@@ -644,35 +644,39 @@ namespace rocwmma
                                       this->mBeta); // beta
             };
 
+            hipEvent_t startEvent, stopEvent;
+            CHECK_HIP_ERROR(hipEventCreate(&startEvent));
+            CHECK_HIP_ERROR(hipEventCreate(&stopEvent));
+
             // Cold runs for frequency warm-up
             for(uint32_t i = 0; i < mColdRuns; ++i)
             {
                 rocwmmaKernel();
             }
 
-            // Use the hot runs for timing
-            hipEvent_t startEvent, stopEvent;
-            CHECK_HIP_ERROR(hipEventCreate(&startEvent));
-            CHECK_HIP_ERROR(hipEventCreate(&stopEvent));
-            CHECK_HIP_ERROR(hipEventRecord(startEvent));
-            for(uint32_t i = 0; i < mHotRuns; ++i)
-            {
-                rocwmmaKernel();
-            }
+            // Finish cold runs
             CHECK_HIP_ERROR(hipEventRecord(stopEvent));
             CHECK_HIP_ERROR(hipEventSynchronize(stopEvent));
 
-            auto timeMs = 0.0f;
-            CHECK_HIP_ERROR(hipEventElapsedTime(&timeMs, startEvent, stopEvent));
+            // Use the hot runs for timing. Ensure sequential execution.
+            mElapsedTimeMs = 0.0;
+            for(uint32_t i = 0; i < mHotRuns; ++i)
+            {
+                CHECK_HIP_ERROR(hipEventRecord(startEvent));
+                rocwmmaKernel();
+                CHECK_HIP_ERROR(hipEventRecord(stopEvent));
+                CHECK_HIP_ERROR(hipEventSynchronize(stopEvent));
+                auto timeMs = 0.0f;
+                CHECK_HIP_ERROR(hipEventElapsedTime(&timeMs, startEvent, stopEvent));
+                mElapsedTimeMs += timeMs;
+            }
 
             // Calculate efficiency
             auto& deviceInfo = DeviceInfo::instance();
 
             auto devicePeakGFlopsPerSec = deviceInfo->peakGFlopsPerSec<InputT>();
-
-            mElapsedTimeMs        = float64_t(timeMs);
-            mTotalGFlops          = calculateGFlops(mM, mN, mK);
-            mMeasuredTFlopsPerSec = calculateTFlopsPerSec(mM, mN, mK, mElapsedTimeMs)
+            mTotalGFlops                = calculateGFlops(mM, mN, mK);
+            mMeasuredTFlopsPerSec       = calculateTFlopsPerSec(mM, mN, mK, mElapsedTimeMs)
                                     * static_cast<float64_t>(mHotRuns);
 
             mEfficiency = round(mMeasuredTFlopsPerSec / devicePeakGFlopsPerSec * 100000.0);
@@ -802,37 +806,42 @@ namespace rocwmma
                         std::numeric_limits<OutputT>::signaling_NaN());
                 }
 
+                hipEvent_t startEvent, stopEvent;
+                CHECK_HIP_ERROR(hipEventCreate(&startEvent));
+                CHECK_HIP_ERROR(hipEventCreate(&stopEvent));
+
                 // Cold runs for frequency warm-up
                 for(uint32_t i = 0; i < mColdRuns; ++i)
                 {
                     refKernel();
                 }
 
-                // Hot runs for timing
-                hipEvent_t startEvent, stopEvent;
-                CHECK_HIP_ERROR(hipEventCreate(&startEvent));
-                CHECK_HIP_ERROR(hipEventCreate(&stopEvent));
-                CHECK_HIP_ERROR(hipEventRecord(startEvent));
-                for(uint32_t i = 0; i < mHotRuns; ++i)
-                {
-                    refKernel();
-                }
+                // Finish cold runs
                 CHECK_HIP_ERROR(hipEventRecord(stopEvent));
                 CHECK_HIP_ERROR(hipEventSynchronize(stopEvent));
 
-                auto timeMs = 0.0f;
-                CHECK_HIP_ERROR(hipEventElapsedTime(&timeMs, startEvent, stopEvent));
+                // Hot runs for timing
+                auto elapsedTimeMs = 0.0;
+                for(uint32_t i = 0; i < mHotRuns; ++i)
+                {
+                    CHECK_HIP_ERROR(hipEventRecord(startEvent));
+                    refKernel();
+                    CHECK_HIP_ERROR(hipEventRecord(stopEvent));
+                    CHECK_HIP_ERROR(hipEventSynchronize(stopEvent));
+                    auto timeMs = 0.0f;
+                    CHECK_HIP_ERROR(hipEventElapsedTime(&timeMs, startEvent, stopEvent));
+                    elapsedTimeMs += timeMs;
+                }
+
                 CHECK_HIP_ERROR(hipEventDestroy(startEvent));
                 CHECK_HIP_ERROR(hipEventDestroy(stopEvent));
 
                 // Calculate reference efficiency
                 if constexpr(mBenchRef)
                 {
-
                     auto& deviceInfo             = DeviceInfo::instance();
                     auto  devicePeakGFlopsPerSec = deviceInfo->peakGFlopsPerSec<InputT>();
 
-                    auto elapsedTimeMs        = float64_t(timeMs);
                     auto measuredTFlopsPerSec = calculateTFlopsPerSec(mM, mN, mK, elapsedTimeMs)
                                                 * static_cast<float64_t>(mHotRuns);
 
