@@ -79,6 +79,45 @@ namespace rocwmma
                   uint32_t MaxVectorWidth>
         struct RowInlineVW;
 
+        /////////////////// Interleaved patterns //////////////////
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  uint32_t VectorWidth,
+                  uint32_t MaxVectorWidth, //
+                  uint32_t MfmaDim, // MFMA instruction size
+                  uint32_t SplitK = 1> // # of splits
+        struct ColInlineInt;
+
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  uint32_t VectorWidth,
+                  uint32_t MaxVectorWidth, //
+                  uint32_t MfmaDim, // MFMA instruction size
+                  uint32_t SplitK = 1> // # of splits
+        struct ColOrthoInt;
+
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  uint32_t VectorWidth,
+                  uint32_t MaxVectorWidth, //
+                  uint32_t MfmaDim, // MFMA instruction size
+                  uint32_t SplitK = 1> // # of splits
+        struct RowInlineInt;
+
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  uint32_t VectorWidth,
+                  uint32_t MaxVectorWidth, //
+                  uint32_t MfmaDim, // MFMA instruction size
+                  uint32_t SplitK = 1> // # of splits
+        struct RowOrthoInt;
+
+        /////////////////// ////////////////////////////// //////////////////
+
     } // namespace MatrixLayout
 
     // Register layouts describe whether contiguous BlockDim elements are:
@@ -90,7 +129,6 @@ namespace rocwmma
         struct Aos
         {
         };
-
         template <uint32_t BlockDim, uint32_t VW>
         struct Soa
         {
@@ -213,8 +251,8 @@ namespace rocwmma
                 MatrixLayout::ColOrthoVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>>;
             using RegisterLayout
                 = conditional_t<is_same_v<DataLayoutT, col_major>,
-                                     RegisterLayout::template Aos<BlockDim, MaxVectorWidth>,
-                                     RegisterLayout::template Soa<BlockDim, MaxVectorWidth>>;
+                                RegisterLayout::template Aos<BlockDim, MaxVectorWidth>,
+                                RegisterLayout::template Soa<BlockDim, MaxVectorWidth>>;
 
             // Mapping
             using MappingUtil  = MappingUtil<BlockDim, BlockK, DataT, DataLayoutT>;
@@ -254,8 +292,8 @@ namespace rocwmma
                 MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>>;
             using RegisterLayout
                 = conditional_t<is_same_v<DataLayoutT, row_major>,
-                                     RegisterLayout::template Aos<BlockDim, MaxVectorWidth>,
-                                     RegisterLayout::template Soa<BlockDim, MaxVectorWidth>>;
+                                RegisterLayout::template Aos<BlockDim, MaxVectorWidth>,
+                                RegisterLayout::template Soa<BlockDim, MaxVectorWidth>>;
 
             // Mapping
             using MappingUtil  = MappingUtil<BlockDim, BlockK, DataT, DataLayoutT>;
@@ -267,7 +305,117 @@ namespace rocwmma
                 !(is_same_v<DataLayoutT, col_major> && (MaxVectorWidth > BlockK)),
                 "MaxVectorWidth is larger than BlockK dimension. Try reducing MaxVectorWidth");
         };
-        
+
+        //////////////// Interleaved layouts /////////////
+
+        // Col is a layout profile that has the following properties:
+        // 1. Leading dimension is aligned with column elements of fragment data:
+        //    - BlockDim is assumed the column size, or BlockM dimension.
+        //    - Analogous to capturing columns of 'matrix A'.
+        // 2. Register layout is dynamic:
+        //    - col_major data is stored in AOS register layout (non-MFMA friendly), and
+        //    - row_major data is stored in SOA register layout (MFMA friendly).
+        //    - Both data layouts cover the same geometric elements (transform friendly).
+        // 3. Register layout DOES change whether DataLayout is col_major or row_major (cost for DataLayoutT change).
+        // 4. VectorWidth is NOT fixed to 1 in either data layout (optimal).
+        // 5. User must convert to SOA if using with MFMA.
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  typename DataLayoutT,
+                  uint32_t VectorWidth,
+                  uint32_t MaxVectorWidth = VectorWidth,
+                  uint32_t MfmaDim        = 16u,
+                  uint32_t SplitK         = 1u>
+        struct ColInt
+        {
+            // Layouts
+            using DataLayout   = DataLayout::template Array1d<DataLayoutT>;
+            using MatrixLayout = conditional_t<is_same_v<DataLayoutT, col_major>,
+                                               MatrixLayout::ColInlineInt<BlockDim,
+                                                                          BlockK,
+                                                                          DataT,
+                                                                          VectorWidth,
+                                                                          MaxVectorWidth,
+                                                                          MfmaDim,
+                                                                          SplitK>,
+                                               MatrixLayout::ColOrthoInt<BlockDim,
+                                                                         BlockK,
+                                                                         DataT,
+                                                                         VectorWidth,
+                                                                         MaxVectorWidth,
+                                                                         MfmaDim,
+                                                                         SplitK>>;
+            using RegisterLayout
+                = conditional_t<is_same_v<DataLayoutT, col_major>,
+                                RegisterLayout::template Aos<BlockDim, MaxVectorWidth>,
+                                RegisterLayout::template Soa<BlockDim, MaxVectorWidth>>;
+
+            // Mapping
+            using MappingUtil  = MappingUtil<BlockDim, BlockK, DataT, DataLayoutT>;
+            using MatrixCoordT = typename MappingUtil::MatrixCoordT;
+
+            // Sanity checks
+            // Must ensure that MaxVectorWidth fits inside the leading dimension
+            static_assert(
+                !(is_same_v<DataLayoutT, row_major> && (MaxVectorWidth > BlockK)),
+                "MaxVectorWidth is larger than BlockK dimension. Try reducing MaxVectorWidth");
+        };
+
+        // Row is a layout profile that has the following properties:
+        // 1. Leading dimension is aligned with row elements of fragment data:
+        //    - BlockDim is assumed the row size, or BlockN dimension.
+        //    - Analogous to capturing rows of 'matrix B' or 'accumulator'.
+        // 2. Register layout is dynamic:
+        //    - row_major data is stored in AOS register layout (non-MFMA friendly), and
+        //    - col_major data is stored in SOA register layout (MFMA friendly).
+        //    - Both data layouts cover the same geometric elements (transform friendly).
+        // 3. Register layout DOES change whether DataLayout is col_major or row_major (cost for DataLayoutT change).
+        // 4. VectorWidth is NOT fixed to 1 in either data layout (optimal).
+        // 5. User must convert to SOA if using with MFMA.
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  typename DataLayoutT,
+                  uint32_t VectorWidth,
+                  uint32_t MaxVectorWidth = VectorWidth,
+                  uint32_t MfmaDim        = 16u,
+                  uint32_t SplitK         = 1u>
+        struct RowInt
+        {
+            // Layouts
+            using DataLayout   = DataLayout::template Array1d<DataLayoutT>;
+            using MatrixLayout = conditional_t<is_same_v<DataLayoutT, row_major>,
+                                               MatrixLayout::RowInlineInt<BlockDim,
+                                                                          BlockK,
+                                                                          DataT,
+                                                                          VectorWidth,
+                                                                          MaxVectorWidth,
+                                                                          MfmaDim,
+                                                                          SplitK>,
+                                               MatrixLayout::RowOrthoInt<BlockDim,
+                                                                         BlockK,
+                                                                         DataT,
+                                                                         VectorWidth,
+                                                                         MaxVectorWidth,
+                                                                         MfmaDim,
+                                                                         SplitK>>;
+            using RegisterLayout
+                = conditional_t<is_same_v<DataLayoutT, row_major>,
+                                RegisterLayout::template Aos<BlockDim, MaxVectorWidth>,
+                                RegisterLayout::template Soa<BlockDim, MaxVectorWidth>>;
+
+            // Mapping
+            using MappingUtil  = MappingUtil<BlockDim, BlockK, DataT, DataLayoutT>;
+            using MatrixCoordT = typename MappingUtil::MatrixCoordT;
+
+            // Sanity checks
+            // Must ensure that MaxVectorWidth fits inside the leading dimension
+            static_assert(
+                !(is_same_v<DataLayoutT, col_major> && (MaxVectorWidth > BlockK)),
+                "MaxVectorWidth is larger than BlockK dimension. Try reducing MaxVectorWidth");
+        };
+
     } // namespace FragmentLayout
 
     ///

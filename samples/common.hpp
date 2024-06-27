@@ -198,6 +198,15 @@ __host__ static inline void
     }
 }
 
+template <typename DataT>
+__host__ static inline void fillVal(DataT* mat, uint32_t m, uint32_t n, DataT val = 1)
+{
+    for(int i = 0; i < m * n; ++i)
+    {
+        mat[i] = val;
+    }
+}
+
 // Host matrix data random initialization
 template <typename DataT>
 __host__ static inline void fillRand(DataT* mat, uint32_t m, uint32_t n)
@@ -221,6 +230,67 @@ __host__ static inline void fillRand(DataT* mat, uint32_t m, uint32_t n)
                                  : static_cast<DataT>(value);
         }
     }
+}
+
+#include <iomanip>
+
+template <typename DataLayoutT, typename DataT>
+__host__ static inline void fillEnc(DataT* mat, uint32_t m, uint32_t n)
+{
+    using EncT = std::conditional_t<sizeof(DataT) == 2, uint16_t, uint32_t>;
+    //#pragma omp parallel for
+    for(int i = 0; i < m; ++i)
+    {
+        for(int j = 0; j < n; j++)
+        {
+            // Use binary encoding for the row / col coords
+            // 0x MMMM NNNN
+            EncT enc = ((i & 0xFF) << (sizeof(DataT) * 4)) | (j & 0xFF);
+            //std::cout << "row: " << i << " col: " << j << " :";
+            //std::cout << "0x" << std::setfill('0') << std::setw(sizeof(DataT)*2) << std::right << std::hex << ((i & 0xFF) << (sizeof(DataT)*4)) << " " << (j & 0xFF) << std::endl;
+            //std::cout << "0x" << std::setfill('0') << std::setw(sizeof(DataT)*2) << std::right << std::hex << enc << std::endl;
+            auto idx = std::is_same_v<DataLayoutT, rocwmma::row_major> ? (i * n + j) : (i + m * j);
+            mat[idx] = reinterpret_cast<DataT&>(enc);
+        }
+    }
+}
+
+template <typename DataLayoutT, typename DataT>
+__host__ static inline void printEnc(DataT* mat, uint32_t m, uint32_t n)
+{
+    using EncT = std::conditional_t<sizeof(DataT) == 2, uint16_t, uint32_t>;
+    for(int i = 0; i < m; ++i)
+    {
+        for(int j = 0; j < n; j++)
+        {
+            // Use binary encoding for the row / col coords
+            // 0x MMMM NNNN
+            auto idx = std::is_same_v<DataLayoutT, rocwmma::row_major> ? (i * n + j) : (i + m * j);
+            std::cout << "0x" << std::setfill('0') << std::setw(sizeof(DataT) * 2) << std::right
+                      << std::hex << reinterpret_cast<EncT&>(mat[idx]) << " ";
+            //std::cout << reinterpret_cast<uint16_t&>(mat[idx]) << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+template <typename DataLayoutT, typename DataT>
+__host__ static inline void printData(DataT* mat, uint32_t m, uint32_t n)
+{
+    for(int i = 0; i < m; ++i)
+    {
+        for(int j = 0; j < n; j++)
+        {
+            // Use binary encoding for the row / col coords
+            // 0x MMMM NNNN
+            auto idx = std::is_same_v<DataLayoutT, rocwmma::row_major> ? (i * n + j) : (i + m * j);
+            std::cout << std::setw(8) << std::right << float(mat[idx]) << " ";
+            //std::cout << reinterpret_cast<uint16_t&>(mat[idx]) << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
 }
 
 // Host GEMM validation
