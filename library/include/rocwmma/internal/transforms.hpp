@@ -59,10 +59,189 @@ namespace rocwmma
 
         template <uint32_t BlockDim, uint32_t MaxVW>
         using AosToSoa = Driver<TransformsImpl::Ops::AosToSoa<BlockDim, MaxVW>>;
-      
+
         template <uint32_t BlockDim, uint32_t MaxVW>
         using SoaToAos = Driver<TransformsImpl::Ops::SoaToAos<BlockDim, MaxVW>>;
-      
+
+        // Note: If you arrive at an undefined register_transform error, it is likely
+        // the layout transformation is not currently supported. Need to either implement
+        // the transform or ensure your layout transform mapping is correct.
+        template <typename SrcLayout,
+                  typename DstLayout,
+                  typename Match = is_same<SrcLayout, DstLayout>>
+        struct register_transform;
+
+        // Layouts that are identical do not require register transformations
+        template <typename SrcLayout, typename DstLayout>
+        struct register_transform<SrcLayout, DstLayout, true_type>
+        {
+            template <typename DataT, uint32_t VecSize>
+            ROCWMMA_DEVICE constexpr static inline decltype(auto)
+                exec(VecT<DataT, VecSize> const& v)
+            {
+                return v;
+            }
+        };
+
+        /////// To MmaInput ///////
+
+        // ColInlineVW and RowInlineVW layouts are not mma friendly and require Aos->Soa transform.
+        // Only valid for BlockDims that supported by mma
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  uint32_t VectorWidth,
+                  uint32_t MaxVectorWidth>
+        struct register_transform<
+            RegisterLayout::Storage<
+                MatrixLayout::ColInlineVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>>,
+            RegisterLayout::MmaInput<BlockDim>,
+            false_type>
+        {
+            // TODO: Remove DataT from the transform
+            template <uint32_t VecSize>
+            ROCWMMA_DEVICE constexpr static inline auto exec(VecT<DataT, VecSize> const& v)
+            {
+                static_assert(RegisterLayout::detail::testSupportedMmaDim(BlockDim),
+                              "Unsupported mma dim");
+
+                // ColInlineVW -> ColOrthoVW (mma friendly) = AOS -> SOA transform
+                return AosToSoa<BlockDim, MaxVectorWidth>::exec(v);
+            }
+        };
+
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  uint32_t VectorWidth,
+                  uint32_t MaxVectorWidth>
+        struct register_transform<
+            RegisterLayout::Storage<
+                MatrixLayout::RowInlineVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>>,
+            RegisterLayout::MmaInput<BlockDim>,
+            false_type>
+        {
+            // TODO: Remove DataT from the transform
+            template <uint32_t VecSize>
+            ROCWMMA_DEVICE constexpr static inline auto exec(VecT<DataT, VecSize> const& v)
+            {
+                static_assert(RegisterLayout::detail::testSupportedMmaDim(BlockDim),
+                              "Unsupported mma dim");
+
+                // RowInlineVW -> RowOrthoVW (mma friendly) = AOS -> SOA transform
+                return AosToSoa<BlockDim, MaxVectorWidth>::exec(v);
+            }
+        };
+
+        /////// To Other Layouts ///////
+
+        // In-register layouts for (RowInlineVW and RowOrthoVW), and (ColInlineVW and ColOrthoVW) are orthgonal
+        // and need specific transforms to transition between either representation.
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  uint32_t VectorWidthLhs,
+                  uint32_t VectorWidthRhs,
+                  uint32_t MaxVectorWidth>
+        struct register_transform<
+            RegisterLayout::Storage<
+                MatrixLayout::RowInlineVW<BlockDim, BlockK, DataT, VectorWidthLhs, MaxVectorWidth>>,
+            RegisterLayout::Storage<
+                MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VectorWidthRhs, MaxVectorWidth>>,
+            false_type>
+        {
+            // TODO: Remove DataT from the transform
+            template <uint32_t VecSize>
+            ROCWMMA_DEVICE constexpr static inline auto exec(VecT<DataT, VecSize> const& v)
+            {
+                static_assert(RegisterLayout::detail::testSupportedVW(
+                                  MaxVectorWidth, VectorWidthLhs, VectorWidthRhs),
+                              "Invalid VW");
+
+                // RowInlineVW -> RowOrthoVW = AOS -> SOA transform
+                return AosToSoa<BlockDim, MaxVectorWidth>::exec(v);
+            }
+        };
+
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  uint32_t VectorWidthLhs,
+                  uint32_t VectorWidthRhs,
+                  uint32_t MaxVectorWidth>
+        struct register_transform<
+            RegisterLayout::Storage<
+                MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VectorWidthRhs, MaxVectorWidth>>,
+            RegisterLayout::Storage<
+                MatrixLayout::RowInlineVW<BlockDim, BlockK, DataT, VectorWidthLhs, MaxVectorWidth>>,
+            false_type>
+        {
+            // TODO: Remove DataT from the transform
+            template <uint32_t VecSize>
+            ROCWMMA_DEVICE constexpr static inline auto exec(VecT<DataT, VecSize> const& v)
+            {
+                static_assert(RegisterLayout::detail::testSupportedVW(
+                                  MaxVectorWidth, VectorWidthLhs, VectorWidthRhs),
+                              "Invalid VW");
+
+                // RowOrthoVW -> RowInlineVW = SOA -> AOS transform
+                return SoaToAos<BlockDim, MaxVectorWidth>::exec(v);
+            }
+        };
+
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  uint32_t VectorWidthLhs,
+                  uint32_t VectorWidthRhs,
+                  uint32_t MaxVectorWidth>
+        struct register_transform<
+            RegisterLayout::Storage<
+                MatrixLayout::ColInlineVW<BlockDim, BlockK, DataT, VectorWidthLhs, MaxVectorWidth>>,
+            RegisterLayout::Storage<
+                MatrixLayout::ColOrthoVW<BlockDim, BlockK, DataT, VectorWidthRhs, MaxVectorWidth>>,
+            false_type>
+        {
+            // TODO: Remove DataT from the transform
+            template <uint32_t VecSize>
+            ROCWMMA_DEVICE constexpr static inline auto exec(VecT<DataT, VecSize> const& v)
+            {
+                static_assert(RegisterLayout::detail::testSupportedVW(
+                                  MaxVectorWidth, VectorWidthLhs, VectorWidthRhs),
+                              "Invalid VW");
+
+                // ColInlineVW -> ColOrthoVW = AOS -> SOA transform
+                return AosToSoa<BlockDim, MaxVectorWidth>::exec(v);
+            }
+        };
+
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  uint32_t VectorWidthLhs,
+                  uint32_t VectorWidthRhs,
+                  uint32_t MaxVectorWidth>
+        struct register_transform<
+            RegisterLayout::Storage<
+                MatrixLayout::ColOrthoVW<BlockDim, BlockK, DataT, VectorWidthRhs, MaxVectorWidth>>,
+            RegisterLayout::Storage<
+                MatrixLayout::ColInlineVW<BlockDim, BlockK, DataT, VectorWidthLhs, MaxVectorWidth>>,
+            false_type>
+        {
+            // TODO: Remove DataT from the transform
+            template <uint32_t VecSize>
+            ROCWMMA_DEVICE constexpr static inline auto exec(VecT<DataT, VecSize> const& v)
+            {
+                static_assert(0, "Nope");
+                static_assert(RegisterLayout::detail::testSupportedVW(
+                                  MaxVectorWidth, VectorWidthLhs, VectorWidthRhs),
+                              "Invalid VW");
+
+                // ColOrthoVW -> ColInlineVW = SOA -> AOS transform
+                return SoaToAos<BlockDim, MaxVectorWidth>::exec(v);
+            }
+        };
+
     } // namespace Transforms
 
 } // namespace rocwmma

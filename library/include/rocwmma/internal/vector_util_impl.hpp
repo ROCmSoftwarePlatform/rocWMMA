@@ -416,6 +416,20 @@ namespace rocwmma
         }
     }
 
+    template <uint32_t GroupSize, typename DataT, uint32_t VecSize>
+    ROCWMMA_DEVICE constexpr static inline auto interleave(VecT<DataT, VecSize> const& v0)
+    {
+        // Interleave groups
+        auto offset = [](auto&& idx, auto&& v0) {
+            constexpr auto Index   = decay_t<decltype(idx)>::value;
+            constexpr auto Offset0 = Index * GroupSize;
+            constexpr auto Offset1 = Index / (VecSize / GroupSize);
+            return get<(Offset0 + Offset1) % VecSize>(v0);
+        };
+
+        return vector_generator<DataT, VecSize>()(offset, v0);
+    }
+
 } // namespace rocwmma
 
 #endif // ROCWMMA_VECTOR_UTIL_IMPL_HPP

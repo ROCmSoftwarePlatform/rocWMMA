@@ -122,6 +122,17 @@ namespace rocwmma
     template <typename DataT, uint32_t VecSize>
     ROCWMMA_DEVICE constexpr static inline auto unpackHi(VecT<DataT, VecSize> const& v0,
                                                          VecT<DataT, VecSize> const& v1);
+
+    //! Interleaves elements from the vector, according to group size
+    //! E.g. GroupSize = 4
+    //! v0     = [0, 1, 2, 3, 4, 5, 6, 7]
+    //! result = [0, 4, 1, 5, 2, 6, 3, 7]
+    /*!
+      \param v0 Vector from which interleaved elements are selected from
+    */
+    template <uint32_t GroupSize, typename DataT, uint32_t VecSize>
+    ROCWMMA_DEVICE constexpr static inline auto interleave(VecT<DataT, VecSize> const& v0);
+
 } // namespace rocwmma
 
 #include "vector_util_impl.hpp"

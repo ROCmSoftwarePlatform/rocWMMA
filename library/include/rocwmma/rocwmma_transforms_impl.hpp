@@ -38,7 +38,7 @@ namespace rocwmma
         ///
 
         // Below are defined as fast implicit transposes:
-        // - We reinterpret meaning between cols of A and rows of B,
+        // - We re-interpret meaning between cols of A and rows of B,
         // in order to change the shape of our data for reading / writing.
         // Implicit transposes of fragment objects are designed to be
         // relatively cheap, and should only require a signature cast.
@@ -50,7 +50,7 @@ namespace rocwmma
         // Example:
         // - A matrix_a fragment of (BlockM x BlockK) = 32x8 in col_major may be reinterpreted
         //   as a matrix_b fragment of (BlockK x BlockN) = 8x32 in row_major.
-        //   Here, we have transposed (reimagined) 8 cols of matrix_a into 8 rows of matrix_b.
+        //   Here, we have transposed (implicitly) 8 cols of matrix_a into 8 rows of matrix_b.
         template <typename FragT>
         struct ApplyTranspose;
 
@@ -65,7 +65,9 @@ namespace rocwmma
             // Original frag A type
             using FragA = fragment<matrix_a, BlockM, BlockN, BlockK, DataT, DataLayoutT>;
 
-            // Transpose to frag B type in opposite data layout.
+            // Transpose to frag B type in opposite data layout:
+            // - Exchange Block M for BlockN
+            // - Exchange row_major for col_major and vice-versa
             using FragB = fragment<matrix_b,
                                    BlockN,
                                    BlockM,
@@ -78,10 +80,10 @@ namespace rocwmma
 
             // Assumptions check
             static_assert(IOConfigA::IOShape::BlockDim == IOConfigB::IOShape::BlockDim,
-                          "BlockDim of transposed frag doesn't match");
+                          "BlockDim of transposed fragment doesn't match");
 
             static_assert(IOConfigA::IOShape::KDim == IOConfigB::IOShape::KDim,
-                          "KDim of transposed fragm doesn't match");
+                          "KDim of transposed fragment doesn't match");
 
             static_assert(is_orthogonal_v<typename IOConfigA::IOLayout::DataLayout,
                                           typename IOConfigB::IOLayout::DataLayout>,
@@ -115,10 +117,12 @@ namespace rocwmma
         struct ApplyTranspose<fragment<matrix_b, BlockM, BlockN, BlockK, DataT, DataLayoutT>>
         {
         private:
-            // Original frag A type
+            // Original frag B type
             using FragB = fragment<matrix_b, BlockM, BlockN, BlockK, DataT, DataLayoutT>;
 
-            // Transpose to frag A type in opposite data layout.
+            // Transpose to frag A type in opposite data layout:
+            // - Exchange Block M for BlockN
+            // - Exchange row_major for col_major and vice-versa
             using FragA = fragment<matrix_a,
                                    BlockN,
                                    BlockM,
@@ -224,46 +228,53 @@ namespace rocwmma
             using Type = FragOut;
 
             // Optimal case: input and output register layouts match
-            template <
-                uint32_t WaveCount = 1,
-                typename FragT,
-                enable_if_t<
-                    is_same_v<FragT, FragIn> && is_same_v<RegisterLayoutIn, RegisterLayoutOut>,
-                    int> = 0>
+            template <uint32_t WaveCount = 1,
+                      typename FragT,
+                      enable_if_t<is_same_v<FragT, FragIn>
+                                      && is_same_v<RegisterLayoutIn, RegisterLayoutOut>,
+                                  int>
+                      = 0>
             ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(FragT const& frag)
             {
                 return reinterpret_cast<FragOut const&>(frag);
             }
 
             // Input and output register layouts do not match: must transform using AOS<->SOA
-            template <
-                uint32_t WaveCount = 1,
-                typename FragT,
-                enable_if_t<
-                    is_same_v<FragT, FragIn> && !is_same_v<RegisterLayoutIn, RegisterLayoutOut>,
-                    int> = 0>
+            template <uint32_t WaveCount = 1,
+                      typename FragT,
+                      enable_if_t<is_same_v<FragT, FragIn>
+                                      && !is_same_v<RegisterLayoutIn, RegisterLayoutOut>,
+                                  int>
+                      = 0>
             ROCWMMA_DEVICE constexpr static inline auto exec(FragT const& frag)
             {
                 // TODO: Make sure to use coop configs to get the right MaxVW!!!
-                using IOConfigCoop           = GetCoopIOConfig_t<FragIn, WaveCount>;
-                constexpr uint32_t BlockDim  = IOConfigCoop::IOShape::BlockDim;
-                constexpr uint32_t MaxVW     = IOConfigCoop::IOLayout::MaxVW;
-                using RegisterLayoutIncoming = typename IOConfigCoop::IOLayout::RegisterLayout;
+                // using IOConfigCoopIn           = GetCoopIOConfig_t<FragIn, WaveCount>;
+                // constexpr uint32_t BlockDim  = IOConfigCoop::IOShape::BlockDim;
+                // constexpr uint32_t MaxVW     = IOConfigCoop::IOLayout::MaxVW;
+                // using RegisterLayoutIncoming = typename IOConfigCoop::IOLayout::RegisterLayout;
 
-                // Target layouts
-                using AosLayout = RegisterLayout::template Aos<BlockDim, MaxVW>;
-                using SoaLayout = RegisterLayout::template Soa<BlockDim, MaxVW>;
+                // // Target layouts
+                // using AosLayout = RegisterLayout::template Aos<BlockDim, MaxVW>;
+                // using SoaLayout = RegisterLayout::template Soa<BlockDim, MaxVW>;
 
-                auto result = FragOut{};
+                using SrcRegLayout =
+                    typename GetCoopIOConfig_t<FragIn, WaveCount>::IOLayout::RegisterLayout;
+                using DstRegLayout =
+                    typename GetCoopIOConfig_t<FragOut, WaveCount>::IOLayout::RegisterLayout;
 
-                if constexpr(is_same_v<AosLayout, RegisterLayoutIncoming>)
-                {
-                    result.mAccess = Transforms::AosToSoa<BlockDim, MaxVW>::exec(frag.mAccess);
-                }
-                else if constexpr(is_same_v<SoaLayout, RegisterLayoutIncoming>)
-                {
-                    result.mAccess = Transforms::SoaToAos<BlockDim, MaxVW>::exec(frag.mAccess);
-                }
+                auto result = FragOut{
+                    Transforms::register_transform<SrcRegLayout, DstRegLayout>::exec(frag.mAccess)};
+                //result.mAccess = ;
+
+                // if constexpr(is_same_v<AosLayout, RegisterLayoutIncoming>)
+                // {
+                //     result.mAccess = Transforms::AosToSoa<BlockDim, MaxVW>::exec(frag.mAccess);
+                // }
+                // else if constexpr(is_same_v<SoaLayout, RegisterLayoutIncoming>)
+                // {
+                //     result.mAccess = Transforms::SoaToAos<BlockDim, MaxVW>::exec(frag.mAccess);
+                // }
 
                 return result;
             }

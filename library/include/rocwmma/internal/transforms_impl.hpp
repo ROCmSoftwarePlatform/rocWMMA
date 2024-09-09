@@ -213,7 +213,6 @@ namespace rocwmma
     {
         namespace Ops
         {
-
             template <uint32_t BlockDim, uint32_t VectorWidth>
             struct AosToSoa
             {

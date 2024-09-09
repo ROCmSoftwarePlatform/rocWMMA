@@ -349,10 +349,10 @@ namespace rocwmma
                                 typename IOConfigB::IOLayout::RegisterLayout>,
                       "Input fragment register layouts do not match");
 
-        static_assert(is_same_v<typename IOConfigA::IOLayout::RegisterLayout,
-                                RegisterLayout::template Soa<IOConfigA::IOShape::BlockDim,
-                                                             IOConfigA::IOLayout::MaxVW>>,
-                      "Input fragment register layouts are not mfma friendly");
+        // static_assert(is_same_v<typename IOConfigA::IOLayout::RegisterLayout,
+        //                         RegisterLayout::template Soa<IOConfigA::IOShape::BlockDim,
+        //                                                      IOConfigA::IOLayout::MaxVW>>,
+        //               "Input fragment register layouts are not mfma friendly");
 
         // Gfx9 uses MFMA, gfx11 uses WMMA
         using MMA = conditional_t<ROCWMMA_ARCH_GFX9,
