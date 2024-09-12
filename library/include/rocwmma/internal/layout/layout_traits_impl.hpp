@@ -26,43 +26,29 @@
 #ifndef ROCWMMA_LAYOUT_TRAITS_IMPL_HPP
 #define ROCWMMA_LAYOUT_TRAITS_IMPL_HPP
 
-#include "config.hpp"
-#include "layout_traits.hpp"
+#include "utility/type_traits.hpp"
 
 namespace rocwmma
 {
-    // Common helpers for supported traits
-    namespace detail
+    namespace LayoutTraits_impl
     {
-        // Based on the current config, determine the compatibility of the mma dimension
-        constexpr static inline bool testSupportedMmaDim(uint32_t testDim)
+        // Classifier to test layout sameness
+        template <typename LayoutLhs, typename LayoutRhs, typename Enabler = void>
+        struct is_layout_same : public false_type
         {
-            return ((bool)ROCWMMA_BLOCK_DIM_16_SUPPORTED && testDim == 16u)
-                   || ((bool)ROCWMMA_BLOCK_DIM_32_SUPPORTED && (testDim == 16u || testDim == 32u));
-        }
+        };
 
-        // VW can be changed from vw0 to vw1 as long as they have the same maxVW, and that maxVW
-        // is a multiple of both vw values
-        constexpr static inline bool testSupportedVW(uint32_t maxVW, uint32_t vw0, uint32_t vw1)
+        // Classifer to test layout orthogonality
+        template <typename LayoutLhs, typename LayoutRhs, typename Enabler = void>
+        struct is_layout_orthogonal : public false_type
         {
-            return (vw0 <= maxVW) && (vw1 <= maxVW) && (maxVW % vw0 == 0) && (maxVW % vw1 == 0);
-        }
+        };
 
-    } // namespace detail
+        // Orthogonality guide
+        template <typename Layout>
+        struct orthogonal_layout;
 
-    // Covers all other generic exact layout class matches
-
-    // Self-compare is always true
-    template <typename Layout>
-    struct is_layout_same<Layout, Layout> : public true_type
-    {
-    };
-
-    // Self-compare is always false
-    template <typename Layout>
-    struct is_layout_transpose<Layout, Layout> : public false_type
-    {
-    };
+    } // namespace LayoutTraits_impl
 
 } // namespace rocwmma
 

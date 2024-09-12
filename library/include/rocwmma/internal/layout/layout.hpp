@@ -26,6 +26,7 @@
 #ifndef ROCWMMA_LAYOUT_HPP
 #define ROCWMMA_LAYOUT_HPP
 
+#include "api_fwd.hpp"
 #include "mapping_util.hpp"
 
 namespace rocwmma
@@ -101,12 +102,9 @@ namespace rocwmma
                   uint32_t MaxVectorWidth>
         struct RowInlineVW;
 
-        /////////////////// Interleaved patterns //////////////////
         template <uint32_t BlockDim,
                   uint32_t BlockK,
                   typename DataT,
-                  uint32_t VectorWidth,
-                  uint32_t MaxVectorWidth, //
                   uint32_t MfmaDim, // MFMA instruction size
                   uint32_t SplitK = 1> // # of splits
         struct ColInlineInt;
@@ -114,8 +112,6 @@ namespace rocwmma
         template <uint32_t BlockDim,
                   uint32_t BlockK,
                   typename DataT,
-                  uint32_t VectorWidth,
-                  uint32_t MaxVectorWidth, //
                   uint32_t MfmaDim, // MFMA instruction size
                   uint32_t SplitK = 1> // # of splits
         struct ColOrthoInt;
@@ -123,8 +119,6 @@ namespace rocwmma
         template <uint32_t BlockDim,
                   uint32_t BlockK,
                   typename DataT,
-                  uint32_t VectorWidth,
-                  uint32_t MaxVectorWidth, //
                   uint32_t MfmaDim, // MFMA instruction size
                   uint32_t SplitK = 1> // # of splits
         struct RowInlineInt;
@@ -132,13 +126,9 @@ namespace rocwmma
         template <uint32_t BlockDim,
                   uint32_t BlockK,
                   typename DataT,
-                  uint32_t VectorWidth,
-                  uint32_t MaxVectorWidth, //
                   uint32_t MfmaDim, // MFMA instruction size
                   uint32_t SplitK = 1> // # of splits
         struct RowOrthoInt;
-
-        /////////////////// ////////////////////////////// //////////////////
 
     } // namespace MatrixLayout
 
@@ -176,9 +166,6 @@ namespace rocwmma
 
 } // namespace rocwmma
 
-#include "data_layout_impl.hpp"
 #include "matrix_layout_impl.hpp"
-#include "matrix_layout_interleaved_impl.hpp"
-#include "register_layout_impl.hpp"
 
 #endif // ROCWMMA_LAYOUT_HPP

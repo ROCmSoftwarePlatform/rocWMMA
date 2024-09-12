@@ -26,7 +26,10 @@
 #ifndef ROCWMMA_LAYOUT_TRAITS_HPP
 #define ROCWMMA_LAYOUT_TRAITS_HPP
 
-#include "utility/type_traits.hpp"
+#include "data_layout_traits.hpp"
+#include "layout_traits_impl.hpp"
+#include "matrix_layout_traits.hpp"
+#include "register_layout_traits.hpp"
 
 namespace rocwmma
 {
@@ -39,39 +42,54 @@ namespace rocwmma
     *  @tparam RhsLayout Comparative right hand side
     */
     template <typename LhsLayout, typename RhsLayout>
-    struct is_layout_same : public false_type
+    struct is_layout_same : public LayoutTraits_impl::is_layout_same<LhsLayout, RhsLayout>
     {
     };
 
-    /*! \class is_layout_transpose
-    *  \brief  Compares layout types if they are transposed with each other.
+    /*! \class is_layout_orthogonal
+    *  \brief  Compares layout types if they are orthogonal with each other.
     *  @tparam LhsLayout Comparative left hand side
     *  @tparam RhsLayout Comparative right hand side
     */
     template <typename LhsLayout, typename RhsLayout>
-    struct is_layout_transpose : public false_type
+    struct is_layout_orthogonal
+        : public LayoutTraits_impl::is_layout_orthogonal<LhsLayout, RhsLayout>
     {
     };
 
-    /*! \class layout_transpose
-    *  \brief  Transforms the layout type into its direct transpose.
+    /*! \class orthogonal_layout
+    *  \brief  Transforms the layout type into its orthogonal layout.
     *  @tparam Layout the layout to transpose from
     */
     template <typename Layout>
-    struct layout_transpose
+    struct orthogonal_layout : public LayoutTraits_impl::orthogonal_layout<Layout>
     {
-        // using type = ...
     };
+
+    /*! \class is_layout_same_v
+    *  \brief  Evaluates is_layout_same
+    *  @tparam LhsLayout Comparative left hand side
+    *  @tparam RhsLayout Comparative right hand side
+    */
+    template <typename LhsLayout, typename RhsLayout>
+    constexpr static inline bool is_layout_same_v = is_layout_same<LhsLayout, RhsLayout>::value;
+
+    /*! \class is_layout_orthogonal
+    *  \brief  Evaluates is_layout_orthogonal
+    *  @tparam LhsLayout Comparative left hand side
+    *  @tparam RhsLayout Comparative right hand side
+    */
+    template <typename LhsLayout, typename RhsLayout>
+    constexpr static inline bool is_layout_orthogonal_v
+        = is_layout_orthogonal<LhsLayout, RhsLayout>::value;
 
     /*! \class layout_transpose_t
-    *  \brief  Transforms the layout type into its direct transpose.
+    *  \brief  Transforms the layout type into its orthogonal layout.
     *  @tparam Layout the layout to transpose from
     */
     template <typename Layout>
-    using layout_transpose_t = typename layout_transpose<Layout>::type;
+    using orthogonal_layout_t = typename orthogonal_layout<Layout>::type;
 
 } // namespace rocwmma
-
-#include "layout_traits_impl.hpp"
 
 #endif // ROCWMMA_LAYOUT_TRAITS_HPP
