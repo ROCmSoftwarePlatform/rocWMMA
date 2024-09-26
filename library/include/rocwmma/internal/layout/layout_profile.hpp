@@ -218,29 +218,16 @@ namespace rocwmma
                   uint32_t BlockK,
                   typename DataT,
                   typename DataLayoutT,
-                  uint32_t VectorWidth,
-                  uint32_t MaxVectorWidth = VectorWidth,
-                  uint32_t MfmaDim        = 16u,
-                  uint32_t SplitK         = 1u>
+                  uint32_t MfmaDim = 16u,
+                  uint32_t SplitK  = 1u>
         struct ColInt
         {
             // Layouts
             using DataLayout   = DataLayout::template Array1d<DataLayoutT>;
-            using MatrixLayout = conditional_t<is_same_v<DataLayoutT, col_major>,
-                                               MatrixLayout::ColInlineInt<BlockDim,
-                                                                          BlockK,
-                                                                          DataT,
-                                                                          VectorWidth,
-                                                                          MaxVectorWidth,
-                                                                          MfmaDim,
-                                                                          SplitK>,
-                                               MatrixLayout::ColOrthoInt<BlockDim,
-                                                                         BlockK,
-                                                                         DataT,
-                                                                         VectorWidth,
-                                                                         MaxVectorWidth,
-                                                                         MfmaDim,
-                                                                         SplitK>>;
+            using MatrixLayout = conditional_t<
+                is_same_v<DataLayoutT, col_major>,
+                MatrixLayout::ColInlineInt<BlockDim, BlockK, DataT, MfmaDim, SplitK>,
+                MatrixLayout::ColOrthoInt<BlockDim, BlockK, DataT, MfmaDim, SplitK>>;
 
             using RegisterLayout = RegisterLayout::Storage<MatrixLayout>;
 
@@ -250,9 +237,10 @@ namespace rocwmma
 
             // Sanity checks
             // Must ensure that MaxVectorWidth fits inside the leading dimension
-            static_assert(
-                !(is_same_v<DataLayoutT, row_major> && (MaxVectorWidth > BlockK)),
-                "MaxVectorWidth is larger than BlockK dimension. Try reducing MaxVectorWidth");
+            // TODO: fix
+            // static_assert(
+            //     !(is_same_v<DataLayoutT, row_major> && (MaxVectorWidth > BlockK)),
+            //     "MaxVectorWidth is larger than BlockK dimension. Try reducing MaxVectorWidth");
         };
 
         // Row is a layout profile that has the following properties:
@@ -270,29 +258,16 @@ namespace rocwmma
                   uint32_t BlockK,
                   typename DataT,
                   typename DataLayoutT,
-                  uint32_t VectorWidth,
-                  uint32_t MaxVectorWidth = VectorWidth,
-                  uint32_t MfmaDim        = 16u,
-                  uint32_t SplitK         = 1u>
+                  uint32_t MfmaDim = 16u,
+                  uint32_t SplitK  = 1u>
         struct RowInt
         {
             // Layouts
             using DataLayout   = DataLayout::template Array1d<DataLayoutT>;
-            using MatrixLayout = conditional_t<is_same_v<DataLayoutT, row_major>,
-                                               MatrixLayout::RowInlineInt<BlockDim,
-                                                                          BlockK,
-                                                                          DataT,
-                                                                          VectorWidth,
-                                                                          MaxVectorWidth,
-                                                                          MfmaDim,
-                                                                          SplitK>,
-                                               MatrixLayout::RowOrthoInt<BlockDim,
-                                                                         BlockK,
-                                                                         DataT,
-                                                                         VectorWidth,
-                                                                         MaxVectorWidth,
-                                                                         MfmaDim,
-                                                                         SplitK>>;
+            using MatrixLayout = conditional_t<
+                is_same_v<DataLayoutT, row_major>,
+                MatrixLayout::RowInlineInt<BlockDim, BlockK, DataT, MfmaDim, SplitK>,
+                MatrixLayout::RowOrthoInt<BlockDim, BlockK, DataT, MfmaDim, SplitK>>;
 
             using RegisterLayout = RegisterLayout::Storage<MatrixLayout>;
 
@@ -302,9 +277,10 @@ namespace rocwmma
 
             // Sanity checks
             // Must ensure that MaxVectorWidth fits inside the leading dimension
-            static_assert(
-                !(is_same_v<DataLayoutT, col_major> && (MaxVectorWidth > BlockK)),
-                "MaxVectorWidth is larger than BlockK dimension. Try reducing MaxVectorWidth");
+            // TODO: fix
+            // static_assert(
+            //     !(is_same_v<DataLayoutT, col_major> && (MaxVectorWidth > BlockK)),
+            //     "MaxVectorWidth is larger than BlockK dimension. Try reducing MaxVectorWidth");
         };
 
     } // namespace LayoutProfile

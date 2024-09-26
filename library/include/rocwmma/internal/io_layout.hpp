@@ -28,7 +28,7 @@
 
 #include "api_fwd.hpp"
 #include "constants.hpp"
-#include "layout.hpp"
+#include "layout/layout_profile.hpp"
 #include "types.hpp"
 
 namespace rocwmma

@@ -26,7 +26,7 @@
 #ifndef ROCWMMA_MATRIX_LAYOUT_TRAITS_HPP
 #define ROCWMMA_MATRIX_LAYOUT_TRAITS_HPP
 
-#include "config.hpp"
+#include "../config.hpp"
 #include "layout.hpp"
 #include "layout_traits.hpp"
 
@@ -61,50 +61,14 @@ namespace rocwmma
         using MatrixLayout::RowInlineInt;
         using MatrixLayout::RowOrthoInt;
 
-        // NOTE: MatrixLayout assumptions
-        // When determining MatrixLayout traits, there are several strong assumptions.
-        // 1. Regarding same-ness: MatrixLayouts must match, as defined below:
-        //  ____________________________________________________________________
-        // | MatrixLayoutLhs | MatrixLayoutRhs | Compatibility test:            |
-        // |                 |     (Same)      | Required Fixed Params          |
-        // | ------------------------------------------------------------------ |
-        // | ColOrthoVW      | ColOrthoVW      | BlockDim, KDim, MaxVectorWidth |
-        // | ColInlineVW     | ColInlineVW     | BlockDim, KDim, MaxVectorWidth |
-        // | RowOrthoVW      | RowOrthoVW      | BlockDim, KDim, MaxVectorWidth |
-        // | RowInlineVW     | RowInlineVW     | BlockDim, KDim, MaxVectorWidth |
-        // | ------------------------------------------------------------------ |
-        // | ColOrthoInt     | ColOrthoInt     | BlockDim, KDim, MmaDim, SplitK |
-        // | ColInlineInt    | ColInlineInt    | BlockDim, KDim, MmaDim, SplitK |
-        // | RowOrthoInt     | RowOrthoInt     | BlockDim, KDim, MmaDim, SplitK |
-        // | RowInlineInt    | RowInlineInt    | BlockDim, KDim, MmaDim, SplitK |
-        //  --------------------------------------------------------------------
-        //
-        // 2. Regarding orthogonality: for all Col* layouts, their Row*
-        // orthogonal counterparts are implemented by row / col coordinate swaps.
-        // This is valid as long as we have some fixed parameters, as defined below:
-        //  ____________________________________________________________________
-        // | MatrixLayoutLhs | MatrixLayoutRhs | Compatibility test:            |
-        // |                 |   (Orthogonal)  | Required Fixed Params          |
-        // | ------------------------------------------------------------------ |
-        // | ColOrthoVW      | RowOrthoVW      | BlockDim, KDim, MaxVectorWidth |
-        // | ColInlineVW     | RowInlineVW     | BlockDim, KDim, MaxVectorWidth |
-        // | RowOrthoVW      | ColOrthoVW      | BlockDim, KDim, MaxVectorWidth |
-        // | RowInlineVW     | ColInlineVW     | BlockDim, KDim, MaxVectorWidth |
-        // | ------------------------------------------------------------------ |
-        // | ColOrthoInt     | RowOrthoInt     | BlockDim, KDim, MmaDim, SplitK |
-        // | ColInlineInt    | RowInlineInt    | BlockDim, KDim, MmaDim, SplitK |
-        // | RowOrthoInt     | ColOrthoInt     | BlockDim, KDim, MmaDim, SplitK |
-        // | RowInlineInt    | ColInlineInt    | BlockDim, KDim, MmaDim, SplitK |
-        //  --------------------------------------------------------------------
-        // This defines the need for MatrixLayout classifiers based upon:
-        // - ColOrtho / RowOrtho
-        // - ColInline / RowInline
-        // - Non-interleave / non-interleaved
-        //
-        // Following the above traits, we can build more complicated traits such as
-        // is_same, is_orthogonal and orthogonal_layout.
-
-        // Classifier for ColOrtho MatrixLayout
+        // Start to build a basic set of meta-data classifiers.
+        // We will be interested in knowing things about our matrix layouts:
+        // - is_col_ortho
+        // - is_row_ortho
+        // - is_col_inline
+        // - is_row_inline
+        // - is_interleaved
+        // - is_matrix_layout
         template <typename MatrixLayout>
         struct is_col_ortho : public false_type
         {
@@ -130,7 +94,6 @@ namespace rocwmma
         {
         };
 
-        // Classifier for RowOrtho MatrixLayout
         template <typename MatrixLayout>
         struct is_row_ortho : public false_type
         {
@@ -156,7 +119,6 @@ namespace rocwmma
         {
         };
 
-        // Classifier for ColInline MatrixLayout
         template <typename MatrixLayout>
         struct is_col_inline : public false_type
         {
@@ -177,12 +139,11 @@ namespace rocwmma
                   typename DataT,
                   uint32_t MfmaDim,
                   uint32_t SplitK>
-        struct is_col_Inline<ColInlineInt<BlockDim, BlockK, DataT, MfmaDim, SplitK>>
+        struct is_col_inline<ColInlineInt<BlockDim, BlockK, DataT, MfmaDim, SplitK>>
             : public true_type
         {
         };
 
-        // Classifier for RowInline MatrixLayout
         template <typename MatrixLayout>
         struct is_row_inline : public false_type
         {
@@ -208,7 +169,6 @@ namespace rocwmma
         {
         };
 
-        // Classifier for interleaved layout
         template <typename MatrixLayout>
         struct is_interleaved : public false_type
         {
@@ -270,74 +230,206 @@ namespace rocwmma
         template <typename MatrixLayout>
         constexpr static bool is_interleaved_v = is_interleaved<MatrixLayout>::value;
 
+        template <typename MatrixLayout>
+        struct is_matrix_layout
+            : public integral_constant<bool,
+                                       is_col_ortho_v<MatrixLayout> || is_col_inline_v<MatrixLayout>
+                                           || is_row_ortho_v<MatrixLayout>
+                                           || is_row_inline_v<MatrixLayout>>
+        {
+        };
+
+        template <typename MatrixLayout>
+        constexpr static bool is_matrix_layout_v = is_matrix_layout<MatrixLayout>::value;
+
+        // Next we can build a set of base trait accessors for the MatrixLayout. These
+        // will be reflective of the input template params of the MatrixLayout instance.
+
+        template <typename MatrixLayout, typename Enabler = void>
+        struct matrix_layout_base_traits;
+
+        // Represent non-interleaved MatrixLayout instances
+        template <uint32_t LayoutBlockDim,
+                  uint32_t LayoutBlockK,
+                  typename LayoutDataT,
+                  uint32_t LayoutVectorWidth,
+                  uint32_t LayoutMaxVectorWidth,
+                  template <uint32_t, uint32_t, typename, uint32_t, uint32_t>
+                  class MatrixLayout>
+        struct matrix_layout_base_traits<
+            MatrixLayout<LayoutBlockDim,
+                         LayoutBlockK,
+                         LayoutDataT,
+                         LayoutVectorWidth,
+                         LayoutMaxVectorWidth>,
+            enable_if_t<is_matrix_layout_v<MatrixLayout<LayoutBlockDim,
+                                                        LayoutBlockK,
+                                                        LayoutDataT,
+                                                        LayoutVectorWidth,
+                                                        LayoutMaxVectorWidth>>
+                        && !is_interleaved_v<MatrixLayout<LayoutBlockDim,
+                                                          LayoutBlockK,
+                                                          LayoutDataT,
+                                                          LayoutVectorWidth,
+                                                          LayoutMaxVectorWidth>>>>
+        {
+            constexpr static uint32_t BlockDim       = LayoutBlockDim;
+            constexpr static uint32_t KDim           = LayoutBlockK;
+            using DataT                              = LayoutDataT;
+            constexpr static uint32_t VectorWidth    = LayoutVectorWidth;
+            constexpr static uint32_t MaxVectorWidth = LayoutMaxVectorWidth;
+        };
+
+        // Represent interleaved MatrixLayout instances
+        template <uint32_t LayoutBlockDim,
+                  uint32_t LayoutBlockK,
+                  typename LayoutDataT,
+                  uint32_t LayoutMmaDim,
+                  uint32_t LayoutSplitK,
+                  template <uint32_t, uint32_t, typename, uint32_t, uint32_t>
+                  class MatrixLayout>
+        struct matrix_layout_base_traits<
+            MatrixLayout<LayoutBlockDim, LayoutBlockK, LayoutDataT, LayoutMmaDim, LayoutSplitK>,
+            enable_if_t<is_matrix_layout_v<MatrixLayout<LayoutBlockDim,
+                                                        LayoutBlockK,
+                                                        LayoutDataT,
+                                                        LayoutMmaDim,
+                                                        LayoutSplitK>>
+                        && is_interleaved_v<MatrixLayout<LayoutBlockDim,
+                                                         LayoutBlockK,
+                                                         LayoutDataT,
+                                                         LayoutMmaDim,
+                                                         LayoutSplitK>>>>
+        {
+            constexpr static uint32_t BlockDim = LayoutBlockDim;
+            constexpr static uint32_t KDim     = LayoutBlockK;
+            using DataT                        = LayoutDataT;
+            constexpr static uint32_t MmaDim   = LayoutMmaDim;
+            constexpr static uint32_t SplitK   = LayoutSplitK;
+        };
+
+        // Combine base instance traits with specific layout classifiers
+        template <typename MatrixLayout>
+        struct matrix_layout_traits : public matrix_layout_base_traits<MatrixLayout>
+        {
+            constexpr static bool is_col_ortho     = is_col_ortho_v<MatrixLayout>;
+            constexpr static bool is_col_inline    = is_col_inline_v<MatrixLayout>;
+            constexpr static bool is_row_ortho     = is_row_ortho_v<MatrixLayout>;
+            constexpr static bool is_row_inline    = is_row_inline_v<MatrixLayout>;
+            constexpr static bool is_interleaved   = is_interleaved_v<MatrixLayout>;
+            constexpr static bool is_matrix_layout = is_matrix_layout_v<MatrixLayout>;
+        };
+
+        // NOTE: MatrixLayout assumptions
+        // When determining MatrixLayout traits, there are several strong assumptions.
+        // 1. Regarding same-ness: MatrixLayouts must match, as defined below:
+        //  ____________________________________________________________________
+        // | MatrixLayoutLhs | MatrixLayoutRhs | Compatibility test:            |
+        // |                 |     (Same)      | Required Fixed Params          |
+        // | ------------------------------------------------------------------ |
+        // | ColOrthoVW      | ColOrthoVW      | BlockDim, KDim, MaxVectorWidth |
+        // | ColInlineVW     | ColInlineVW     | BlockDim, KDim, MaxVectorWidth |
+        // | RowOrthoVW      | RowOrthoVW      | BlockDim, KDim, MaxVectorWidth |
+        // | RowInlineVW     | RowInlineVW     | BlockDim, KDim, MaxVectorWidth |
+        // | ------------------------------------------------------------------ |
+        // | ColOrthoInt     | ColOrthoInt     | BlockDim, KDim, MmaDim, SplitK |
+        // | ColInlineInt    | ColInlineInt    | BlockDim, KDim, MmaDim, SplitK |
+        // | RowOrthoInt     | RowOrthoInt     | BlockDim, KDim, MmaDim, SplitK |
+        // | RowInlineInt    | RowInlineInt    | BlockDim, KDim, MmaDim, SplitK |
+        //  --------------------------------------------------------------------
+        //
+        // 2. Regarding orthogonality: for all Col* layouts, their Row*
+        // orthogonal counterparts are implemented by row / col coordinate swaps.
+        // This is valid as long as we have some fixed parameters, as defined below:
+        //  ____________________________________________________________________
+        // | MatrixLayoutLhs | MatrixLayoutRhs | Compatibility test:            |
+        // |                 |   (Orthogonal)  | Required Fixed Params          |
+        // | ------------------------------------------------------------------ |
+        // | ColOrthoVW      | RowOrthoVW      | BlockDim, KDim, MaxVectorWidth |
+        // | ColInlineVW     | RowInlineVW     | BlockDim, KDim, MaxVectorWidth |
+        // | RowOrthoVW      | ColOrthoVW      | BlockDim, KDim, MaxVectorWidth |
+        // | RowInlineVW     | ColInlineVW     | BlockDim, KDim, MaxVectorWidth |
+        // | ------------------------------------------------------------------ |
+        // | ColOrthoInt     | RowOrthoInt     | BlockDim, KDim, MmaDim, SplitK |
+        // | ColInlineInt    | RowInlineInt    | BlockDim, KDim, MmaDim, SplitK |
+        // | RowOrthoInt     | ColOrthoInt     | BlockDim, KDim, MmaDim, SplitK |
+        // | RowInlineInt    | ColInlineInt    | BlockDim, KDim, MmaDim, SplitK |
+        //  --------------------------------------------------------------------
+        // This defines the need for MatrixLayout classifiers based upon:
+        // - ColOrtho / RowOrtho
+        // - ColInline / RowInline
+        // - Non-interleave / non-interleaved
+        //
+        // Following the above traits, we can build more complicated traits such as
+        // is_same, is_orthogonal and orthogonal_layout.
+
         // When comparing one MatrixLayout to another, we need a way to check parameter compatibility.
-        template <typename LayoutLhs, typename LayoutRhs, typename Enabler = void>
-        struct is_compatible_params : public false_type
+        template <typename MatrixLayoutLhs, typename MatrixLayoutRhs, typename Enabler = void>
+        struct is_compatible_matrix_params : public false_type
         {
         };
 
-        // Non-interleaved matrix layouts require that BlockDim, BlockK, MaxVW are matching.
-        // VectorWidth values must satisfy criterion in testSupportedVW().
-        template <uint32_t BlockDim,
-                  uint32_t BlockK,
-                  typename DataT,
-                  uint32_t VectorWidthLhs,
-                  uint32_t VectorWidthRhs,
-                  uint32_t MaxVectorWidth,
-                  template <uint32_t, uint32_t, typename, uint32_t, uint32_t>
-                  class MatrixLayoutLhs,
-                  template <uint32_t, uint32_t, typename, uint32_t, uint32_t>
-                  class MatrixLayoutRhs>
-        struct is_compatible_params<
-            MatrixLayoutLhs<BlockDim, BlockK, DataT, VectorWidthLhs, MaxVectorWidth>,
-            MatrixLayoutRhs<BlockDim, BlockK, DataT, VectorWidthRhs, MaxVectorWidth>,
-            enable_if_t<
-                !is_interleaved_v<
-                    MatrixLayoutLhs<BlockDim, BlockK, DataT, VectorWidthLhs, MaxVectorWidth>>
-                && !is_interleaved_v<
-                    MatrixLayoutRhs<BlockDim, BlockK, DataT, VectorWidthRhs, MaxVectorWidth>>
-                && testSupportedVW(MaxVectorWidth, VectorWidthLhs, VectorWidthRhs)>>
-            : public true_type
+// Keeps things a bit more tidy. Quick access to matrix layout traits.
+#define mat_traits_lhs matrix_layout_traits<MatrixLayoutLhs>
+#define mat_traits_rhs matrix_layout_traits<MatrixLayoutRhs>
+
+        // Non-interleaved matrix layout compatibility requires:
+        // 1. Must have fixed: BlockDim, KDim, MaxVectorWidth
+        // 2. VectorWidths must satisfy criterion in testSupportedVW().
+        template <typename MatrixLayoutLhs, typename MatrixLayoutRhs>
+        struct is_compatible_matrix_params<
+            MatrixLayoutLhs,
+            MatrixLayoutRhs,
+            enable_if_t<(!mat_traits_lhs::is_interleaved && !mat_traits_rhs::is_interleaved)>>
+            : public integral_constant<bool,
+                                       (mat_traits_lhs::BlockDim == mat_traits_rhs::BlockDim)
+                                           && (mat_traits_lhs::KDim == mat_traits_rhs::KDim)
+                                           && (mat_traits_lhs::MaxVectorWidth
+                                               == mat_traits_rhs::MaxVectorWidth)
+                                           && (testSupportedVW(mat_traits_lhs::MaxVectorWidth,
+                                                               mat_traits_lhs::VectorWidth,
+                                                               mat_traits_rhs::VectorWidth))>
         {
         };
 
-        // Interleaved matrix layouts require that BlockDim, BlockK, MmaDim, SplitK are matching.
-        // MmaDim values must satisfy criterion in testSupportedMmaDim().
-        template <uint32_t BlockDim,
-                  uint32_t BlockK,
-                  typename DataT,
-                  uint32_t MmaDim,
-                  uint32_t SplitK,
-                  template <uint32_t, uint32_t, typename, uint32_t, uint32_t>
-                  class MatrixLayoutLhs,
-                  template <uint32_t, uint32_t, typename, uint32_t, uint32_t>
-                  class MatrixLayoutRhs>
-        struct is_compatible_params<
-            MatrixLayoutLhs<BlockDim, BlockK, DataT, MmaDim, SplitK>,
-            MatrixLayoutRhs<BlockDim, BlockK, DataT, MmaDim, SplitK>,
-            enable_if_t<
-                is_interleaved_v<MatrixLayoutLhs<BlockDim, BlockK, DataT, MmaDim, SplitK>>
-                && is_interleaved_v<MatrixLayoutRhs<BlockDim, BlockK, DataT, MmaDim, SplitK>>
-                && testSupportedMmaDim(MmaDim)>> : public true_type
+        // Interleaved matrix layout compatibility requires:
+        // 1. Must have fixed BlockDim, BlockK, MmaDim, SplitK
+        // 2. MmaDim values must satisfy criterion in testSupportedMmaDim().
+        template <typename MatrixLayoutLhs, typename MatrixLayoutRhs>
+        struct is_compatible_matrix_params<
+            MatrixLayoutLhs,
+            MatrixLayoutRhs,
+            enable_if_t<(mat_traits_lhs::is_interleaved && mat_traits_rhs::is_interleaved)>>
+            : public integral_constant<bool,
+                                       (mat_traits_lhs::BlockDim == mat_traits_rhs::BlockDim)
+                                           && (mat_traits_lhs::KDim == mat_traits_rhs::KDim)
+                                           && (mat_traits_lhs::MmaDim == mat_traits_rhs::MmaDim)
+                                           && (mat_traits_lhs::SplitK == mat_traits_rhs::SplitK)
+                                           && (testSupportedMmaDim(mat_traits_lhs::MmaDim))>
         {
         };
 
         // Convenience evaluator
         template <typename MatrixLayoutLhs, typename MatrixLayoutRhs>
-        constexpr static bool is_compatible_params_v
-            = is_compatible_params<MatrixLayoutLhs, MatrixLayoutRhs>::value;
+        constexpr static bool is_compatible_matrix_params_v
+            = is_compatible_matrix_params<MatrixLayoutLhs, MatrixLayoutRhs>::value;
+
+        // Now to implement the interfaces for is_layout_same and is_layout_orthogonal,
+        // with MatrixLayout types.
 
         // Classifier to test same-ness, implements criterion #1 from above:
         template <typename MatrixLayoutLhs, typename MatrixLayoutRhs>
         struct is_layout_same<
             MatrixLayoutLhs,
             MatrixLayoutRhs,
-            enable_if_t<((is_col_ortho_v<MatrixLayoutLhs> && is_col_ortho_v<MatrixLayoutRhs>)
-                         || (is_row_ortho_v<MatrixLayoutLhs> && is_row_ortho_v<MatrixLayoutRhs>)
-                         || (is_col_inline_v<MatrixLayoutLhs> && is_col_inline_v<MatrixLayoutRhs>)
-                         || (is_row_inline_v<MatrixLayoutLhs> && is_row_inline_v<MatrixLayoutRhs>))
-                        && is_compatible_params_v<MatrixLayoutLhs, MatrixLayoutRhs>>>
-            : public true_type
+            enable_if_t<mat_traits_lhs::is_matrix_layout && mat_traits_rhs::is_matrix_layout>>
+            : public integral_constant<
+                  bool,
+                  ((mat_traits_lhs::is_col_ortho_v && mat_traits_rhs::is_col_ortho)
+                   || (mat_traits_lhs::is_row_ortho_v && mat_traits_rhs::is_row_ortho)
+                   || (mat_traits_lhs::is_col_inline_v && mat_traits_rhs::is_col_inline)
+                   || (mat_traits_lhs::is_row_inline_v && mat_traits_rhs::is_row_inline))
+                      && is_compatible_matrix_params_v<MatrixLayoutLhs, MatrixLayoutRhs>>
         {
         };
 
@@ -346,14 +438,19 @@ namespace rocwmma
         struct is_layout_orthogonal<
             MatrixLayoutLhs,
             MatrixLayoutRhs,
-            enable_if_t<((is_col_ortho_v<MatrixLayoutLhs> && is_row_ortho_v<MatrixLayoutRhs>)
-                         || (is_row_ortho_v<MatrixLayoutLhs> && is_col_ortho_v<MatrixLayoutRhs>)
-                         || (is_col_inline_v<MatrixLayoutLhs> && is_row_inline_v<MatrixLayoutRhs>)
-                         || (is_row_inline_v<MatrixLayoutLhs> && is_col_inline_v<MatrixLayoutRhs>))
-                        && is_compatible_params_v<MatrixLayoutLhs, MatrixLayoutRhs>>>
-            : public true_type
+            enable_if_t<mat_traits_lhs::is_matrix_layout && mat_traits_rhs::is_matrix_layout>>
+            : public integral_constant<
+                  bool,
+                  ((mat_traits_lhs::is_col_ortho_v && mat_traits_rhs::is_row_ortho_v)
+                   || (mat_traits_lhs::is_row_ortho_v && mat_traits_rhs::is_col_ortho_v)
+                   || (mat_traits_lhs::is_col_inline_v && mat_traits_rhs::is_row_inline_v)
+                   || (mat_traits_lhs::is_row_inline_v && mat_traits_rhs::is_col_inline_v))
+                      && is_compatible_matrix_params_v<MatrixLayoutLhs, MatrixLayoutRhs>>
         {
         };
+
+#undef mat_traits_lhs
+#undef mat_traits_rhs
 
         // Matrix space transpose guide: Swap rows / cols
         // VW stays consistent.

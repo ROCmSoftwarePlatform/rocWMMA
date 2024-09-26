@@ -26,8 +26,8 @@
 #ifndef ROCWMMA_LAYOUT_HPP
 #define ROCWMMA_LAYOUT_HPP
 
-#include "api_fwd.hpp"
-#include "mapping_util.hpp"
+#include "../api_fwd.hpp"
+#include "../mapping_util.hpp"
 
 namespace rocwmma
 {

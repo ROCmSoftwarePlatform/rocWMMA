@@ -39,7 +39,7 @@
 #include "internal/io_layout.hpp"
 #include "internal/io_shape.hpp"
 #include "internal/io_traits.hpp"
-#include "internal/layout.hpp"
+#include "internal/layout/layout.hpp"
 #include "internal/mapping_util.hpp"
 #include "internal/mfma.hpp"
 #include "internal/opaque_load.hpp"
@@ -341,12 +341,12 @@ namespace rocwmma
         static_assert(IOConfigA::IOShape::KDim == IOConfigB::IOShape::KDim,
                       "KDim of input fragments must match");
 
-        static_assert(is_orthogonal_v<typename IOConfigA::IOLayout::MatrixLayout,
-                                      typename IOConfigB::IOLayout::MatrixLayout>,
+        static_assert(is_layout_orthogonal_v<typename IOConfigA::IOLayout::MatrixLayout,
+                                             typename IOConfigB::IOLayout::MatrixLayout>,
                       "Input fragment matrix layouts are not orthogonal");
 
-        static_assert(is_same_v<typename IOConfigA::IOLayout::RegisterLayout,
-                                typename IOConfigB::IOLayout::RegisterLayout>,
+        static_assert(is_layout_same_v<typename IOConfigA::IOLayout::RegisterLayout,
+                                       typename IOConfigB::IOLayout::RegisterLayout>,
                       "Input fragment register layouts do not match");
 
         // static_assert(is_same_v<typename IOConfigA::IOLayout::RegisterLayout,

@@ -26,7 +26,7 @@
 #ifndef ROCWMMA_LAYOUT_TRAITS_IMPL_HPP
 #define ROCWMMA_LAYOUT_TRAITS_IMPL_HPP
 
-#include "utility/type_traits.hpp"
+#include "../utility/type_traits.hpp"
 
 namespace rocwmma
 {

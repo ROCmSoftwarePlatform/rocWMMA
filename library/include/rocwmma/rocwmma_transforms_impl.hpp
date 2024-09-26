@@ -85,16 +85,16 @@ namespace rocwmma
             static_assert(IOConfigA::IOShape::KDim == IOConfigB::IOShape::KDim,
                           "KDim of transposed fragment doesn't match");
 
-            static_assert(is_orthogonal_v<typename IOConfigA::IOLayout::DataLayout,
-                                          typename IOConfigB::IOLayout::DataLayout>,
+            static_assert(is_layout_orthogonal_v<typename IOConfigA::IOLayout::DataLayout,
+                                                 typename IOConfigB::IOLayout::DataLayout>,
                           "Data Layouts are not orthogonal");
 
-            static_assert(is_orthogonal_v<typename IOConfigA::IOLayout::MatrixLayout,
-                                          typename IOConfigB::IOLayout::MatrixLayout>,
+            static_assert(is_layout_orthogonal_v<typename IOConfigA::IOLayout::MatrixLayout,
+                                                 typename IOConfigB::IOLayout::MatrixLayout>,
                           "Matrix Layouts are not orthogonal");
 
-            static_assert(is_same_v<typename IOConfigA::IOLayout::RegisterLayout,
-                                    typename IOConfigB::IOLayout::RegisterLayout>,
+            static_assert(is_layout_same_v<typename IOConfigA::IOLayout::RegisterLayout,
+                                           typename IOConfigB::IOLayout::RegisterLayout>,
                           "Register layouts do not match");
 
         public:
@@ -140,16 +140,16 @@ namespace rocwmma
             static_assert(IOConfigA::IOShape::KDim == IOConfigB::IOShape::KDim,
                           "KDim of transposed frag doesn't match");
 
-            static_assert(is_orthogonal_v<typename IOConfigA::IOLayout::DataLayout,
-                                          typename IOConfigB::IOLayout::DataLayout>,
+            static_assert(is_layout_orthogonal_v<typename IOConfigA::IOLayout::DataLayout,
+                                                 typename IOConfigB::IOLayout::DataLayout>,
                           "Data Layouts are not orthogonal");
 
-            static_assert(is_orthogonal_v<typename IOConfigA::IOLayout::MatrixLayout,
-                                          typename IOConfigB::IOLayout::MatrixLayout>,
+            static_assert(is_layout_orthogonal_v<typename IOConfigA::IOLayout::MatrixLayout,
+                                                 typename IOConfigB::IOLayout::MatrixLayout>,
                           "Matrix Layouts are not orthogonal");
 
-            static_assert(is_same_v<typename IOConfigA::IOLayout::RegisterLayout,
-                                    typename IOConfigB::IOLayout::RegisterLayout>,
+            static_assert(is_layout_same_v<typename IOConfigA::IOLayout::RegisterLayout,
+                                           typename IOConfigB::IOLayout::RegisterLayout>,
                           "Register layouts do not match");
 
         public:
@@ -230,8 +230,8 @@ namespace rocwmma
             // Optimal case: input and output register layouts match
             template <uint32_t WaveCount = 1,
                       typename FragT,
-                      enable_if_t<is_same_v<FragT, FragIn>
-                                      && is_same_v<RegisterLayoutIn, RegisterLayoutOut>,
+                      enable_if_t<is_layout_same_v<FragT, FragIn>
+                                      && is_layout_same_v<RegisterLayoutIn, RegisterLayoutOut>,
                                   int>
                       = 0>
             ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(FragT const& frag)

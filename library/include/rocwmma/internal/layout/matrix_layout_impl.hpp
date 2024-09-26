@@ -930,45 +930,76 @@ namespace rocwmma
         template <typename MatrixLayout>
         struct OrthoImpl
         {
-            struct Traits
-            {
-                using OrthoLayout = orthogonal_layout_t<MatrixLayout>;
-            };
-
             // Matrix coord offsets
-            ROCWMMA_DEVICE static inline typename auto baseOffset()
+            ROCWMMA_DEVICE static inline auto baseOffset()
             {
-                return swap(Traits::OrthoLayout::baseOffset());
+                return swap(MatrixLayout::baseOffset());
             }
 
             ROCWMMA_DEVICE constexpr static inline auto strideCounts()
             {
-                return Traits::OrthoLayout::strideCounts();
+                return MatrixLayout::strideCounts();
             }
 
             ROCWMMA_DEVICE constexpr static inline auto strides()
             {
-                auto t = Traits::OrthoLayout::strides();
+                auto t = MatrixLayout::strides();
+                // TODO: use apply
+                //apply([](auto const& v){ return swap(v); });
                 return make_vector(swap(get<0>(t)), swap(get<1>(t)), swap(get<2>(t)));
             }
 
             ROCWMMA_DEVICE static inline auto incrementalOffset(uint32_t iteration)
             {
-                return swap(Traits::OrthoLayout::incrementalOffset(iteration));
+                return swap(MatrixLayout::incrementalOffset(iteration));
             }
 
             ROCWMMA_DEVICE static inline auto cumulativeOffset(uint32_t iteration)
             {
-                return swap(Traits::OrthoLayout::cumulativeOffset(iteration));
+                return swap(MatrixLayout::cumulativeOffset(iteration));
             }
 
             ROCWMMA_DEVICE static inline auto debug() {}
         };
 
-        using RowOrthoVW   = OrthoImpl<ColOrthoVW>;
-        using RowInlineVW  = OrthoImpl<ColInlineVW>;
-        using RowOrthoInt  = OrthoImpl<ColOrthoInt>;
-        using RowInlineInt = OrthoImpl<ColInlineInt>;
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  uint32_t VectorWidth,
+                  uint32_t MaxVectorWidth>
+        struct RowOrthoVW
+            : public OrthoImpl<ColOrthoVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>>
+        {
+        };
+
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  uint32_t VectorWidth,
+                  uint32_t MaxVectorWidth>
+        struct RowInlineVW
+            : public OrthoImpl<ColInlineVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>>
+        {
+        };
+
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  uint32_t MmaDim, // Mma instruction size
+                  uint32_t SplitK /*= 1*/> // # of splits
+        struct RowOrthoInt : public OrthoImpl<ColOrthoInt<BlockDim, BlockK, DataT, MmaDim, SplitK>>
+        {
+        };
+
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  uint32_t MmaDim, // Mma instruction size
+                  uint32_t SplitK /*= 1*/> // # of splits
+        struct RowInlineInt
+            : public OrthoImpl<ColInlineInt<BlockDim, BlockK, DataT, MmaDim, SplitK>>
+        {
+        };
 
     } // namespace MatrixLayout
 

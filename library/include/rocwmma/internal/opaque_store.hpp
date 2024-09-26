@@ -27,7 +27,6 @@
 #define ROCWMMA_OPAQUE_STORE_HPP
 
 #include "io_traits.hpp"
-#include "layout.hpp"
 #include "types.hpp"
 #include "vector_iterator.hpp"
 
@@ -73,10 +72,7 @@ namespace rocwmma
 
         using StoreVecTraits = VecTraits<typename Traits::StoreT>;
 
-        template <size_t Depth = 0,
-                  typename Iterator,
-                  typename StrideCounts,
-                  typename Strides2d>
+        template <size_t Depth = 0, typename Iterator, typename StrideCounts, typename Strides2d>
         ROCWMMA_DEVICE static inline auto unroll_right(DataT*         dataPtr,
                                                        Iterator&      in,
                                                        uint32_t       ldm,

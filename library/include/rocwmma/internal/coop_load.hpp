@@ -27,7 +27,6 @@
 #define ROCWMMA_COOP_LOAD_HPP
 
 #include "io_traits.hpp"
-#include "layout.hpp"
 #include "opaque_load.hpp"
 #include "types.hpp"
 #include "utils.hpp"

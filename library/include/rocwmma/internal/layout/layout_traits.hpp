@@ -26,10 +26,13 @@
 #ifndef ROCWMMA_LAYOUT_TRAITS_HPP
 #define ROCWMMA_LAYOUT_TRAITS_HPP
 
-#include "data_layout_traits.hpp"
+// Need strict inclusion order here
+// clang-format off
 #include "layout_traits_impl.hpp"
+#include "data_layout_traits.hpp"
 #include "matrix_layout_traits.hpp"
 #include "register_layout_traits.hpp"
+// clang-format on
 
 namespace rocwmma
 {

@@ -27,7 +27,6 @@
 #define ROCWMMA_COOP_STORE_HPP
 
 #include "io_traits.hpp"
-#include "layout.hpp"
 #include "opaque_store.hpp"
 #include "types.hpp"
 #include "utils.hpp"
