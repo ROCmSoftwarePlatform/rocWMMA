@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -80,7 +80,7 @@ namespace rocwmma
             template <typename VecT>
             ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
             {
-                return Transforma::AosToSoa<mat_traits_lhs::BlockDim,
+                return Transforms::AosToSoa<mat_traits_lhs::BlockDim,
                                             mat_traits_lhs::MaxVectorWidth>::exec(forward<VecT>(v));
             }
         };
@@ -123,7 +123,21 @@ namespace rocwmma
             }
         };
 
+#undef reg_traits_lhs
+#undef reg_traits_rhs
+#undef mat_traits_lhs
+#undef mat_traits_rhs
+
     } // namespace RegisterTransform_impl
+
+    /*! \class register_layout_transform
+    *  \brief  Invokes an in-register transform from one register layout to the other
+    *  @tparam RegisterLayoutLhs Source register layout
+    *  @tparam RegisterLayoutRhs Target register layout
+    */
+    template <typename RegisterLayoutLhs, typename RegisterLayoutRhs>
+    using register_layout_transform
+        = RegisterTransform_impl::register_layout_transform<RegisterLayoutLhs, RegisterLayoutRhs>;
 
 } // namespace rocWMMA
 

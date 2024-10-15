@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +23,8 @@
  * SOFTWARE.
  *
  *******************************************************************************/
-#ifndef ROCWMMA_DATA_LAYOUT_TRAITS_HPP
-#define ROCWMMA_DATA_LAYOUT_TRAITS_HPP
+#ifndef ROCWMMA_DATA_LAYOUT_TRAITS_IMPL_HPP
+#define ROCWMMA_DATA_LAYOUT_TRAITS_IMPL_HPP
 
 #include "layout.hpp"
 #include "layout_traits.hpp"
@@ -93,7 +93,7 @@ namespace rocwmma
         template <typename DataLayoutT>
         struct orthogonal_layout<DataLayout::template Array1d<DataLayoutT>>
         {
-            using Type
+            using type
                 = DataLayout::template Array1d<typename orthogonal_layout<DataLayoutT>::type>;
         };
 
@@ -101,4 +101,4 @@ namespace rocwmma
 
 } // namespace rocwmma
 
-#endif // ROCWMMA_DATA_LAYOUT_TRAITS_HPP
+#endif // ROCWMMA_DATA_LAYOUT_TRAITS_IMPL_HPP

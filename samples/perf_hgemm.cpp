@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -375,8 +375,8 @@ ROCWMMA_DEVICE static inline void
 {
     constexpr uint32_t VW = 4;
 
-    using Profile = rocwmma::LayoutProfile::
-        ColInt<WARP_TILE_X, ROCWMMA_K, float16_t, DataLayoutLds, VW, VW, 16u, 1u>;
+    using Profile
+        = rocwmma::LayoutProfile::ColInt<WARP_TILE_X, ROCWMMA_K, float16_t, DataLayoutLds, 16u, 1u>;
 
     using DataLayout   = typename Profile::DataLayout;
     using MatrixLayout = typename Profile::MatrixLayout;
@@ -404,8 +404,8 @@ ROCWMMA_DEVICE static inline void
     // How to choose? Comes from the IOConfig?
     constexpr uint32_t VW = 4;
 
-    using Profile = rocwmma::LayoutProfile::
-        ColInt<WARP_TILE_X, ROCWMMA_K, float16_t, DataLayoutLds, VW, VW, 16u, 1u>;
+    using Profile
+        = rocwmma::LayoutProfile::ColInt<WARP_TILE_X, ROCWMMA_K, float16_t, DataLayoutLds, 16u, 1u>;
 
     using MatrixLayout = typename Profile::MatrixLayout;
     using DataLayout   = typename Profile::DataLayout;
@@ -432,8 +432,8 @@ ROCWMMA_DEVICE static inline void globalReadC(GRBuffC& fragsC, OutputT const* gA
     // How to choose? Comes from the IOConfig?
     constexpr uint32_t VW = 4;
 
-    using Profile = rocwmma::LayoutProfile::
-        RowInt<WARP_TILE_Y, WARP_TILE_X, OutputT, DataLayoutC, VW, VW, 16u, 1u>;
+    using Profile
+        = rocwmma::LayoutProfile::RowInt<WARP_TILE_Y, WARP_TILE_X, OutputT, DataLayoutC, 16u, 1u>;
 
     using MatrixLayout = typename Profile::MatrixLayout;
     using DataLayout   = typename Profile::DataLayout;
@@ -499,8 +499,8 @@ ROCWMMA_DEVICE static inline void globalWriteD(OutputT* gAddrD, GRBuffC const& f
     // How to choose? Comes from the IOConfig?
     constexpr uint32_t VW = 4;
 
-    using Profile = rocwmma::LayoutProfile::
-        RowInt<WARP_TILE_Y, WARP_TILE_X, OutputT, DataLayoutC, VW, VW, 16u, 1u>;
+    using Profile
+        = rocwmma::LayoutProfile::RowInt<WARP_TILE_Y, WARP_TILE_X, OutputT, DataLayoutC, 16u, 1u>;
 
     using MatrixLayout = typename Profile::MatrixLayout;
     using DataLayout   = typename Profile::DataLayout;

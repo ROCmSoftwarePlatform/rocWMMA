@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +23,8 @@
  * SOFTWARE.
  *
  *******************************************************************************/
-#ifndef ROCWMMA_MATRIX_LAYOUT_TRAITS_HPP
-#define ROCWMMA_MATRIX_LAYOUT_TRAITS_HPP
+#ifndef ROCWMMA_MATRIX_LAYOUT_TRAITS_IMPL_HPP
+#define ROCWMMA_MATRIX_LAYOUT_TRAITS_IMPL_HPP
 
 #include "../config.hpp"
 #include "layout.hpp"
@@ -246,7 +246,9 @@ namespace rocwmma
         // will be reflective of the input template params of the MatrixLayout instance.
 
         template <typename MatrixLayout, typename Enabler = void>
-        struct matrix_layout_base_traits;
+        struct matrix_layout_base_traits
+        {
+        };
 
         // Represent non-interleaved MatrixLayout instances
         template <uint32_t LayoutBlockDim,
@@ -425,10 +427,10 @@ namespace rocwmma
             enable_if_t<mat_traits_lhs::is_matrix_layout && mat_traits_rhs::is_matrix_layout>>
             : public integral_constant<
                   bool,
-                  ((mat_traits_lhs::is_col_ortho_v && mat_traits_rhs::is_col_ortho)
-                   || (mat_traits_lhs::is_row_ortho_v && mat_traits_rhs::is_row_ortho)
-                   || (mat_traits_lhs::is_col_inline_v && mat_traits_rhs::is_col_inline)
-                   || (mat_traits_lhs::is_row_inline_v && mat_traits_rhs::is_row_inline))
+                  ((mat_traits_lhs::is_col_ortho && mat_traits_rhs::is_col_ortho)
+                   || (mat_traits_lhs::is_row_ortho && mat_traits_rhs::is_row_ortho)
+                   || (mat_traits_lhs::is_col_inline && mat_traits_rhs::is_col_inline)
+                   || (mat_traits_lhs::is_row_inline && mat_traits_rhs::is_row_inline))
                       && is_compatible_matrix_params_v<MatrixLayoutLhs, MatrixLayoutRhs>>
         {
         };
@@ -441,10 +443,10 @@ namespace rocwmma
             enable_if_t<mat_traits_lhs::is_matrix_layout && mat_traits_rhs::is_matrix_layout>>
             : public integral_constant<
                   bool,
-                  ((mat_traits_lhs::is_col_ortho_v && mat_traits_rhs::is_row_ortho_v)
-                   || (mat_traits_lhs::is_row_ortho_v && mat_traits_rhs::is_col_ortho_v)
-                   || (mat_traits_lhs::is_col_inline_v && mat_traits_rhs::is_row_inline_v)
-                   || (mat_traits_lhs::is_row_inline_v && mat_traits_rhs::is_col_inline_v))
+                  ((mat_traits_lhs::is_col_ortho && mat_traits_rhs::is_row_ortho)
+                   || (mat_traits_lhs::is_row_ortho && mat_traits_rhs::is_col_ortho)
+                   || (mat_traits_lhs::is_col_inline && mat_traits_rhs::is_row_inline)
+                   || (mat_traits_lhs::is_row_inline && mat_traits_rhs::is_col_inline))
                       && is_compatible_matrix_params_v<MatrixLayoutLhs, MatrixLayoutRhs>>
         {
         };
@@ -539,4 +541,4 @@ namespace rocwmma
 
 } // namespace rocwmma
 
-#endif // ROCWMMA_MATRIX_LAYOUT_TRAITS_HPP
+#endif // ROCWMMA_MATRIX_LAYOUT_TRAITS_IMPL_HPP

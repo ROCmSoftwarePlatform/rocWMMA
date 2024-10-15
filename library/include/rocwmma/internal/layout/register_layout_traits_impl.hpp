@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +23,8 @@
  * SOFTWARE.
  *
  *******************************************************************************/
-#ifndef ROCWMMA_REGISTER_LAYOUT_TRAITS_HPP
-#define ROCWMMA_REGISTER_LAYOUT_TRAITS_HPP
+#ifndef ROCWMMA_REGISTER_LAYOUT_TRAITS_IMPL_HPP
+#define ROCWMMA_REGISTER_LAYOUT_TRAITS_IMPL_HPP
 
 #include "../utility/type_traits.hpp"
 #include "layout.hpp"
@@ -41,9 +41,9 @@ namespace rocwmma
         // Start to build a basic set of meta-data classifiers.
         // We will be interested in knowing things about our register layouts:
         // - is_register_layout
-        // - is_storage_layout
-        // - is_mma_input_layout
-        // - is_mma_acc_layout
+        // - is_storage
+        // - is_mma_input
+        // - is_mma_acc
         template <typename RegisterLayout>
         struct is_register_layout : public false_type
         {
@@ -65,32 +65,32 @@ namespace rocwmma
         };
 
         template <typename RegisterLayout>
-        struct is_storage_layout : public false_type
+        struct is_storage : public false_type
         {
         };
 
         template <typename MatrixLayout>
-        struct is_storage_layout<Storage<MatrixLayout>> : public is_matrix_layout<MatrixLayout>
+        struct is_storage<Storage<MatrixLayout>> : public is_matrix_layout<MatrixLayout>
         {
         };
 
         template <typename RegisterLayout>
-        struct is_mma_input_layout : public false_type
+        struct is_mma_input : public false_type
         {
         };
 
         template <uint32_t MmaSize>
-        struct is_mma_input_layout<MmaInput<MmaSize>> : public true_type
+        struct is_mma_input<MmaInput<MmaSize>> : public true_type
         {
         };
 
         template <typename RegisterLayout>
-        struct is_mma_acc_layout : public false_type
+        struct is_mma_acc : public false_type
         {
         };
 
         template <uint32_t MmaSize>
-        struct is_mma_acc_layout<MmaAcc<MmaSize>> : public true_type
+        struct is_mma_acc<MmaAcc<MmaSize>> : public true_type
         {
         };
 
@@ -100,19 +100,20 @@ namespace rocwmma
             = is_register_layout<RegisterLayout>::value;
 
         template <typename RegisterLayout>
-        constexpr inline static bool is_storage_layout_v = is_storage_layout<RegisterLayout>::value;
+        constexpr inline static bool is_storage_v = is_storage<RegisterLayout>::value;
 
         template <typename RegisterLayout>
-        constexpr inline static bool is_mma_input_layout_v
-            = is_mma_input_layout<RegisterLayout>::value;
+        constexpr inline static bool is_mma_input_v = is_mma_input<RegisterLayout>::value;
 
         template <typename RegisterLayout>
-        constexpr inline static bool is_mma_acc_layout_v = is_mma_acc_layout<RegisterLayout>::value;
+        constexpr inline static bool is_mma_acc_v = is_mma_acc<RegisterLayout>::value;
 
         // Next we can build a set of base trait accessors for the RegisterLayout. These
         // will be reflective of the input template params of the RegisterLayout instance.
         template <typename RegisterLayout>
-        struct register_layout_base_traits;
+        struct register_layout_base_traits
+        {
+        };
 
         template <typename MatrixLayoutInternal>
         struct register_layout_base_traits<Storage<MatrixLayoutInternal>>
@@ -138,10 +139,10 @@ namespace rocwmma
         template <typename RegisterLayout>
         struct register_layout_traits : public register_layout_base_traits<RegisterLayout>
         {
-            constexpr static bool is_register_layout  = is_register_layout_v<RegisterLayout>;
-            constexpr static bool is_storage_layout   = is_storage_layout_v<RegisterLayout>;
-            constexpr static bool is_mma_input_layout = is_mma_input_layout_v<RegisterLayout>;
-            constexpr static bool is_mma_acc_layout   = is_mma_acc_layout_v<RegisterLayout>;
+            constexpr static bool is_register_layout = is_register_layout_v<RegisterLayout>;
+            constexpr static bool is_storage         = is_storage_v<RegisterLayout>;
+            constexpr static bool is_mma_input       = is_mma_input_v<RegisterLayout>;
+            constexpr static bool is_mma_acc         = is_mma_acc_v<RegisterLayout>;
         };
 
         // NOTE: RegisterLayout assumptions
@@ -237,7 +238,7 @@ namespace rocwmma
         struct is_compatible_register_params<
             RegisterLayoutLhs,
             RegisterLayoutRhs,
-            enable_if_t<reg_traits_lhs::is_storage_layout && reg_traits_rhs::is_storage_layout>>
+            enable_if_t<reg_traits_lhs::is_storage && reg_traits_rhs::is_storage>>
             : public is_compatible_matrix_params<typename reg_traits_lhs::MatrixLayout,
                                                  typename reg_traits_rhs::MatrixLayout>
         {
@@ -248,7 +249,7 @@ namespace rocwmma
         struct is_compatible_register_params<
             RegisterLayoutLhs,
             RegisterLayoutRhs,
-            enable_if_t<reg_traits_lhs::is_mma_input_layout && reg_traits_rhs::is_mma_input_layout>>
+            enable_if_t<reg_traits_lhs::is_mma_input && reg_traits_rhs::is_mma_input>>
             : public integral_constant<bool,
                                        (reg_traits_rhs::MmaDim == reg_traits_rhs::MmaDim)
                                            && testSupportedMmaDim(reg_traits_rhs::MmaDim)>
@@ -262,8 +263,8 @@ namespace rocwmma
         struct is_compatible_register_params<
             RegisterLayoutLhs,
             RegisterLayoutRhs,
-            enable_if_t<(reg_traits_lhs::is_storage_layout && !mat_traits_lhs::is_interleaved)
-                        && reg_traits_rhs::is_mma_input_layout>>
+            enable_if_t<(reg_traits_lhs::is_storage && !mat_traits_lhs::is_interleaved)
+                        && reg_traits_rhs::is_mma_input>>
             : public integral_constant<bool,
                                        (mat_traits_lhs::BlockDim == reg_traits_rhs::MmaDim)
                                            && testSupportedMmaDim(reg_traits_rhs::MmaDim)>
@@ -274,8 +275,8 @@ namespace rocwmma
         struct is_compatible_register_params<
             RegisterLayoutLhs,
             RegisterLayoutRhs,
-            enable_if_t<reg_traits_lhs::is_mma_input_layout
-                        && (reg_traits_rhs::is_storage_layout && !mat_traits_rhs::is_interleaved)>>
+            enable_if_t<reg_traits_lhs::is_mma_input
+                        && (reg_traits_rhs::is_storage && !mat_traits_rhs::is_interleaved)>>
             : public integral_constant<bool,
                                        (mat_traits_rhs::BlockDim == reg_traits_lhs::MmaDim)
                                            && testSupportedMmaDim(reg_traits_lhs::MmaDim)>
@@ -289,8 +290,8 @@ namespace rocwmma
         struct is_compatible_register_params<
             RegisterLayoutLhs,
             RegisterLayoutRhs,
-            enable_if_t<(reg_traits_lhs::is_storage_layout && mat_traits_lhs::is_interleaved)
-                        && reg_traits_rhs::is_mma_input_layout>>
+            enable_if_t<(reg_traits_lhs::is_storage && mat_traits_lhs::is_interleaved)
+                        && reg_traits_rhs::is_mma_input>>
             : public integral_constant<bool,
                                        (mat_traits_lhs::MmaDim == reg_traits_rhs::MmaDim)
                                            && testSupportedMmaDim(reg_traits_lhs::MmaDim)>
@@ -301,8 +302,8 @@ namespace rocwmma
         struct is_compatible_register_params<
             RegisterLayoutLhs,
             RegisterLayoutRhs,
-            enable_if_t<reg_traits_lhs::is_mma_input_layout
-                        && (reg_traits_rhs::is_storage_layout && mat_traits_rhs::is_interleaved)>>
+            enable_if_t<reg_traits_lhs::is_mma_input
+                        && (reg_traits_rhs::is_storage && mat_traits_rhs::is_interleaved)>>
             : public integral_constant<bool,
                                        (mat_traits_rhs::MmaDim == reg_traits_lhs::MmaDim)
                                            && testSupportedMmaDim(reg_traits_lhs::MmaDim)>
@@ -390,4 +391,4 @@ namespace rocwmma
 
 } // namespace rocwmma
 
-#endif // ROCWMMA_REGISTER_LAYOUT_TRAITS_HPP
+#endif // ROCWMMA_REGISTER_LAYOUT_TRAITS_IMPL_HPP

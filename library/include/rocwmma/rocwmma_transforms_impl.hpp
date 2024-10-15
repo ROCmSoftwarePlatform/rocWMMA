@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,8 @@
 #ifndef ROCWMMA_TRANSFORMS_API_IMPL_HPP
 #define ROCWMMA_TRANSFORMS_API_IMPL_HPP
 
+#include "internal/layout/layout.hpp"
+#include "internal/layout/register_layout_transforms.hpp"
 #include "internal/transforms.hpp"
 #include "rocwmma_transforms.hpp"
 
@@ -230,7 +232,7 @@ namespace rocwmma
             // Optimal case: input and output register layouts match
             template <uint32_t WaveCount = 1,
                       typename FragT,
-                      enable_if_t<is_layout_same_v<FragT, FragIn>
+                      enable_if_t<is_same_v<FragT, FragIn>
                                       && is_layout_same_v<RegisterLayoutIn, RegisterLayoutOut>,
                                   int>
                       = 0>
@@ -243,7 +245,7 @@ namespace rocwmma
             template <uint32_t WaveCount = 1,
                       typename FragT,
                       enable_if_t<is_same_v<FragT, FragIn>
-                                      && !is_same_v<RegisterLayoutIn, RegisterLayoutOut>,
+                                      && !is_layout_same_v<RegisterLayoutIn, RegisterLayoutOut>,
                                   int>
                       = 0>
             ROCWMMA_DEVICE constexpr static inline auto exec(FragT const& frag)
@@ -263,18 +265,9 @@ namespace rocwmma
                 using DstRegLayout =
                     typename GetCoopIOConfig_t<FragOut, WaveCount>::IOLayout::RegisterLayout;
 
-                auto result = FragOut{
-                    Transforms::register_transform<SrcRegLayout, DstRegLayout>::exec(frag.mAccess)};
-                //result.mAccess = ;
-
-                // if constexpr(is_same_v<AosLayout, RegisterLayoutIncoming>)
-                // {
-                //     result.mAccess = Transforms::AosToSoa<BlockDim, MaxVW>::exec(frag.mAccess);
-                // }
-                // else if constexpr(is_same_v<SoaLayout, RegisterLayoutIncoming>)
-                // {
-                //     result.mAccess = Transforms::SoaToAos<BlockDim, MaxVW>::exec(frag.mAccess);
-                // }
+                auto result = FragOut{};
+                result.mAccess
+                    = register_layout_transform<SrcRegLayout, DstRegLayout>::exec(frag.mAccess);
 
                 return result;
             }

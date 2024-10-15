@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,16 +28,13 @@
 #define ROCWMMA_DEVICE_COLNT_LAYOUT_HPP
 
 #include "unit_test_traits.hpp"
+#include <rocwmma/internal/io_layout.hpp>
 #include <rocwmma/internal/io_traits.hpp>
-#include <rocwmma/internal/layout.hpp>
 #include <rocwmma/internal/mapping_util.hpp>
 
 namespace rocwmma
 {
-    template <uint32_t BlockM,
-              uint32_t BlockN,
-              typename DataT,
-              typename DataLayoutT>
+    template <uint32_t BlockM, uint32_t BlockN, typename DataT, typename DataLayoutT>
     __global__ void ColNTLayout(uint32_t     m,
                                 uint32_t     n,
                                 DataT const* in,
@@ -46,12 +43,12 @@ namespace rocwmma
                                 DataT        param1,
                                 DataT        param2)
     {
-        if constexpr (FragSize_guard<BlockM,
-                                 BlockN,
-                                 DataT,
-                                 DataLayoutT,
-                                 Constants::AMDGCN_WAVE_SIZE,
-                                 Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
+        if constexpr(FragSize_guard<BlockM,
+                                    BlockN,
+                                    DataT,
+                                    DataLayoutT,
+                                    Constants::AMDGCN_WAVE_SIZE,
+                                    Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
         {
             enum : uint32_t
             {
@@ -61,8 +58,9 @@ namespace rocwmma
             };
 
             using IOTraits = IOTraits<BlockM, BlockN, DataT, VectorWidth>;
-            using LayoutT
-                = typename LayoutProfile::ColNT<BlockM, BlockN, DataT, DataLayoutT, VectorWidth, MaxVectorWidth>::MatrixLayout;
+            using LayoutT  = typename LayoutProfile::
+                ColNT<BlockM, BlockN, DataT, DataLayoutT, VectorWidth, MaxVectorWidth>::
+                    MatrixLayout;
             using Mapping = MappingUtil<BlockM, BlockN, DataT, DataLayoutT>;
 
             auto baseOffset  = LayoutT::baseOffset();
@@ -80,7 +78,7 @@ namespace rocwmma
                 for(int j = 0; j < VectorWidth; j++)
                 {
                     auto index = (get<MajorIndex>(matrixCoord) * ld + get<MinorIndex>(matrixCoord))
-                                + Mapping::dataOffset(baseOffset, ld) + j;
+                                 + Mapping::dataOffset(baseOffset, ld) + j;
                     out[index] = in[index];
                 }
                 baseOffset += LayoutT::incrementalOffset(i);
