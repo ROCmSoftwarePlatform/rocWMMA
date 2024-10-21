@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,14 +25,27 @@
  *******************************************************************************/
 
 #include "common.hpp"
-#include "rocwmma_logging.hpp"
+#include "rocwmma_options.hpp"
 #include <gtest/gtest.h>
 
 int main(int argc, char** argv)
 {
-    using Options        = rocwmma::RocwmmaLogging;
+    using Options        = rocwmma::RocwmmaOptions;
     auto& loggingOptions = Options::instance();
     loggingOptions->parseOptions(argc, argv);
+
+    if(loggingOptions->emulationOption() == rocwmma::EmulationOption::SMOKE)
+    {
+        ::testing::GTEST_FLAG(filter) = "*Emulation*Smoke*";
+    }
+    else if(loggingOptions->emulationOption() == rocwmma::EmulationOption::REGRESSION)
+    {
+        ::testing::GTEST_FLAG(filter) = "*Emulation*Regression*";
+    }
+    else if(loggingOptions->emulationOption() == rocwmma::EmulationOption::EXTENDED)
+    {
+        ::testing::GTEST_FLAG(filter) = "*Emulation*Extended*";
+    }
 
     // Initialize Google Tests
     testing::InitGoogleTest(&argc, argv);

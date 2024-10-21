@@ -2,7 +2,7 @@
  #
  # MIT License
  #
- # Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ # Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  #
  # Permission is hereby granted, free of charge, to any person obtaining a copy
  # of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@ set(ROCWMMA_TEST_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${ROCWMMA_TEST_INCLUDE
 
 set(ContaminationTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_contamination_a_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/load_contamination_a_16.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_contamination_a_32.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_contamination_a_64.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_contamination_a_128.cpp
@@ -44,6 +45,7 @@ set(ContaminationTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_contamination_b_128.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_contamination_b_256.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/store_contamination_a_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/store_contamination_a_16.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/store_contamination_a_32.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/store_contamination_a_64.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/store_contamination_a_128.cpp

@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,8 +24,8 @@
  *
  *******************************************************************************/
 
-#ifndef ROCWMMA_LOGGING_HPP
-#define ROCWMMA_LOGGING_HPP
+#ifndef ROCWMMA_OPTIONS_HPP
+#define ROCWMMA_OPTIONS_HPP
 
 #include "rocwmma/rocwmma-version.hpp"
 #include "rocwmma_ostream.hpp"
@@ -34,26 +34,35 @@
 
 namespace rocwmma
 {
-    struct RocwmmaLogging : public LazySingleton<RocwmmaLogging>
+    enum struct EmulationOption
+    {
+        NONE,
+        SMOKE,
+        REGRESSION,
+        EXTENDED
+    };
+
+    struct RocwmmaOptions : public LazySingleton<RocwmmaOptions>
     {
         // For static initialization
-        friend std::unique_ptr<RocwmmaLogging> std::make_unique<RocwmmaLogging>();
+        friend std::unique_ptr<RocwmmaOptions> std::make_unique<RocwmmaOptions>();
 
     private: // No public instantiation except make_unique.
-             // No copy
-        RocwmmaLogging(RocwmmaLogging const&)            = delete;
-        RocwmmaLogging& operator=(RocwmmaLogging const&) = delete;
+        // No copy
+        RocwmmaOptions(RocwmmaOptions const&)            = delete;
+        RocwmmaOptions& operator=(RocwmmaOptions const&) = delete;
 
     public:
-        RocwmmaLogging(RocwmmaLogging&&) = default;
-        ~RocwmmaLogging()                = default;
+        RocwmmaOptions(RocwmmaOptions&&) = default;
+        ~RocwmmaOptions()                = default;
 
-        RocwmmaLogging()
+        RocwmmaOptions()
             : mOstream()
             , mOmitSkipped(false)
             , mOmitFailed(false)
             , mOmitPassed(false)
             , mOmitCout(false)
+            , mEmulationOption(EmulationOption::NONE)
         {
         }
 
@@ -69,6 +78,31 @@ namespace rocwmma
                 mOmitCout = true;
         }
 
+        bool setEmulationOption(std::string const& value)
+        {
+            std::string lowercase_value = value;
+            std::transform(
+                lowercase_value.begin(), lowercase_value.end(), lowercase_value.begin(), ::tolower);
+
+            if(lowercase_value == "smoke")
+            {
+                mEmulationOption = EmulationOption::SMOKE;
+            }
+            else if(lowercase_value == "regression")
+            {
+                mEmulationOption = EmulationOption::REGRESSION;
+            }
+            else if(lowercase_value == "extended")
+            {
+                mEmulationOption = EmulationOption::EXTENDED;
+            }
+            else
+            {
+                return false;
+            }
+            return true;
+        }
+
         void parseOptions(int argc, char** argv)
         {
             const std::vector<std::string> args(argv + 1, argv + argc);
@@ -79,6 +113,7 @@ namespace rocwmma
                 if(args[i] == "-v" || args[i] == "--version")
                 {
                     std::cout << "rocWMMA Version: " << rocwmma_get_version() << std::endl;
+                    continue;
                 }
                 if(args[i] == "-os" || args[i] == "--output_stream")
                 {
@@ -90,6 +125,7 @@ namespace rocwmma
                     }
                     fileName = args[i + 1];
                     i++;
+                    continue;
                 }
                 if(args[i] == "--omit")
                 {
@@ -100,6 +136,25 @@ namespace rocwmma
                         exit(EXIT_FAILURE);
                     }
                     setOmits(std::stoi(args[i + 1]));
+                    i++;
+                    continue;
+                }
+                if(args[i] == "--emulation")
+                {
+                    if(i + 2 >= argc)
+                    {
+                        std::cerr << "Missing emulation option\n";
+                        std::cerr << "Usage: --emulation [smoke|regression|extended]\n";
+                        exit(EXIT_FAILURE);
+                    }
+                    if(!setEmulationOption(args[i + 1]))
+                    {
+                        std::cerr << "Invalid emulation option: " << args[i + 1] << "\n";
+                        std::cerr << "Usage: --emulation [smoke|regression|extended]\n";
+                        exit(EXIT_FAILURE);
+                    }
+                    i++;
+                    continue;
                 }
             }
 
@@ -131,11 +186,18 @@ namespace rocwmma
             return mOmitCout;
         }
 
+        EmulationOption emulationOption()
+        {
+            return mEmulationOption;
+        }
+
     protected:
         rocwmmaOStream mOstream;
 
         bool mOmitSkipped, mOmitFailed, mOmitPassed, mOmitCout;
+
+        EmulationOption mEmulationOption;
     };
 }
 
-#endif // ROCWMMA_LOGGING_HPP
+#endif // ROCWMMA_OPTIONS_HPP
