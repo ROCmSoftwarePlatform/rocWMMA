@@ -46,8 +46,8 @@ namespace rocwmma
         using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
 
         // Assemble the kernel generator
-        // Kernel: StoreContaminationA
-        using GeneratorImpl   = StoreContaminationGeneratorA;
+        // Kernel: StoreContaminationB
+        using GeneratorImpl   = StoreContaminationGeneratorB;
         using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
 
         // Sanity check for kernel generator
@@ -73,18 +73,18 @@ namespace rocwmma
 } // namespace rocwmma
 
 // Test suite for unique parameterization
-class EmulationSmokeStoreContaminationATest16 : public rocwmma::UnitTest
+class EmulationSmokeStoreContaminationBTest16 : public rocwmma::UnitTest
 {
 };
 
-TEST_P(EmulationSmokeStoreContaminationATest16, RunKernel)
+TEST_P(EmulationSmokeStoreContaminationBTest16, RunKernel)
 {
     this->RunKernel();
 }
 
 INSTANTIATE_TEST_SUITE_P(
     KernelTests,
-    EmulationSmokeStoreContaminationATest16,
+    EmulationSmokeStoreContaminationBTest16,
     ::testing::Combine(::testing::ValuesIn(rocwmma::TestParams::kernels()),
                        ::testing::ValuesIn(rocwmma::TestParams::threadBlocks()),
                        ::testing::ValuesIn(rocwmma::TestParams::problemSizes()),

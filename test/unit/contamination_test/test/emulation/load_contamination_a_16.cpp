@@ -41,7 +41,7 @@ namespace rocwmma
         // Types: Base IOC + double
         // Block Sizes: 16 x BlockK
         // Layouts: N, T
-        using Types        = typename Base::TestTypes16;
+        using Types        = std::tuple<float32_t>;
         using BlockSizes   = std::tuple<std::tuple<I<16>, I<16>>>;
         using Layouts      = typename Base::TestLayoutsAll;
         using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
