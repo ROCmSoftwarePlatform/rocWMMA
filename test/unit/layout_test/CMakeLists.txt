@@ -2,7 +2,7 @@
 #
 # MIT License
 #
-# Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -48,6 +48,12 @@ set(LayoutTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/rownt_layout_64.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/rownt_layout_128.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/rownt_layout_256.cpp
+
+					   #Emulation Smoke
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/col_layout_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/colnt_layout_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/row_layout_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/rownt_layout_16.cpp
                        )
 
 add_rocwmma_unit_test(layout_test ${LayoutTestSources})
