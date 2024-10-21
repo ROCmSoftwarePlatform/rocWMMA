@@ -2,7 +2,7 @@
 #
 # MIT License
 #
-# Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -43,6 +43,10 @@ set(LoadStoreMatrixSyncTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_store_matrix_sync_b_64.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_store_matrix_sync_b_128.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_store_matrix_sync_b_256.cpp
+					   # Emulation Smoke
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/load_store_matrix_sync_a_16.cpp
+					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/load_store_matrix_sync_acc_16.cpp
+					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/load_store_matrix_sync_b_16.cpp
                     )
 
 add_rocwmma_unit_test(load_store_matrix_sync_test ${LoadStoreMatrixSyncTestSources})
