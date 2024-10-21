@@ -2,7 +2,7 @@
 #
 # MIT License
 #
-# Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -116,6 +116,12 @@ set(CrossLaneOpsTestSources ${UnitCommonSources}
                            ${CMAKE_CURRENT_SOURCE_DIR}/test/blend_extract_word_even.cpp
                            ${CMAKE_CURRENT_SOURCE_DIR}/test/blend_extract_word_odd.cpp
 
+						   # Smoke
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/blend_extract_byte_even.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/blend_zip.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/dpp_bcast_2.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/permute_gather_scatter.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/swizzle_reverse_4.cpp
 )
 
 add_rocwmma_unit_test(cross_lane_ops_test ${CrossLaneOpsTestSources})
