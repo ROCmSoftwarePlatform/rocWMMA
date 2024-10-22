@@ -261,10 +261,7 @@ def batch(script, xml):
         # if in a staging directory then test locally
         test_dir = cwd
     else:
-        build_type = "debug" if args.debug else "release"
         search_paths = [
-            f"{args.install_dir}//{build_type}//clients//staging",
-            f"{args.install_dir}//{build_type}//test",
             f"{args.install_dir}"
         ]
         test_dir = ""
