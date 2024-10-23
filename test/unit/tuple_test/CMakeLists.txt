@@ -29,7 +29,7 @@ set(ROCWMMA_TEST_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${ROCWMMA_TEST_INCLUDE
 
 set(TupleTestSources ${UnitCommonSources}
                       ${CMAKE_CURRENT_SOURCE_DIR}/test/tuple.cpp
-                      ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/tuple.cpp
+                      ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-tuple.cpp
                        )
 
 add_rocwmma_unit_test(tuple_test ${TupleTestSources})

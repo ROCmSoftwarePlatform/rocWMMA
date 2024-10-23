@@ -117,11 +117,11 @@ set(CrossLaneOpsTestSources ${UnitCommonSources}
                            ${CMAKE_CURRENT_SOURCE_DIR}/test/blend_extract_word_odd.cpp
 
 						   # Smoke
-                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/blend_extract_byte_even.cpp
-                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/blend_zip.cpp
-                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/dpp_bcast_2.cpp
-                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/permute_gather_scatter.cpp
-                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/swizzle_reverse_4.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-blend_extract_byte_even.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-blend_zip.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-dpp_bcast_2.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-permute_gather_scatter.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-swizzle_reverse_4.cpp
 )
 
 add_rocwmma_unit_test(cross_lane_ops_test ${CrossLaneOpsTestSources})

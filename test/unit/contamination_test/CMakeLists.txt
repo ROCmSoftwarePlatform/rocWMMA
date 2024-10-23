@@ -29,7 +29,7 @@ set(ROCWMMA_TEST_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${ROCWMMA_TEST_INCLUDE
 
 set(ContaminationTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_contamination_a_16.cpp
-                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/load_contamination_a_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_contamination_a_16.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_contamination_a_32.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_contamination_a_64.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_contamination_a_128.cpp
@@ -45,7 +45,7 @@ set(ContaminationTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_contamination_b_128.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_contamination_b_256.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/store_contamination_a_16.cpp
-                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/store_contamination_a_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-store_contamination_a_16.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/store_contamination_a_32.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/store_contamination_a_64.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/store_contamination_a_128.cpp
@@ -62,10 +62,10 @@ set(ContaminationTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/store_contamination_b_256.cpp
 
 					   # Emulation Smoke
-					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/load_contamination_a_16.cpp
-					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/load_contamination_b_16.cpp
-					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/store_contamination_a_16.cpp
-					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/store_contamination_b_16.cpp
+					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_contamination_a_16.cpp
+					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_contamination_b_16.cpp
+					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-store_contamination_a_16.cpp
+					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-store_contamination_b_16.cpp
                      )
 
 

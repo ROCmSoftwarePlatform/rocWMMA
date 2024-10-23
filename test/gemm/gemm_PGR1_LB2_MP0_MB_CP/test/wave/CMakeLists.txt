@@ -54,7 +54,7 @@ set(${ROCWMMA_TARGET_SOURCES} ${${ROCWMMA_TARGET_SOURCES}}
                               ${CMAKE_CURRENT_SOURCE_DIR}/32x32_tt_1x1.cpp
                               ${CMAKE_CURRENT_SOURCE_DIR}/32x32_tt_2x2.cpp
 
-                              ${CMAKE_CURRENT_SOURCE_DIR}/emulation/16x16_nn_2x2.cpp
+                              ${CMAKE_CURRENT_SOURCE_DIR}/emulation/smoketest-16x16_nn_2x2.cpp
                               )
 
 if(ROCWMMA_BUILD_EXTENDED_TESTS)

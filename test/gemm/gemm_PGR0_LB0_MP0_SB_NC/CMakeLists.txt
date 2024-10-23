@@ -44,8 +44,8 @@ set(${ROCWMMA_TARGET_SOURCES} ${GemmCommonSources}
                           ${CMAKE_CURRENT_SOURCE_DIR}/test/32x32_nt.cpp
                           ${CMAKE_CURRENT_SOURCE_DIR}/test/32x32_tn.cpp
                           ${CMAKE_CURRENT_SOURCE_DIR}/test/32x32_tt.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/16x16_nn.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/32x32_nn.cpp
+                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-16x16_nn.cpp
+                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-32x32_nn.cpp
                           )
 
 # Ad hoc test

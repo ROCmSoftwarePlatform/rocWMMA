@@ -66,8 +66,8 @@ set(${ROCWMMA_TARGET_SOURCES}   ${GemmCommonSources}
                                 ${CMAKE_CURRENT_SOURCE_DIR}/test/32x32_tt_2x2.cpp
 
 								# Emulation Smoke
-								${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/16x16_nn_4x2.cpp
-								${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/32x32_nt_4x2.cpp
+								${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-16x16_nn_4x2.cpp
+								${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-32x32_nt_4x2.cpp
                                 )
 
 if(ROCWMMA_BUILD_EXTENDED_TESTS)

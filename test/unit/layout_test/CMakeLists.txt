@@ -50,10 +50,10 @@ set(LayoutTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/rownt_layout_256.cpp
 
 					   #Emulation Smoke
-                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/col_layout_16.cpp
-                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/colnt_layout_16.cpp
-                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/row_layout_16.cpp
-                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/rownt_layout_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-col_layout_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-colnt_layout_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-row_layout_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-rownt_layout_16.cpp
                        )
 
 add_rocwmma_unit_test(layout_test ${LayoutTestSources})

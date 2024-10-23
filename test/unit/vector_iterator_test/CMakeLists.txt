@@ -29,7 +29,7 @@ set(ROCWMMA_TEST_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${ROCWMMA_TEST_INCLUDE
 
 set(VectorIteratorTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/vector_iterator.cpp
-                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/vector_iterator.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-vector_iterator.cpp
                        )
 
 add_rocwmma_unit_test(vector_iterator_test ${VectorIteratorTestSources})

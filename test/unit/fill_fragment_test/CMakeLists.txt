@@ -45,9 +45,9 @@ set(FillFragmentTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/fill_fragment_b_256.cpp
 
 					   # Emulation Smoke
-                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/fill_fragment_a_16.cpp
-                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/fill_fragment_acc_64.cpp
-                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/fill_fragment_b_32.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-fill_fragment_a_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-fill_fragment_acc_64.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-fill_fragment_b_32.cpp
                        )
 
 

@@ -29,7 +29,7 @@ set(ROCWMMA_TEST_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${ROCWMMA_TEST_INCLUDE
 
 set(TransformsTestSources ${UnitCommonSources}
                           ${CMAKE_CURRENT_SOURCE_DIR}/test/transforms.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/transforms.cpp
+                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-transforms.cpp
                        )
 
 add_rocwmma_unit_test(transforms_test ${TransformsTestSources})

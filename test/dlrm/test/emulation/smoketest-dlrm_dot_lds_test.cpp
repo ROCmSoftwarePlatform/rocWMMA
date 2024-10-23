@@ -26,8 +26,8 @@
 
 #include "../dlrm_dot_test.hpp"
 #include "detail/dlrm_dot_lds.hpp"
-#include "emulation_dlrm_test_params.hpp"
 #include "kernel_generator.hpp"
+#include "smoketest-emulation_dlrm_test_params.hpp"
 
 namespace rocwmma
 {
