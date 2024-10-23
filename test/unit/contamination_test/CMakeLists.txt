@@ -61,11 +61,11 @@ set(ContaminationTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/store_contamination_b_128.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/store_contamination_b_256.cpp
 
-					   # Emulation Smoke
-					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_contamination_a_16.cpp
-					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_contamination_b_16.cpp
-					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-store_contamination_a_16.cpp
-					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-store_contamination_b_16.cpp
+                       # Emulation Smoke
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_contamination_a_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_contamination_b_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-store_contamination_a_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-store_contamination_b_16.cpp
                      )
 
 

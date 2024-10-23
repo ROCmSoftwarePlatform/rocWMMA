@@ -69,11 +69,11 @@ set(MapUtilTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/map_wave_to_matrix_128.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/map_wave_to_matrix_256.cpp
 
-					   # Emulation Smoke
-					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-map_block_to_matrix_16.cpp
-					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-map_thread_to_matrix_16.cpp
-					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-map_matrix_to_data_16.cpp
-					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-map_wave_to_matrix_16.cpp
-					   )
+                       # Emulation Smoke
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-map_block_to_matrix_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-map_thread_to_matrix_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-map_matrix_to_data_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-map_wave_to_matrix_16.cpp
+                       )
 
-				   add_rocwmma_unit_test(map_util_test ${MapUtilTestSources})
+                   add_rocwmma_unit_test(map_util_test ${MapUtilTestSources})

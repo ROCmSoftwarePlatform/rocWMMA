@@ -116,7 +116,7 @@ set(CrossLaneOpsTestSources ${UnitCommonSources}
                            ${CMAKE_CURRENT_SOURCE_DIR}/test/blend_extract_word_even.cpp
                            ${CMAKE_CURRENT_SOURCE_DIR}/test/blend_extract_word_odd.cpp
 
-						   # Smoke
+                           # Smoke
                            ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-blend_extract_byte_even.cpp
                            ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-blend_zip.cpp
                            ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-dpp_bcast_2.cpp

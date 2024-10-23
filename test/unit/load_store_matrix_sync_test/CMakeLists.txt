@@ -43,10 +43,10 @@ set(LoadStoreMatrixSyncTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_store_matrix_sync_b_64.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_store_matrix_sync_b_128.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/load_store_matrix_sync_b_256.cpp
-					   # Emulation Smoke
+                       # Emulation Smoke
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_store_matrix_sync_a_16.cpp
-					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_store_matrix_sync_acc_16.cpp
-					   ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_store_matrix_sync_b_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_store_matrix_sync_acc_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_store_matrix_sync_b_16.cpp
                     )
 
 add_rocwmma_unit_test(load_store_matrix_sync_test ${LoadStoreMatrixSyncTestSources})

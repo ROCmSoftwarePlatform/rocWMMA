@@ -49,7 +49,7 @@ set(LayoutTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/rownt_layout_128.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/rownt_layout_256.cpp
 
-					   #Emulation Smoke
+                       #Emulation Smoke
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-col_layout_16.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-colnt_layout_16.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-row_layout_16.cpp
