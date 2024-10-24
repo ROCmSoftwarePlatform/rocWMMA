@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2022-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2022-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -416,18 +416,44 @@ namespace rocwmma
         }
     }
 
-    template <uint32_t GroupSize, typename DataT, uint32_t VecSize>
-    ROCWMMA_DEVICE constexpr static inline auto interleave(VecT<DataT, VecSize> const& v0)
+    // A permutation of vector indices, given a gather size and a stride
+    // Examples:
+    //                                     row_major               col_major
+    //       [0, 1] => interleave<1, 2>([0, 1, 2, 3, 4, 5])  =  [0, 2, 4, 1, 3, 5]
+    //   A = [2, 3]                        col_major               row_major
+    //       [4, 5] => interleave<1, 4>([0, 2, 4, 1, 3, 5])  =  [0, 1, 2, 3, 4, 5]
+    //
+    //       [0, 1]
+    //   A = [2, 3] => interleave<2, 4>([0, 1, 2, 3, 4, 5, 6, 7]) = [0, 1, 4, 5, 2, 3, 6, 7]
+    //       [4, 5]
+    //       [6, 7]
+    //
+    template <uint32_t GatherSize, uint32_t ElementStride, typename DataT, uint32_t VecSize>
+    ROCWMMA_DEVICE constexpr static inline decltype(auto) interleave(VecT<DataT, VecSize> const& v0)
     {
-        // Interleave groups
-        auto offset = [](auto&& idx, auto&& v0) {
-            constexpr auto Index   = decay_t<decltype(idx)>::value;
-            constexpr auto Offset0 = Index * GroupSize;
-            constexpr auto Offset1 = Index / (VecSize / GroupSize);
-            return get<(Offset0 + Offset1) % VecSize>(v0);
-        };
+        static_assert((GatherSize >= 1u) && (GatherSize <= ElementStride)
+                          && (ElementStride % GatherSize == 0) && (VecSize % GatherSize == 0),
+                      "Invalid GatherSize");
+        static_assert(ElementStride >= 1u && ElementStride < VecSize, "Invalid Stride");
 
-        return vector_generator<DataT, VecSize>()(offset, v0);
+        // No transform is needed (NOP)
+        if constexpr(GatherSize == ElementStride || ElementStride == VecSize)
+        {
+            return v0;
+        }
+        else
+        {
+            auto offset = [](auto&& idx, auto&& v0) {
+                constexpr auto Index   = decay_t<decltype(idx)>::value;
+                constexpr auto Offset0 = (Index / GatherSize) * ElementStride % VecSize;
+                constexpr auto Offset1 = Index % GatherSize;
+                constexpr auto Offset2
+                    = (Index * ElementStride) / (VecSize * GatherSize) * GatherSize;
+                return get<Offset0 + Offset1 + Offset2>(v0);
+            };
+
+            return vector_generator<DataT, VecSize>()(offset, v0);
+        }
     }
 
 } // namespace rocwmma
