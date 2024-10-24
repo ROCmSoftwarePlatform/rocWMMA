@@ -37,6 +37,9 @@ set(IoShapeTestSources ${UnitCommonSources}
                        # Emulation Smoke
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-io_shape_16.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-io_shape_32.cpp
+                       # Emulation regression
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-io_shape_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-io_shape_32.cpp
                        )
 
 add_rocwmma_unit_test(io_shape_test ${IoShapeTestSources})

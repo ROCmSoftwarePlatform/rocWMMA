@@ -37,6 +37,9 @@ set(IoTraitsTestSources ${UnitCommonSources}
                        # Emulation Smoke
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-io_traits_16.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-io_traits_32.cpp
+                       # Emulation Smoke
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-io_traits_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-io_traits_32.cpp
                        )
 
 add_rocwmma_unit_test(io_traits_test ${IoTraitsTestSources})

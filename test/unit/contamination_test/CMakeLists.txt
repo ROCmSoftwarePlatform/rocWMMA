@@ -66,6 +66,13 @@ set(ContaminationTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_contamination_b_16.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-store_contamination_a_16.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-store_contamination_b_16.cpp
+                       # Emulation Regression
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-load_contamination_a_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-load_contamination_acc_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-load_contamination_b_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-store_contamination_a_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-store_contamination_acc_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-store_contamination_b_16.cpp
                      )
 
 

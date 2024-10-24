@@ -38,6 +38,18 @@ int main(int argc, char** argv)
     {
         ::testing::GTEST_FLAG(filter) = "*Emulation*Smoke*";
     }
+    else if(loggingOptions->emulationOption() == rocwmma::EmulationOption::REGRESSION)
+    {
+        ::testing::GTEST_FLAG(filter) = "*Emulation*Regression*";
+    }
+    else if(loggingOptions->emulationOption() == rocwmma::EmulationOption::EXTENDED)
+    {
+        ::testing::GTEST_FLAG(filter) = "*Emulation*Extended*";
+    }
+    else
+    {
+        ::testing::GTEST_FLAG(filter) = "-*Emulation*";
+    }
 
     // Initialize Google Tests
     testing::InitGoogleTest(&argc, argv);

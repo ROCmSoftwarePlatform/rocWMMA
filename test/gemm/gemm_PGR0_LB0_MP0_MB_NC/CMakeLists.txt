@@ -68,6 +68,16 @@ set(${ROCWMMA_TARGET_SOURCES}   ${GemmCommonSources}
                                 # Emulation Smoke
                                 ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-16x16_nn_4x2.cpp
                                 ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-32x32_nt_4x2.cpp
+
+                                # Emulation Regression
+                                ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-16x16_nn_4x2.cpp
+                                ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-16x16_nt_4x2.cpp
+                                ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-16x16_tn_4x2.cpp
+                                ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-16x16_tt_4x2.cpp
+                                ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-32x32_nn_4x2.cpp
+                                ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-32x32_nt_4x2.cpp
+                                ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-32x32_tn_4x2.cpp
+                                ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-32x32_tt_4x2.cpp
                                 )
 
 if(ROCWMMA_BUILD_EXTENDED_TESTS)

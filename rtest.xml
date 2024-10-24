@@ -82,13 +82,13 @@
     </emulation>
 
     <emulation sets="regression">
-        <run name="regression01"> ./test/gemm/gemm_PGR0_LB0_MP0_MB_NC_ad_hoc-validate {REGRESSION_PARAMS} </run>
+        <run name="regression01"> ./test/gemm/gemm_PGR0_LB0_MP0_MB_NC_ad_hoc-validate --gtest_output=xml --gtest_color=yes </run>
     </emulation>
     <emulation sets="regression">
-        <run name="regression02"> ./test/gemm/gemm_PGR1_LB2_MP0_MB_CP_ad_hoc-validate {REGRESSION_PARAMS} </run>
+        <run name="regression02"> ./test/gemm/gemm_PGR1_LB2_MP0_MB_CP_ad_hoc-validate --gtest_output=xml --gtest_color=yes </run>
     </emulation>
     <emulation sets="regression">
-        <run name="regression03"> ./test/gemm/gemm_PGR0_LB0_MP0_SB_NC_ad_hoc-validate {REGRESSION_PARAMS} </run>
+        <run name="regression03"> ./test/gemm/gemm_PGR0_LB0_MP0_SB_NC_ad_hoc-validate --gtest_output=xml --gtest_color=yes </run>
     </emulation>
     <emulation sets="regression">
         <run name="regression04"> ./test/gemm/gemm_PGR0_LB0_MP0_SB_NC-validate {REGRESSION_PARAMS} </run>

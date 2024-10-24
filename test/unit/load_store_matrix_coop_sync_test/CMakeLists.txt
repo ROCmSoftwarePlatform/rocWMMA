@@ -45,9 +45,13 @@ set(LoadStoreMatrixCoopSyncTestSources ${UnitCommonSources}
                     ${CMAKE_CURRENT_SOURCE_DIR}/test/load_store_matrix_coop_sync_b_128.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/test/load_store_matrix_coop_sync_b_256.cpp
 
-# Emulation Smoke
+                    # Emulation Smoke
                     ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_store_matrix_coop_sync_a_16.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_store_matrix_coop_sync_b_16.cpp
+                    # Emulation regression
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-load_store_matrix_coop_sync_a_16.cpp
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-load_store_matrix_coop_sync_acc_16.cpp
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-load_store_matrix_coop_sync_b_16.cpp
                  )
 
 add_rocwmma_unit_test(load_store_matrix_coop_sync_test ${LoadStoreMatrixCoopSyncTestSources})

@@ -30,6 +30,7 @@ set(ROCWMMA_TEST_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${ROCWMMA_TEST_INCLUDE
 set(UnpackUtilTestSources ${UnitCommonSources}
                           ${CMAKE_CURRENT_SOURCE_DIR}/test/unpackutil.cpp
                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-unpackutil.cpp
+                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-unpackutil.cpp
                        )
 
 add_rocwmma_unit_test(unpack_util_test ${UnpackUtilTestSources})

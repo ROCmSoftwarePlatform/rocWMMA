@@ -69,11 +69,13 @@ endif()
  set(DlrmDotTestSources ${DlrmCommonSources}
                         ${CMAKE_CURRENT_SOURCE_DIR}/test/dlrm_dot_test.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-dlrm_dot_test.cpp
+                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-dlrm_dot_test.cpp
                         )
 
   set(DlrmDotLdsTestSources ${DlrmCommonSources}
                             ${CMAKE_CURRENT_SOURCE_DIR}/test/dlrm_dot_lds_test.cpp
                             ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-dlrm_dot_lds_test.cpp
+                            ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-dlrm_dot_lds_test.cpp
                             )
 
  # Benchmark DLRM tests

@@ -74,6 +74,15 @@ set(MapUtilTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-map_thread_to_matrix_16.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-map_matrix_to_data_16.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-map_wave_to_matrix_16.cpp
+                       # Emulation regression
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_block_to_matrix_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_block_to_matrix_override_m_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_block_to_matrix_override_n_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_matrix_to_data_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_matrix_to_data_override_m_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_matrix_to_data_override_n_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_thread_to_matrix_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_wave_to_matrix_16.cpp
                        )
 
                    add_rocwmma_unit_test(map_util_test ${MapUtilTestSources})
