@@ -26,6 +26,7 @@
 
 #include <type_traits>
 
+#include "../contamination_test_params.hpp"
 #include "detail/load_contamination.hpp"
 #include "kernel_generator.hpp"
 #include "unit_test.hpp"
@@ -33,42 +34,9 @@
 namespace rocwmma
 {
 
-    struct TestParams : public UnitTestParams
-    {
-        using Base = UnitTestParams;
-
-        // Types: Base IOC + double
-        // Block Sizes: 16 x BlockK
-        // Layouts: N, T
-        using Types        = std::tuple<float32_t>;
-        using BlockSizes   = std::tuple<std::tuple<I<16>, I<16>>>;
-        using Layouts      = typename Base::TestLayoutsAll;
-        using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
-
-        // Assemble the kernel generator
-        // Kernel: LoadContaminationB
-        using GeneratorImpl   = LoadContaminationGeneratorB;
-        using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
-
-        // Sanity check for kernel generator
-        static_assert(std::is_same<typename GeneratorImpl::ResultT, typename Base::KernelT>::value,
-                      "Kernels from this generator do not match testing interface");
-
-        static inline typename KernelGenerator::ResultT kernels()
-        {
-            return KernelGenerator::generate();
-        }
-
-        static inline std::vector<Param1T> param1s()
-        {
-            return {4.0, 3.0};
-        }
-
-        static inline std::vector<Param2T> param2s()
-        {
-            return {8.0, 1.0};
-        }
-    };
+    using TestParams = ContaminationTestParams<UnitTestParams::TestAllSizeTypes,
+                                               UnitTestParams::TestBlockSizes16,
+                                               LoadContaminationGeneratorB>;
 
 } // namespace rocwmma
 

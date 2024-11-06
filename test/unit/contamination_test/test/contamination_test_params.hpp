@@ -26,28 +26,21 @@
 
 #include <type_traits>
 
-#include "detail/load_contamination.hpp"
 #include "kernel_generator.hpp"
 #include "unit_test.hpp"
 
 namespace rocwmma
 {
 
-    struct TestParams : public UnitTestParams
+    template <typename Types, typename BlockSizes, typename GeneratorImpl>
+    struct ContaminationTestParams : public UnitTestParams
     {
         using Base = UnitTestParams;
 
-        // Types: Base IOC + double
-        // Block Sizes: 16 x BlockN
-        // Layouts: N, T
-        using Types        = typename Base::TestTypes16;
-        using BlockSizes   = typename Base::TestBlockSizes16;
         using Layouts      = typename Base::TestLayoutsAll;
         using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
 
         // Assemble the kernel generator
-        // Kernel: LoadContaminationAcc
-        using GeneratorImpl   = LoadContaminationGeneratorAcc;
         using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
 
         // Sanity check for kernel generator
@@ -71,22 +64,3 @@ namespace rocwmma
     };
 
 } // namespace rocwmma
-
-// Test suite for unique parameterization
-class EmulationRegressionLoadContaminationAccTest16 : public rocwmma::UnitTest
-{
-};
-
-TEST_P(EmulationRegressionLoadContaminationAccTest16, RunKernel)
-{
-    this->RunKernel();
-}
-
-INSTANTIATE_TEST_SUITE_P(
-    KernelTests,
-    EmulationRegressionLoadContaminationAccTest16,
-    ::testing::Combine(::testing::ValuesIn(rocwmma::TestParams::kernels()),
-                       ::testing::ValuesIn(rocwmma::TestParams::threadBlocks()),
-                       ::testing::ValuesIn(rocwmma::TestParams::problemSizes()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param1s()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param2s())));

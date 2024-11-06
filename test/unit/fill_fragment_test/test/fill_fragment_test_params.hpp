@@ -26,7 +26,6 @@
 
 #include <type_traits>
 
-#include "detail/fill_fragment.hpp"
 #include "kernel_generator.hpp"
 #include "unit_test.hpp"
 
