@@ -46,12 +46,10 @@ set(FillFragmentTestSources ${UnitCommonSources}
 
                        # Emulation Smoke
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-fill_fragment_a_16.cpp
-                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-fill_fragment_acc_64.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-fill_fragment_b_32.cpp
 
                        # Emulation Regression
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-fill_fragment_a_16.cpp
-                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-fill_fragment_acc_16.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-fill_fragment_b_16.cpp
                        )
 

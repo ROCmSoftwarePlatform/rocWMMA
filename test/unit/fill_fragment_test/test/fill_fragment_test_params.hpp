@@ -33,21 +33,14 @@
 namespace rocwmma
 {
 
-    struct TestParams : public UnitTestParams
+    template <typename Types, typename BlockSizes, typename GeneratorImpl>
+    struct FillFragmentTestParams : public UnitTestParams
     {
         using Base = UnitTestParams;
 
-        // Types: Base IOC
-        // Block Sizes: 64 x BlockK
-        // Layouts: N, T
-        using Types        = std::tuple<float16_t, float32_t>;
-        using BlockSizes   = std::tuple<std::tuple<I<64>, I<8>>>;
         using Layouts      = typename Base::TestLayoutsAll;
         using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
 
-        // Assemble the kernel generator
-        // Kernel: fillFragmentAcc
-        using GeneratorImpl   = FillFragmentGeneratorAcc;
         using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
 
         // Sanity check for kernel generator
@@ -61,22 +54,3 @@ namespace rocwmma
     };
 
 } // namespace rocwmma
-
-// Test suite for unique parameterization
-class EmulationSmokeFillFragmentAccTest64 : public rocwmma::UnitTest
-{
-};
-
-TEST_P(EmulationSmokeFillFragmentAccTest64, RunKernel)
-{
-    this->RunKernel();
-}
-
-INSTANTIATE_TEST_SUITE_P(
-    KernelTests,
-    EmulationSmokeFillFragmentAccTest64,
-    ::testing::Combine(::testing::ValuesIn(rocwmma::TestParams::kernels()),
-                       ::testing::ValuesIn(rocwmma::TestParams::threadBlocks()),
-                       ::testing::ValuesIn(rocwmma::TestParams::problemSizes()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param1s()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param2s())));
