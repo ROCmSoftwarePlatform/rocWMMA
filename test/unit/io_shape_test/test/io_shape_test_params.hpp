@@ -23,37 +23,54 @@
  * SOFTWARE.
  *
  *******************************************************************************/
+#ifndef IO_SHAPE_TEST_PARAMS_HPP
+#define IO_SHAPE_TEST_PARAMS_HPP
 
 #include <type_traits>
 
 #include "detail/io_shape.hpp"
-#include "io_shape_test_params.hpp"
 #include "kernel_generator.hpp"
 #include "unit_test.hpp"
 
 namespace rocwmma
 {
+    template <typename BlockSizes, typename DataTypes>
+    struct IoShapeTestParams : public UnitTestParams
+    {
+        using Base        = UnitTestParams;
+        using MatrixTypes = std::tuple<matrix_a, matrix_b, accumulator>;
+        using DataLayouts = typename Base::TestLayoutsAll;
+        using KernelParams =
+            typename CombineLists<MatrixTypes, BlockSizes, DataTypes, DataLayouts>::Result;
 
-    using TestParams
-        = IoShapeTestParams<UnitTestParams::TestBlockSizes128, UnitTestParams::TestTypes16>;
+        // Assemble the kernel generator
+        using GeneratorImpl   = IOShapeGenerator;
+        using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
+
+        // Sanity check for kernel generator
+        static_assert(std::is_same<typename GeneratorImpl::ResultT, typename Base::KernelT>::value,
+                      "Kernels from this generator do not match testing interface");
+
+        static inline typename KernelGenerator::ResultT kernels()
+        {
+            return KernelGenerator::generate();
+        }
+
+        static inline std::vector<ThreadBlockT> threadBlocks()
+        {
+            auto warpSize = HipDevice::instance()->warpSize();
+            // clang-format off
+            return { {warpSize, 1} };
+            // clang-format on
+        }
+
+        static inline std::vector<ProblemSizeT> problemSizes()
+        {
+            // clang-format off
+            return { {1024, 1024} };
+            // clang-format on
+        }
+    };
 
 } // namespace rocwmma
-
-// Test suite for unique parameterization
-class IOShapeTest128 : public rocwmma::UnitTest
-{
-};
-
-TEST_P(IOShapeTest128, RunKernel)
-{
-    this->RunKernel();
-}
-
-INSTANTIATE_TEST_SUITE_P(
-    KernelTests,
-    IOShapeTest128,
-    ::testing::Combine(::testing::ValuesIn(rocwmma::TestParams::kernels()),
-                       ::testing::ValuesIn(rocwmma::TestParams::threadBlocks()),
-                       ::testing::ValuesIn(rocwmma::TestParams::problemSizes()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param1s()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param2s())));
+#endif // IO_SHAPE_TEST_PARAMS_HPP

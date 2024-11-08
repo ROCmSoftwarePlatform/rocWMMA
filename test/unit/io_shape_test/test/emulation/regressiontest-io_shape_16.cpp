@@ -26,51 +26,15 @@
 
 #include <type_traits>
 
+#include "../io_shape_test_params.hpp"
 #include "detail/io_shape.hpp"
 #include "kernel_generator.hpp"
 #include "unit_test.hpp"
 
 namespace rocwmma
 {
-
-    struct TestParams : public UnitTestParams
-    {
-        using Base        = UnitTestParams;
-        using MatrixTypes = std::tuple<matrix_a, matrix_b, accumulator>;
-        using BlockSizes  = typename Base::TestBlockSizes16;
-        using DataTypes   = typename Base::TestTypes16;
-        using DataLayouts = typename Base::TestLayoutsAll;
-        using KernelParams =
-            typename CombineLists<MatrixTypes, BlockSizes, DataTypes, DataLayouts>::Result;
-
-        // Assemble the kernel generator
-        using GeneratorImpl   = IOShapeGenerator;
-        using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
-
-        // Sanity check for kernel generator
-        static_assert(std::is_same<typename GeneratorImpl::ResultT, typename Base::KernelT>::value,
-                      "Kernels from this generator do not match testing interface");
-
-        static inline typename KernelGenerator::ResultT kernels()
-        {
-            return KernelGenerator::generate();
-        }
-
-        static inline std::vector<ThreadBlockT> threadBlocks()
-        {
-            auto warpSize = HipDevice::instance()->warpSize();
-            // clang-format off
-            return { {warpSize, 1} };
-            // clang-format on
-        }
-
-        static inline std::vector<ProblemSizeT> problemSizes()
-        {
-            // clang-format off
-            return { {1024, 1024} };
-            // clang-format on
-        }
-    };
+    using TestParams
+        = IoShapeTestParams<UnitTestParams::TestBlockSizes16, UnitTestParams::TestAllSizeTypes>;
 
 } // namespace rocwmma
 

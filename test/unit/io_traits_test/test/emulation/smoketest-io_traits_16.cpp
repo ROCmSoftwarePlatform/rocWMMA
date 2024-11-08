@@ -26,6 +26,7 @@
 
 #include <type_traits>
 
+#include "../io_traits_test_params.hpp"
 #include "common.hpp"
 #include "detail/io_traits.hpp"
 #include "kernel_generator.hpp"
@@ -34,42 +35,8 @@
 namespace rocwmma
 {
 
-    struct TestParams : public UnitTestParams
-    {
-        using Base         = UnitTestParams;
-        using Types        = std::tuple<float16_t, float32_t>;
-        using BlockSizes   = std::tuple<std::tuple<I<16>, I<16>>>;
-        using VectorSizes  = std::tuple<I<1>, I<2>, I<4>>;
-        using KernelParams = typename CombineLists<Types, BlockSizes, VectorSizes>::Result;
-
-        // Assemble the kernel generator
-        using GeneratorImpl   = IOTraitsGenerator;
-        using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
-
-        // Sanity check for kernel generator
-        static_assert(std::is_same<typename GeneratorImpl::ResultT, typename Base::KernelT>::value,
-                      "Kernels from this generator do not match testing interface");
-
-        static inline typename KernelGenerator::ResultT kernels()
-        {
-            return KernelGenerator::generate();
-        }
-
-        static inline std::vector<ThreadBlockT> threadBlocks()
-        {
-            auto warpSize = HipDevice::instance()->warpSize();
-            // clang-format off
-            return { {warpSize, 1} };
-            // clang-format on
-        }
-
-        static inline std::vector<ProblemSizeT> problemSizes()
-        {
-            // clang-format off
-            return { {1024, 1024} };
-            // clang-format on
-        }
-    };
+    using TestParams
+        = IoTraitsTestParams<UnitTestParams::TestBlockSizes16, std::tuple<I<1>, I<2>, I<4>>>;
 
 } // namespace rocwmma
 

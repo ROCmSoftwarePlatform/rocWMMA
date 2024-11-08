@@ -24,35 +24,53 @@
  *
  *******************************************************************************/
 
+#ifndef IO_TRAITS_TEST_PARAMS_HPP
+#define IO_TRAITS_TEST_PARAMS_HPP
 #include <type_traits>
 
+#include "common.hpp"
 #include "detail/io_traits.hpp"
-#include "io_traits_test_params.hpp"
 #include "kernel_generator.hpp"
 #include "unit_test.hpp"
 
 namespace rocwmma
 {
-    using TestParams
-        = IoTraitsTestParams<UnitTestParams::TestBlockSizes64, std::tuple<I<1>, I<2>, I<4>, I<8>>>;
+    template <typename BlockSizes, typename VectorSizes>
+    struct IoTraitsTestParams : public UnitTestParams
+    {
+        using Base         = UnitTestParams;
+        using Types        = typename Base::TestTypes16;
+        using KernelParams = typename CombineLists<Types, BlockSizes, VectorSizes>::Result;
+
+        // Assemble the kernel generator
+        using GeneratorImpl   = IOTraitsGenerator;
+        using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
+
+        // Sanity check for kernel generator
+        static_assert(std::is_same<typename GeneratorImpl::ResultT, typename Base::KernelT>::value,
+                      "Kernels from this generator do not match testing interface");
+
+        static inline typename KernelGenerator::ResultT kernels()
+        {
+            return KernelGenerator::generate();
+        }
+
+        static inline std::vector<ThreadBlockT> threadBlocks()
+        {
+            auto warpSize = HipDevice::instance()->warpSize();
+            // clang-format off
+            return { {warpSize, 1} };
+            // clang-format on
+        }
+
+        static inline std::vector<ProblemSizeT> problemSizes()
+        {
+            // clang-format off
+            return { {1024, 1024} };
+            // clang-format on
+        }
+    };
 
 } // namespace rocwmma
 
-// Test suite for unique parameterization
-class IOTraitsTest64 : public rocwmma::UnitTest
-{
-};
-
-TEST_P(IOTraitsTest64, RunKernel)
-{
-    this->RunKernel();
-}
-
-INSTANTIATE_TEST_SUITE_P(
-    KernelTests,
-    IOTraitsTest64,
-    ::testing::Combine(::testing::ValuesIn(rocwmma::TestParams::kernels()),
-                       ::testing::ValuesIn(rocwmma::TestParams::threadBlocks()),
-                       ::testing::ValuesIn(rocwmma::TestParams::problemSizes()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param1s()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param2s())));
+#endif // IO_TRAITS_TEST_PARAMS_HPP
