@@ -27,6 +27,7 @@
 #include <tuple>
 #include <type_traits>
 
+#include "../cross_lane_ops_test_params.hpp"
 #include "detail/cross_lane_ops.hpp"
 #include "kernel_generator.hpp"
 #include "unit_test.hpp"
@@ -34,49 +35,9 @@
 namespace rocwmma
 {
 
-    struct TestParams : public UnitTestParams
-    {
-        using Base = UnitTestParams;
-
-        using Types = typename std::tuple<uint32_t, uint64_t>;
-
-        using SwizzleOps = std::tuple<SwizzleImpl::Ops::BCast2<0>, SwizzleImpl::Ops::BCast2<1>>;
-
-        using KernelParams = typename CombineLists<Types, SwizzleOps>::Result;
-
-        // Assemble the kernel generator
-        // Kernel: VectorIterator
-        using GeneratorImpl   = SwizzleOpsGenerator;
-        using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
-
-        // Sanity check for kernel generator
-        static_assert(std::is_same<typename GeneratorImpl::ResultT, typename Base::KernelT>::value,
-                      "Kernels from this generator do not match testing interface");
-
-        // Must be TBlockY must be 1.
-        static inline std::vector<ThreadBlockT> threadBlocks()
-        {
-            auto warpSize = HipDevice::instance()->warpSize();
-            return {{warpSize, 1}};
-        }
-
-        static inline std::vector<ProblemSizeT> problemSizes()
-        {
-            auto warpSize = HipDevice::instance()->warpSize();
-            return {{warpSize, 1}};
-        }
-
-        // 'prev' values
-        static inline std::vector<Param1T> param1s()
-        {
-            return {5.0};
-        }
-
-        static inline typename KernelGenerator::ResultT kernels()
-        {
-            return KernelGenerator::generate();
-        }
-    };
+    using TestParams = CrossLaneTestParams<
+        SwizzleKernelParams<std::tuple<SwizzleImpl::Ops::BCast2<0>, SwizzleImpl::Ops::BCast2<1>>>,
+        SwizzleOpsGenerator>;
 
 } // namespace rocwmma
 
