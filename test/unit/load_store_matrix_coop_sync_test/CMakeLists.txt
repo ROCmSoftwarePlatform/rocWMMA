@@ -50,7 +50,6 @@ set(LoadStoreMatrixCoopSyncTestSources ${UnitCommonSources}
                     ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-load_store_matrix_coop_sync_b_16.cpp
                     # Emulation regression
                     ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-load_store_matrix_coop_sync_a_16.cpp
-                    ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-load_store_matrix_coop_sync_acc_16.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-load_store_matrix_coop_sync_b_16.cpp
                  )
 

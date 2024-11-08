@@ -24,30 +24,28 @@
  *
  *******************************************************************************/
 
+#ifndef LAYOUT_TEST_PARAMS_HPP
+#define LAYOUT_TEST_PARAMS_HPP
 #include <type_traits>
 
-#include "detail/load_store_matrix_sync.hpp"
+#include "detail/col_layout.hpp"
+#include "detail/colnt_layout.hpp"
+#include "detail/row_layout.hpp"
+#include "detail/rownt_layout.hpp"
 #include "kernel_generator.hpp"
 #include "unit_test.hpp"
 
 namespace rocwmma
 {
 
-    struct TestParams : public UnitTestParams
+    template <typename Types, typename BlockSizes, typename GeneratorImpl>
+    struct LayoutTestParams : public UnitTestParams
     {
         using Base = UnitTestParams;
 
-        // Types: Base IOC + double
-        // Block Sizes: 16 x BlockN
-        // Layouts: N, T
-        using Types        = std::tuple<float32_t>;
-        using BlockSizes   = std::tuple<std::tuple<I<16>, I<16>>>;
         using Layouts      = typename Base::TestLayoutsAll;
         using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
 
-        // Assemble the kernel generator
-        // Kernel: LoadStoreMatrixSyncAcc
-        using GeneratorImpl   = LoadStoreMatrixSyncGeneratorAcc;
         using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
 
         // Sanity check for kernel generator
@@ -62,21 +60,4 @@ namespace rocwmma
 
 } // namespace rocwmma
 
-// Test suite for unique parameterization
-class EmulationSmokeLoadStoreMatrixSyncAccTest16 : public rocwmma::UnitTest
-{
-};
-
-TEST_P(EmulationSmokeLoadStoreMatrixSyncAccTest16, RunKernel)
-{
-    this->RunKernel();
-}
-
-INSTANTIATE_TEST_SUITE_P(
-    KernelTests,
-    EmulationSmokeLoadStoreMatrixSyncAccTest16,
-    ::testing::Combine(::testing::ValuesIn(rocwmma::TestParams::kernels()),
-                       ::testing::ValuesIn(rocwmma::TestParams::threadBlocks()),
-                       ::testing::ValuesIn(rocwmma::TestParams::problemSizes()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param1s()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param2s())));
+#endif // LAYOUT_TEST_PARAMS_HPP

@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,56 +28,15 @@
 
 #include "detail/load_store_matrix_coop_sync.hpp"
 #include "kernel_generator.hpp"
+#include "load_store_matrix_coop_sync_test_params.hpp"
 #include "unit_test.hpp"
 
 namespace rocwmma
 {
 
-    struct TestParams : public UnitTestParams
-    {
-        using Base = UnitTestParams;
-
-        // Types: Base IOC
-        // Block Sizes: 32 x BlockK
-        // Layouts: N, T
-        using Types        = typename Base::TestTypesIOC;
-        using BlockSizes   = typename Base::TestBlockSizes32;
-        using Layouts      = typename Base::TestLayoutsAll;
-        using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
-
-        // Assemble the kernel generator
-        // Kernel: LoadStoreMatrixCoopSyncB
-        using GeneratorImpl   = LoadStoreMatrixCoopSyncGeneratorB;
-        using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
-
-        // Sanity check for kernel generator
-        static_assert(std::is_same<typename GeneratorImpl::ResultT, typename Base::KernelT>::value,
-                      "Kernels from this generator do not match testing interface");
-
-        static inline typename KernelGenerator::ResultT kernels()
-        {
-            return KernelGenerator::generate();
-        }
-
-        static inline std::vector<Base::Param1T> param1s()
-        {
-            return {0.0, 1.0}; // Split by waves in same rol and col
-        }
-
-        static inline std::vector<Base::Param2T> param2s()
-        {
-            return
-            {
-                0.0, 1.0, 2.0,
-                    3.0 // 1 - 4 waves
-#if ROCWMMA_EXTENDED_TESTS
-                    ,
-                    4.0, 5.0, 6.0,
-                    7.0 // 8 waves
-#endif // ROCWMMA_EXTENDED_TESTS
-            };
-        }
-    };
+    using TestParams = LoadStoreMatrixCoopSyncTestParams<UnitTestParams::TestTypesIOC,
+                                                         UnitTestParams::TestBlockSizes32,
+                                                         LoadStoreMatrixCoopSyncGeneratorB>;
 
 } // namespace rocwmma
 
