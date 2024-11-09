@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -60,7 +60,7 @@ namespace rocwmma
                 MatrixLayout::ColOrthoVW<BlockDim, BlockK, DataT, 1, MaxVectorWidth>,
                 MatrixLayout::ColOrthoVW<BlockDim, BlockK, DataT, MaxVectorWidth, MaxVectorWidth>>;
 
-            using RegisterLayout = RegisterLayout::Storage<MatrixLayout>;
+            using RegisterLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
 
             // Mapping
             using MappingUtil  = MappingUtil<BlockDim, BlockK, DataT, DataLayoutT>;
@@ -104,7 +104,7 @@ namespace rocwmma
                 MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>,
                 MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, 1, MaxVectorWidth>>;
 
-            using RegisterLayout = RegisterLayout::Storage<MatrixLayout>;
+            using RegisterLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
 
             // Mapping
             using MappingUtil  = MappingUtil<BlockDim, BlockK, DataT, DataLayoutT>;
@@ -149,7 +149,7 @@ namespace rocwmma
                 MatrixLayout::ColInlineVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>,
                 MatrixLayout::ColOrthoVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>>;
 
-            using RegisterLayout = RegisterLayout::Storage<MatrixLayout>;
+            using RegisterLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
 
             // Mapping
             using MappingUtil  = MappingUtil<BlockDim, BlockK, DataT, DataLayoutT>;
@@ -188,7 +188,7 @@ namespace rocwmma
                 MatrixLayout::RowInlineVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>,
                 MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>>;
 
-            using RegisterLayout = RegisterLayout::Storage<MatrixLayout>;
+            using RegisterLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
 
             // Mapping
             using MappingUtil  = MappingUtil<BlockDim, BlockK, DataT, DataLayoutT>;
@@ -229,7 +229,7 @@ namespace rocwmma
                 MatrixLayout::ColInlineInt<BlockDim, BlockK, DataT, MfmaDim, SplitK>,
                 MatrixLayout::ColOrthoInt<BlockDim, BlockK, DataT, MfmaDim, SplitK>>;
 
-            using RegisterLayout = RegisterLayout::Storage<MatrixLayout>;
+            using RegisterLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
 
             // Mapping
             using MappingUtil  = MappingUtil<BlockDim, BlockK, DataT, DataLayoutT>;
@@ -269,7 +269,7 @@ namespace rocwmma
                 MatrixLayout::RowInlineInt<BlockDim, BlockK, DataT, MfmaDim, SplitK>,
                 MatrixLayout::RowOrthoInt<BlockDim, BlockK, DataT, MfmaDim, SplitK>>;
 
-            using RegisterLayout = RegisterLayout::Storage<MatrixLayout>;
+            using RegisterLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
 
             // Mapping
             using MappingUtil  = MappingUtil<BlockDim, BlockK, DataT, DataLayoutT>;

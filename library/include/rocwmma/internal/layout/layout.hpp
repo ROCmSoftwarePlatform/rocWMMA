@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -144,20 +144,30 @@ namespace rocwmma
     // Storage<MatrixLayout::RowInline> to MmaInput<16> to serve as input to a 16x16xk mma builtin.
     namespace RegisterLayout
     {
+        // Format for data locality
+        enum struct Format : uint32_t
+        {
+            SOA  = 0u, // Structure of Arrays (SOA), e.g., [{XX}, {YY}, {ZZ}]
+            AOS  = 1u, // Array of Structures (AOS), e.g., [{X,Y,Z}, {X,Y,Z}]
+            None = 2u,
+        };
+
         // A mnemonic used to describe the register layout is suitable for input/output
-        template <class MatrixLayout>
+        template <class MatrixLayout, class DataLayout>
         struct Storage
         {
         };
 
         // A mnemonic used to describe the register layout is suitable for mma input for A/B
-        template <uint32_t MmaSize>
+        template <uint32_t MmaSize, bool Interleaved, Format Fmt = Format::SOA>
         struct MmaInput
         {
         };
 
         // A mnemonic used to describe the register layout is suitable for mma input for accumulator input/output
-        template <uint32_t MmaSize>
+        template <uint32_t MmaSize,
+                  bool     Interleaved,
+                  Format   Fmt = Interleaved ? Format::None : Format::SOA>
         struct MmaAcc
         {
         };
@@ -165,6 +175,72 @@ namespace rocwmma
     } // namespace RegisterLayout
 
 } // namespace rocwmma
+
+#if !defined(__HIPCC_RTC__)
+namespace std
+{
+
+    inline ostream& operator<<(ostream& stream, rocwmma::row_major const& data_layout)
+    {
+        return stream << "row_major";
+    }
+
+    inline ostream& operator<<(ostream& stream, rocwmma::col_major const& data_layout)
+    {
+        return stream << "col_major";
+    }
+
+    inline ostream& operator<<(ostream& stream, rocwmma::DataLayout::RowMajor const& data_layout)
+    {
+        return stream << "RowMajor";
+    }
+
+    inline ostream& operator<<(ostream& stream, rocwmma::DataLayout::ColMajor const& data_layout)
+    {
+        return stream << "ColMajor";
+    }
+
+} // namespace std
+
+#endif // !defined(__HIPCC_RTC__)
+
+#if !defined(__HIPCC_RTC__)
+namespace std
+{
+    inline ostream& operator<<(ostream& stream, rocwmma::RegisterLayout::Format const& fmt)
+    {
+        return stream << (fmt == rocwmma::RegisterLayout::Format::AOS     ? "AOS"
+                          : (fmt == rocwmma::RegisterLayout::Format::SOA) ? "SOA"
+                                                                          : "NONE");
+    }
+
+    template <typename MatrixLayout, typename DataLayout>
+    inline ostream& operator<<(
+        ostream&                                                          stream,
+        rocwmma::RegisterLayout::Storage<MatrixLayout, DataLayout> const& register_layout)
+    {
+        return stream << "Storage<" << MatrixLayout{} << ", " << DataLayout{} << ">";
+    }
+
+    template <uint32_t MmaDim, bool Interleaved, rocwmma::RegisterLayout::Format Fmt>
+    inline ostream& operator<<(
+        ostream&                                                           stream,
+        rocwmma::RegisterLayout::MmaInput<MmaDim, Interleaved, Fmt> const& register_layout)
+    {
+        return stream << "MmaInput<" << MmaDim << ", " << Interleaved << ", " << Fmt << ">";
+    }
+
+    template <uint32_t MmaDim, bool Interleaved, rocwmma::RegisterLayout::Format Fmt>
+    inline ostream&
+        operator<<(ostream&                                                    stream,
+                   rocwmma::RegisterLayout::MmaAcc<MmaDim, Interleaved> const& register_layout)
+    {
+        return stream << "MmaAcc<" << MmaDim << ", " << Interleaved << ", " << Fmt << ">";
+    }
+
+} // namespace std
+
+#endif // !defined(__HIPCC_RTC__)
 
 #include "matrix_layout_impl.hpp"
 

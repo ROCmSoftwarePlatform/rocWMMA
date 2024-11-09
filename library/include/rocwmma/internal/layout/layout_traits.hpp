@@ -59,12 +59,12 @@ namespace rocwmma
     constexpr static inline bool is_layout_same_v = is_layout_same<LhsLayout, RhsLayout>::value;
 
     /*! \class is_layout_orthogonal
-    *  \brief  Compares layout types if they are orthogonal with each other.
+    *  \brief  Describes a relationship between two layout endpoints. They are considered orthogonal if they
+    * are not the same, and there exists a reversible transformation path from one to the other.
     * Applicable to layout contexts: DataLayout, MatrixLayout and RegisterLayout
-    * DataLayouts are orthogonal if their 1D layout in memory is opposite (e.g., row major vs col major).
-    * MatrixLayouts are orthogonal if their 2D matrix layout geometry is transposed.
-    * RegisterLayouts are orthogonal if they have opposite per-thread mappings:
-    * Contiguous vector elements in BlockDim (e.g., AOS) vs contiguous vector elements in kDim (e.g., SOA).
+    * DataLayouts are orthogonal if their 1D layouts in memory are transformable (e.g., row major vs col major).
+    * MatrixLayouts are orthogonal if their 2D matrix layout geometry is transformable (e.g., layout transpose).
+    * RegisterLayouts are orthogonal if their in-register layouts are transformable (e.g., AOS vs SOA)
     *  @tparam LhsLayout Comparative left hand side
     *  @tparam RhsLayout Comparative right hand side
     */
@@ -99,6 +99,11 @@ namespace rocwmma
     */
     template <typename Layout>
     using orthogonal_layout_t = typename orthogonal_layout<Layout>::type;
+
+    template <typename Layout>
+    struct layout_traits : public LayoutTraits_impl::layout_traits<Layout>
+    {
+    };
 
 } // namespace rocwmma
 

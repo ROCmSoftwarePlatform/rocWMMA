@@ -65,61 +65,87 @@ namespace rocwmma
             }
         };
 
-        // AOS -> SOA transform (non-interleaved) requirements:
-        // - Lhs is *Inline
-        // - layouts are not interleaved
-        // - layouts are orthogonal
+        // Non-interleaved orthogonal transforms
+        //
         template <typename RegisterLayoutLhs, typename RegisterLayoutRhs>
         struct register_layout_transform<
             RegisterLayoutLhs,
             RegisterLayoutRhs,
-            enable_if_t<(mat_traits_lhs::is_col_inline || mat_traits_lhs::is_row_inline)
-                        && !mat_traits_lhs::is_interleaved
+            enable_if_t<(!mat_traits_lhs::is_interleaved || !mat_traits_rhs::is_interleaved)
                         && is_layout_orthogonal_v<RegisterLayoutLhs, RegisterLayoutRhs>>>
         {
             template <typename VecT>
             ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
             {
-                return Transforms::AosToSoa<mat_traits_lhs::BlockDim,
-                                            mat_traits_lhs::MaxVectorWidth>::exec(forward<VecT>(v));
+                // Orthogonality promises:
+                // BlockDim, KDim, MaxVW match on lhs and rhs
+
+                // Inline to ortho layout (AOS -> SOA)
+                if constexpr(mat_traits_lhs::is_col_inline || mat_traits_lhs::is_row_inline)
+                {
+                    return Transforms::
+                        AosToSoa<mat_traits_lhs::BlockDim, mat_traits_lhs::MaxVectorWidth>::exec(
+                            forward<VecT>(v));
+                }
+                // Ortho to inline layout (SOA -> AOS)
+                else if constexpr(mat_traits_lhs::is_col_ortho || mat_traits_lhs::is_row_ortho)
+                {
+                    return Transforms::
+                        SoaToAos<mat_traits_lhs::BlockDim, mat_traits_lhs::MaxVectorWidth>::exec(
+                            forward<VecT>(v));
+                }
+                // MmaInput (ortho) to inline layout (SOA -> AOS)
+                else if constexpr(reg_traits_lhs::is_mma_input)
+                {
+                    return Transforms::
+                        SoaToAos<mat_traits_rhs::BlockDim, mat_traits_rhs::MaxVectorWidth>::exec(
+                            forward<VecT>(v));
+                }
+                else
+                {
+                    static_assert(0, "Shouldn't get here");
+                    return v;
+                }
             }
         };
 
-        // SOA -> AOS transform (non-interleaved) requirements:
-        // - Lhs is *Ortho
-        // - layouts are not interleaved
-        // - layouts are orthogonal
+        // Interleaved orthogonal transforms
         template <typename RegisterLayoutLhs, typename RegisterLayoutRhs>
         struct register_layout_transform<
             RegisterLayoutLhs,
             RegisterLayoutRhs,
-            enable_if_t<(mat_traits_lhs::is_col_ortho || mat_traits_lhs::is_row_ortho)
-                        && !mat_traits_lhs::is_interleaved
+            enable_if_t<(mat_traits_lhs::is_interleaved || mat_traits_rhs::is_interleaved)
                         && is_layout_orthogonal_v<RegisterLayoutLhs, RegisterLayoutRhs>>>
         {
             template <typename VecT>
             ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
             {
-                return Transforms::SoaToAos<mat_traits_lhs::BlockDim,
-                                            mat_traits_lhs::MaxVectorWidth>::exec(forward<VecT>(v));
-            }
-        };
+                // Orthogonality promises:
+                // BlockDim, KDim, MmaDim match on lhs and rhs
 
-        // Interleaved layout transform:
-        // - layouts are interleaved
-        // - layouts are orthogonal
-        template <typename RegisterLayoutLhs, typename RegisterLayoutRhs>
-        struct register_layout_transform<
-            RegisterLayoutLhs,
-            RegisterLayoutRhs,
-            enable_if_t<mat_traits_lhs::is_interleaved
-                        && is_layout_orthogonal_v<RegisterLayoutLhs, RegisterLayoutRhs>>>
-        {
-            template <typename VecT>
-            ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
-            {
-                // TODO: replace with DimPerThread for interleaved.
-                return interleave<mat_traits_lhs::BlockDim>(forward<VecT>(v));
+                // Inline to ortho layout (AOS -> SOA)
+                if constexpr(mat_traits_lhs::is_col_inline || mat_traits_lhs::is_row_inline)
+                {
+                    // Leading dim VW
+                    return interleave<1u, mat_traits_lhs::DimPerThread>(forward<VecT>(v));
+                }
+                // Ortho to inline layout (SOA -> AOS)
+                else if constexpr(mat_traits_lhs::is_col_ortho || mat_traits_lhs::is_row_ortho)
+                {
+                    // KDim VW
+                    return interleave<1u, mat_traits_lhs::KPerThread>(forward<VecT>(v));
+                }
+                // MmaInput (ortho) to inline
+                else if constexpr(reg_traits_lhs::is_mma_input)
+                {
+                    // Leading dim VW
+                    return interleave<1u, mat_traits_rhs::DimPerThread>(forward<VecT>(v));
+                }
+                else
+                {
+                    static_assert(0, "Shouldn't get here");
+                    return v;
+                }
             }
         };
 
