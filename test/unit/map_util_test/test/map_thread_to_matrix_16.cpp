@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,37 +28,15 @@
 
 #include "detail/map_thread_to_matrix.hpp"
 #include "kernel_generator.hpp"
+#include "map_util_test_params.hpp"
 #include "unit_test.hpp"
 
 namespace rocwmma
 {
 
-    struct TestParams : public UnitTestParams
-    {
-        using Base = UnitTestParams;
-
-        // Types: Base IOC + double
-        // Block Sizes: 16 x BlockN
-        // Layouts: NT
-        using Types        = typename Base::TestTypes16;
-        using BlockSizes   = typename Base::TestBlockSizes16;
-        using Layouts      = typename Base::TestLayoutsAll;
-        using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
-
-        // Assemble the kernel generator
-        // Kernel: MapThreadToMatrix
-        using GeneratorImpl   = MapThreadToMatrixGenerator;
-        using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
-
-        // Sanity check for kernel generator
-        static_assert(std::is_same<typename GeneratorImpl::ResultT, typename Base::KernelT>::value,
-                      "Kernels from this generator do not match testing interface");
-
-        static inline typename KernelGenerator::ResultT kernels()
-        {
-            return KernelGenerator::generate();
-        }
-    };
+    using TestParams = MapUtilTestParams<UnitTestParams::TestTypes16,
+                                         UnitTestParams::TestBlockSizes16,
+                                         MapThreadToMatrixGenerator>;
 
 } // namespace rocwmma
 

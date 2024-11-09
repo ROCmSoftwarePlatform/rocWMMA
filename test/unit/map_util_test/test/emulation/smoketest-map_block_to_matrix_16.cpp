@@ -26,40 +26,16 @@
 
 #include <type_traits>
 
+#include "../map_util_test_params.hpp"
 #include "detail/map_block_to_matrix.hpp"
 #include "kernel_generator.hpp"
 #include "unit_test.hpp"
 
 namespace rocwmma
 {
-
-    struct TestParams : public UnitTestParams
-    {
-        using Base = UnitTestParams;
-
-        // Types: Base IOC + double
-        // Block Sizes: 16 x BlockN
-        // Layouts: NT
-        using Types        = std::tuple<float32_t>;
-        using BlockSizes   = std::tuple<std::tuple<I<16>, I<16>>>;
-        using Layouts      = typename Base::TestLayoutsAll;
-        using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
-
-        // Assemble the kernel generator
-        // Kernel: MapBlockToMatrix
-        using GeneratorImpl   = MapBlockToMatrixGenerator;
-        using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
-
-        // Sanity check for kernel generator
-        static_assert(std::is_same<typename GeneratorImpl::ResultT, typename Base::KernelT>::value,
-                      "Kernels from this generator do not match testing interface");
-
-        static inline typename KernelGenerator::ResultT kernels()
-        {
-            return KernelGenerator::generate();
-        }
-    };
-
+    using TestParams = MapUtilTestParams<UnitTestParams::TestAllSizeTypes,
+                                         std::tuple<std::tuple<I<16>, I<16>>>,
+                                         MapBlockToMatrixGenerator>;
 } // namespace rocwmma
 
 // Test suite for unique parameterization

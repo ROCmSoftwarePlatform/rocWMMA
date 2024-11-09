@@ -24,37 +24,38 @@
  *
  *******************************************************************************/
 
+#ifndef MAP_UTIL_TEST_PARAMS_HPP
+#define MAP_UTIL_TEST_PARAMS_HPP
 #include <type_traits>
 
-#include "detail/map_block_to_matrix.hpp"
 #include "kernel_generator.hpp"
-#include "map_util_test_params.hpp"
 #include "unit_test.hpp"
+#include "unit_test_params.hpp"
 
 namespace rocwmma
 {
 
-    using TestParams = MapUtilTestParams<UnitTestParams::TestTypesIOC,
-                                         UnitTestParams::TestBlockSizes64,
-                                         MapBlockToMatrixGenerator>;
+    template <typename Types, typename BlockSizes, typename GeneratorImpl>
+    struct MapUtilTestParams : public UnitTestParams
+    {
+        using Base = UnitTestParams;
+
+        using Layouts      = typename Base::TestLayoutsAll;
+        using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
+
+        // Assemble the kernel generator
+        using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
+
+        // Sanity check for kernel generator
+        static_assert(std::is_same<typename GeneratorImpl::ResultT, typename Base::KernelT>::value,
+                      "Kernels from this generator do not match testing interface");
+
+        static inline typename KernelGenerator::ResultT kernels()
+        {
+            return KernelGenerator::generate();
+        }
+    };
 
 } // namespace rocwmma
 
-// Test suite for unique parameterization
-class MapBlockToMatrixTest64 : public rocwmma::UnitTest
-{
-};
-
-TEST_P(MapBlockToMatrixTest64, RunKernel)
-{
-    this->RunKernel();
-}
-
-INSTANTIATE_TEST_SUITE_P(
-    KernelTests,
-    MapBlockToMatrixTest64,
-    ::testing::Combine(::testing::ValuesIn(rocwmma::TestParams::kernels()),
-                       ::testing::ValuesIn(rocwmma::TestParams::threadBlocks()),
-                       ::testing::ValuesIn(rocwmma::TestParams::problemSizes()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param1s()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param2s())));
+#endif // MAP_UTIL_TEST_PARAMS_HPP
