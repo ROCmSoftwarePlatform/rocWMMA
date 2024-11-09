@@ -38,7 +38,7 @@ namespace rocwmma
     struct TestParams : public UnitTestParams
     {
         using Base  = UnitTestParams;
-        using Types = std::tuple<float16_t, float32_t>;
+        using Types = typename Base::TestAllSizeTypes;
 
         // Vector Sizes.
         // Test up to VecSize = 64. Anything bigger is impractical.

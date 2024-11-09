@@ -39,7 +39,7 @@ namespace rocwmma
         using Base = UnitTestParams;
 
         // Types: Base IOC + double
-        using Types = std::tuple<float16_t, float32_t>;
+        using Types = Base::TestAllSizeTypes;
 
         // Vector Sizes.
         // Test up to VecSize = 64. Anything bigger is impractical.

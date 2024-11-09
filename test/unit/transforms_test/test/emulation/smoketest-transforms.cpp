@@ -40,7 +40,7 @@ namespace rocwmma
     {
         using Base = UnitTestParams;
 
-        using Types = std::tuple<float16_t, float32_t>;
+        using Types = Base::TestAllSizeTypes;
 
         // size of BlockDim dimension
         using BlockDim = std::tuple<I<32>, I<64>>;

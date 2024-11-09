@@ -40,7 +40,7 @@ namespace rocwmma
     {
         using Base = UnitTestParams;
 
-        using Types = std::tuple<float16_t, float32_t>;
+        using Types = typename Base::TestAllSizeTypes;
 
         // Vector Width.
         using VWs = std::tuple<I<2>, I<4>, I<8>, I<16>>;
