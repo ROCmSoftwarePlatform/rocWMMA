@@ -147,9 +147,11 @@ namespace rocwmma
         // Format for data locality
         enum struct Format : uint32_t
         {
-            SOA  = 0u, // Structure of Arrays (SOA), e.g., [{XX}, {YY}, {ZZ}]
-            AOS  = 1u, // Array of Structures (AOS), e.g., [{X,Y,Z}, {X,Y,Z}]
-            None = 2u,
+            SOA             = 0u, // Structure of Arrays (SOA), e.g., [{XX}, {YY}, {ZZ}]
+            AOS             = 1u, // Array of Structures (AOS), e.g., [{X,Y,Z}, {X,Y,Z}]
+            ACC_INT_A_MAJOR = 2u, // Interleaved Mma 'A' major order
+            ACC_INT_B_MAJOR = 3u, // Interleaved Mma 'B' major order
+            Invalid, // Invalid register format
         };
 
         // A mnemonic used to describe the register layout is suitable for input/output
@@ -167,7 +169,7 @@ namespace rocwmma
         // A mnemonic used to describe the register layout is suitable for mma input for accumulator input/output
         template <uint32_t MmaSize,
                   bool     Interleaved,
-                  Format   Fmt = Interleaved ? Format::None : Format::SOA>
+                  Format   Fmt = Interleaved ? Format::ACC_INT_A_MAJOR : Format::SOA>
         struct MmaAcc
         {
         };
@@ -211,7 +213,11 @@ namespace std
     {
         return stream << (fmt == rocwmma::RegisterLayout::Format::AOS     ? "AOS"
                           : (fmt == rocwmma::RegisterLayout::Format::SOA) ? "SOA"
-                                                                          : "NONE");
+                          : (fmt == rocwmma::RegisterLayout::Format::ACC_INT_A_MAJOR)
+                              ? "ACC_INT_A_MAJOR"
+                          : (fmt == rocwmma::RegisterLayout::Format::ACC_INT_B_MAJOR)
+                              ? "ACC_INT_B_MAJOR"
+                              : "INVALID");
     }
 
     template <typename MatrixLayout, typename DataLayout>

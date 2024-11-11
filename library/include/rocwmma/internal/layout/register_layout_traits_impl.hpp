@@ -121,7 +121,6 @@ namespace rocwmma
         template <typename RegisterLayout>
         struct register_layout_traits;
 
-        // Test the consistency of matrix layouts under different data layouts.
         // RegisterLayouts are consistent for both data layouts if we restrict
         // VectorWidth to 1 in the opposite data layout grain.
         // This applies to all matrix layouts.
@@ -129,7 +128,6 @@ namespace rocwmma
         ROCWMMA_HOST_DEVICE constexpr static bool testStorageLayoutIdentity()
         {
             using traits = register_layout_traits<RegisterLayout>;
-
             if constexpr(traits::is_col_inline)
             {
                 return (traits::is_col_major || traits::VectorWidth == 1);
@@ -150,36 +148,66 @@ namespace rocwmma
             return false;
         }
 
+        // AOS is a strict register layout where thread VW is inline
+        // with contiguous BlockDim elements.
+        // To be valid, the layout must be consistent across row_major
+        // and col_major data layouts.
         template <typename RegisterLayout>
         ROCWMMA_HOST_DEVICE constexpr static bool testStorageLayoutAos()
         {
             using traits = register_layout_traits<RegisterLayout>;
-
-            // AOS is a strict register layout where contiguous elements
-            // capture contiguous BlockDim elements and must be consistent.
-            return (traits::is_col_inline || traits::is_row_inline)
-                   && testStorageLayoutIdentity<RegisterLayout>();
+            return (traits::is_col_inline || traits::is_row_inline);
         }
 
+        // SOA is a strict register layout where thread VW is inline
+        // with contiguous BlockK elements, orthogonal to BlockDim.
+        // To be valid, the layout must be consistent across row_major
+        // and col_major data layouts.
         template <typename RegisterLayout>
         ROCWMMA_HOST_DEVICE constexpr static bool testStorageLayoutSoa()
         {
             using traits = register_layout_traits<RegisterLayout>;
-
-            // SOA is a strict register layout where contiguous elements
-            // capture contiguous BlockK elements and must be consistent.
-            return (traits::is_col_ortho || traits::is_row_ortho)
-                   && testStorageLayoutIdentity<RegisterLayout>();
+            return (traits::is_col_ortho || traits::is_row_ortho);
         }
 
-        // Based on the current config, mma dimensions supported
+        // Based on the current architecture, which mma dimensions supported
         template <typename RegisterLayout>
         ROCWMMA_HOST_DEVICE constexpr static inline bool testSupportedMmaDim()
         {
             using traits = register_layout_traits<RegisterLayout>;
             return ((bool)ROCWMMA_BLOCK_DIM_16_SUPPORTED && traits::MmaDim == 16u)
-                   || ((bool)ROCWMMA_BLOCK_DIM_32_SUPPORTED
-                       && (traits::MmaDim == 16u || traits::MmaDim == 32u));
+                   || ((bool)ROCWMMA_BLOCK_DIM_32_SUPPORTED && traits::MmaDim == 32u);
+        }
+
+        // Based on the current architecture, which register layout formats currently supported
+        template <typename RegisterLayout>
+        ROCWMMA_HOST_DEVICE constexpr static inline bool testSupportedFormat()
+        {
+            using traits = register_layout_traits<RegisterLayout>;
+            using rocwmma::RegisterLayout::Format;
+            if constexpr(traits::is_mma_input)
+            {
+                return (traits::Format == Format::SOA) || (traits::Format == Format::AOS);
+            }
+            else if constexpr(traits::is_mma_acc)
+            {
+                if constexpr(traits::is_interleaved)
+                {
+                    // Intermediate accumulation format for interleaved layout
+                    return (traits::Format == Format::ACC_INT_A_MAJOR)
+                           || (traits::Format == Format::ACC_INT_B_MAJOR);
+                }
+                else
+                {
+                    return (traits::Format == Format::SOA) || (traits::Format == Format::AOS);
+                }
+            }
+            else
+            {
+                return traits::is_storage
+                       && ((traits::Format == Format::SOA) || (traits::Format == Format::AOS)
+                           || (traits::Format == Format::Invalid));
+            }
         }
 
         template <typename RegisterLayout>
@@ -195,17 +223,17 @@ namespace rocwmma
             using MatrixLayout = MatrixLayoutInternal;
             using DataLayout   = DataLayoutInternal;
 
-            constexpr static bool is_aos_format
-                = testStorageLayoutAos<Storage<MatrixLayout, DataLayout>>();
-            constexpr static bool is_soa_format
-                = testStorageLayoutSoa<Storage<MatrixLayout, DataLayout>>();
-            constexpr static bool is_valid
-                = testStorageLayoutIdentity<Storage<MatrixLayout, DataLayout>>();
-
+            // Determine the register format of the current storage layout
             constexpr static RegisterLayout::Format Format
-                = is_aos_format ? RegisterLayout::Format::AOS
-                                : (is_soa_format ? RegisterLayout::Format::SOA
-                                                 : RegisterLayout::Format::None);
+                = testStorageLayoutAos<Storage<MatrixLayout, DataLayout>>()
+                      ? RegisterLayout::Format::AOS
+                      : (testStorageLayoutSoa<Storage<MatrixLayout, DataLayout>>()
+                             ? RegisterLayout::Format::SOA
+                             : RegisterLayout::Format::Invalid);
+
+            constexpr static bool is_valid
+                = testStorageLayoutIdentity<Storage<MatrixLayout, DataLayout>>()
+                  && testSupportedFormat<Storage<MatrixLayout, DataLayout>>();
         };
 
         template <uint32_t LayoutMmaDim, bool LayoutIsInterleaved, RegisterLayout::Format Fmt>
@@ -219,12 +247,12 @@ namespace rocwmma
             constexpr static bool     is_interleaved = LayoutIsInterleaved;
             constexpr static uint32_t MmaDim         = LayoutMmaDim;
 
-            constexpr static bool is_aos_format = (Fmt == RegisterLayout::Format::AOS);
-            constexpr static bool is_soa_format = (Fmt == RegisterLayout::Format::SOA);
-            constexpr static bool is_valid
-                = testSupportedMmaDim<MmaInput<LayoutMmaDim, LayoutIsInterleaved, Fmt>>();
-
+            // Template param driven format
             constexpr static RegisterLayout::Format Format = Fmt;
+
+            constexpr static bool is_valid
+                = testSupportedMmaDim<MmaInput<LayoutMmaDim, LayoutIsInterleaved, Fmt>>()
+                  && testSupportedFormat<MmaInput<LayoutMmaDim, LayoutIsInterleaved, Fmt>>();
         };
 
         template <uint32_t LayoutMmaDim, bool LayoutIsInterleaved, RegisterLayout::Format Fmt>
@@ -238,285 +266,108 @@ namespace rocwmma
             constexpr static bool     is_interleaved = LayoutIsInterleaved;
             constexpr static uint32_t MmaDim         = LayoutMmaDim;
 
-            constexpr static bool is_aos_format = (Fmt == RegisterLayout::Format::AOS);
-            constexpr static bool is_soa_format = (Fmt == RegisterLayout::Format::SOA);
-            constexpr static bool is_valid
-                = testSupportedMmaDim<MmaAcc<LayoutMmaDim, LayoutIsInterleaved, Fmt>>();
-
+            // Template param driven format
             constexpr static RegisterLayout::Format Format = Fmt;
+
+            constexpr static bool is_valid
+                = testSupportedMmaDim<MmaAcc<LayoutMmaDim, LayoutIsInterleaved, Fmt>>()
+                  && testSupportedFormat<MmaAcc<LayoutMmaDim, LayoutIsInterleaved, Fmt>>();
         };
 
         // Combine base instance traits with specific layout classifiers
         template <typename RegisterLayout>
-        struct register_layout_traits : public register_layout_derived_traits<RegisterLayout>,
-                                        public register_layout_classifier_traits<RegisterLayout>
+        struct register_layout_traits : public register_layout_classifier_traits<RegisterLayout>,
+                                        public register_layout_derived_traits<RegisterLayout>
+
         {
         };
 
-        // NOTE: RegisterLayout assumptions
+        // NOTE: RegisterLayout comparison assumptions
         // When determining RegisterLayout traits, there are several strong assumptions.
+        // Register layouts are assigned Formats, based on their given matrix and data layouts.
         // 1. Regarding same-ness:
-        //    - Storage<MatrixLayout> match if MatrixLayouts match, given fixed params.
-        //    - Storage<MatrixLayout> match if MatrixLayouts are either both *Ortho or both *Inline
-        //      orientations. Register thread mapping is the same while swapping the underlying
-        //      meaning of rows for cols (e.g., implicit transpose).
-        //    - Storage<*Ortho> layouts are suitable MmaInputs while Storage<*Inline> layouts are not.
-        //      Given appropriate MmaDim, it is assumed MmaInput layouts are mapped to mma hardware
-        //      requirements.
-        //  _________________________________________________________________________________
-        // | MatrixLayoutLhs       |     MatrixLayoutRhs    |    Compatibility test:         |
-        // |                       |         (Same)         |  Required Fixed Params         |
-        // | ------------------------------------------------------------------------------- |
-        // | Storage<ColOrthoVW>   | Storage<ColOrthoVW>    | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<ColInlineVW>  | Storage<ColInlineVW>   | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<RowOrthoVW>   | Storage<RowOrthoVW>    | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<RowInlineVW>  | Storage<RowInlineVW>   | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<ColOrthoVW>   | Storage<RowOrthoVW>    | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<ColInlineVW>  | Storage<RowInlineVW>   | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<RowOrthoVW>   | Storage<ColOrthoVW>    | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<RowInlineVW>  | Storage<ColInlineVW>   | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<ColOrthoVW>   | MmaInput               | BlockDim == MmaDim             |
-        // | MmaInput              | Storage<ColOrthoVW>    | BlockDim == MmaDim             |
-        // | Storage<RowOrthoVW>   | MmaInput               | BlockDim == MmaDim             |
-        // | MmaInput              | Storage<RowOrthoVW>    | BlockDim == MmaDim             |
-        // | Storage<ColOrthoVW>   | MmaAcc                 | BlockDim == MmaDim, MaxVW = 4* |
-        // | MmaAcc                | Storage<ColOrthoVW>    | BlockDim == MmaDim, MaxVW = 4* |
-        // | Storage<RowOrthoVW>   | MmaAcc                 | BlockDim == MmaDim, MaxVW = 4* |
-        // | MmaAcc                | Storage<RowOrthoVW>    | BlockDim == MmaDim, MaxVW = 4* | * = arch dependent
-        // | ------------------------------------------------------------------------------- |
-        // | Storage<ColInlineInt> | Storage<ColInlineInt>  | BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<RowOrthoInt>  | Storage<RowOrthoInt>   | BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<ColOrthoInt>  | Storage<ColOrthoInt>   | BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<RowInlineInt> | Storage<RowInlineInt>  | BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<ColOrthoInt>  | Storage<RowOrthoInt>   | BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<ColInlineInt> | Storage<RowInlineInt>  | BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<RowOrthoInt>  | Storage<ColOrthoInt>   | BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<RowInlineInt> | Storage<ColInlineInt>  | BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<ColOrthoInt>  | MmaInput               | MmaDim                         |
-        // | MmaInput              | Storage<ColOrthoInt>   | MmaDim                         |
-        // | Storage<RowOrthoInt>  | MmaInput               | MmaDim                         |
-        // | MmaInput              | Storage<RowOrthoInt>   | MmaDim                         |
-        // | ------------------------------------------------------------------------------- |
+        //    - Register formats match, if tested for matching register layout traits:
+        //      MmaDim, is_interleaved and is_valid.
+        //    - Register layouts match if register formats match, and there is congruency between
+        //      Storage, MmaInput and MmaAcc types.
+        //    - Congruency between Storage, MmaInput and MmaAcc types is partly defined by how
+        //      MmaInput and MmaAcc register format template parameters are set for the Mma workflow,
+        //      and partly by architecture (e.g., MmaAcc layout VW per block is fixed).
         //
         // 2. Regarding orthogonality:
-        //    - Storage<MatrixLayout>s are considered orthogonal if one MatrixLayout is an
-        //      *Ortho layout and the other is an *Inline layout, or vice versa.
-        //    - Since MmaInput layouts are same as Storage<Ortho*> layouts with appropriate
-        //      MmaDim, MmaInput is also orthogonal to Storage<Inline*> layouts.
-        //  _______________________________________________________________________________
-        // | MatrixLayoutLhs       | MatrixLayoutRhs      | Required Fixed Params          |
-        // |                       |   (Orthogonal)       |                                |
-        // | ----------------------------------------------------------------------------- |
-        // | Storage<ColOrthoVW>   | Storage<ColInlineVW> | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<ColInlineVW>  | Storage<ColOrthoVW>  | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<RowOrthoVW>   | Storage<RowInlineVW> | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<RowInlineVW>  | Storage<RowOrthoVW>  | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<ColOrthoVW>   | Storage<RowInlineVW> | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<RowInlineVW>  | Storage<ColOrthoVW>  | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<RowOrthoVW>   | Storage<ColInlineVW> | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<ColInlineVW>  | Storage<RowOrthoVW>  | BlockDim, KDim, MaxVectorWidth |
-        // | Storage<ColInlineVW>  | MmaInput             | BlockDim == MmaDim             |
-        // | MmaInput              | Storage<ColInlineVW> | BlockDim == MmaDim             |
-        // | Storage<RowInlineVW>  | MmaInput             | BlockDim == MmaDim             |
-        // | MmaInput              | Storage<RowInlineVW> | BlockDim == MmaDim             |
-        // | Storage<ColInlineVW>  | MmaAcc               | BlockDim == MmaDim             |
-        // | MmaAcc                | Storage<ColInlineVW> | BlockDim == MmaDim             |
-        // | Storage<RowInlineVW>  | MmaInput             | BlockDim == MmaDim             |
-        // | MmaInput              | Storage<RowInlineVW> | BlockDim == MmaDim             |
-        // | ----------------------------------------------------------------------------- |
-        // | Storage<ColOrthoInt>  | Storage<ColInlineInt>| BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<ColInlineInt> | Storage<ColOrthoInt> | BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<RowOrthoInt>  | Storage<RowInlineInt>| BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<RowInlineInt> | Storage<RowOrthoInt> | BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<ColOrthoInt>  | Storage<RowInlineInt>| BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<RowInlineInt> | Storage<ColOrthoInt> | BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<RowOrthoInt>  | Storage<ColInlineInt>| BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<ColInlineInt> | Storage<RowOrthoInt> | BlockDim, KDim, MmaDim, SplitK |
-        // | Storage<ColInlineInt> | MmaInput             | MmaDim                         |
-        // | MmaInput              | Storage<ColInlineInt>| MmaDim                         |
-        // | Storage<RowInlineInt> | MmaInput             | MmaDim                         |
-        // | MmaInput              | Storage<RowInlineInt>| MmaDim                         |
-        // | Storage<RowInlineInt> | MmaInput             | MmaDim                         |
-        // | MmaInput              | Storage<RowInlineInt>| MmaDim                         |
-        // | ----------------------------------------------------------------------------- |
+        //    - Format orthogonality is defined as having an in-register transition from one distinct
+        //      format to another.
+        //      E.g,. AOS <-> SOA, SOA <-> ACC_INT_A_MAJOR, SOA <-> ACC_INT_B_MAJOR,
+        //      AOS <-> ACC_INT_A_MAJOR or AOS <-> ACC_INT_B_MAJOR.
+        //      These require matching MmaDim, is_interleaved and is_valid traits.
 
 // Keeps things a bit more tidy. Quick access to register layout traits.
 #define traits_lhs register_layout_traits<RegisterLayoutLhs>
 #define traits_rhs register_layout_traits<RegisterLayoutRhs>
 #define traits register_layout_traits<RegisterLayout>
 
-        template <typename RegisterLayout>
-        ROCWMMA_HOST_DEVICE constexpr static inline bool testSupportedMmaAccMaxVW()
-        {
-            // Test the MaxVectorWidth of storage layouts for MMA requirements.
-            if constexpr(traits::is_storage)
-            {
-                // Interleaved storage layouts not compatible with MmaAcc
-                if constexpr(traits::is_interleaved)
-                {
-                    return false;
-                }
-                else if constexpr((bool)ROCWMMA_ARCH_GFX12)
-                {
-                    return traits::MaxVectorWidth == 8u;
-                }
-                else if constexpr((bool)ROCWMMA_ARCH_GFX11
-                                  || is_same<typename traits::DataT, float64_t>::value)
-                {
-                    return traits::MaxVectorWidth == 1u;
-                }
-                else // General case
-                {
-                    return traits::MaxVectorWidth == 4u;
-                }
-            }
-
-            // Mma input not compatible with acc
-            return traits::is_mma_acc;
-        }
-
-        // Test the consistency of matrix layouts under different data layouts.
-        template <typename RegisterLayout>
-        ROCWMMA_HOST_DEVICE constexpr static bool testRegisterLayoutIdentity()
-        {
-            if constexpr(traits::is_storage)
-            {
-                // RegisterLayouts are consistent for both data layouts if we restrict
-                // VectorWidth to 1 in the opposite data layout grain.
-                if constexpr(traits::is_col_inline)
-                {
-                    return (traits::is_col_major || traits::VectorWidth == 1);
-                }
-                else if constexpr(traits::is_row_inline)
-                {
-                    return (traits::is_row_major || traits::VectorWidth == 1);
-                }
-                else if constexpr(traits::is_col_ortho)
-                {
-                    return (traits::is_row_major || traits::VectorWidth == 1u);
-                }
-                else if constexpr(traits::is_row_ortho)
-                {
-                    return (traits::is_col_major || traits::VectorWidth == 1u);
-                }
-            }
-
-            // Mma input and acc are symbolic register layouts.
-            // Both are consistent in either row/col major data layouts.
-            return traits::is_mma_input || traits::is_mma_acc;
-        }
-
-        template <typename RegisterLayout>
-        ROCWMMA_HOST_DEVICE constexpr static bool testRegisterLayoutAos()
-        {
-            // AOS is a strict register layout where contiguous elements
-            // capture contiguous BlockDim elements and must be consistent.
-            if constexpr(traits::is_storage)
-            {
-                return (traits::is_col_inline || traits::is_row_inline)
-                       && testRegisterLayoutIdentity<RegisterLayout>();
-            }
-            else
-            {
-                // None of the MMA inputs are AOS
-                return !traits::is_mma_input && !traits::is_mma_acc;
-            }
-        }
-
-        template <typename RegisterLayout>
-        ROCWMMA_HOST_DEVICE constexpr static bool testRegisterLayoutSoa()
-        {
-            // SOA is a strict register layout where contiguous elements
-            // capture contiguous BlockK elements and must be consistent.
-            if constexpr(traits::is_storage)
-            {
-                return (traits::is_col_ortho || traits::is_row_ortho)
-                       && testRegisterLayoutIdentity<RegisterLayout>();
-            }
-            else
-            {
-                // Interleaved acc is not SOA
-                return traits::is_mma_input || (traits::is_mma_acc && !traits::is_interleaved);
-            }
-        }
-
-        template <typename RegisterLayout>
-        ROCWMMA_HOST_DEVICE constexpr static bool testRegisterLayoutMmaInput()
-        {
-            // MMA inputs must be compatible with MMA size support
-            if constexpr(traits::is_storage)
-            {
-                return traits::is_soa_format && testSupportedMmaDim<RegisterLayout>();
-            }
-            else
-            {
-                return traits::is_mma_input && testSupportedMmaDim<RegisterLayout>();
-            }
-        }
-
-        template <typename RegisterLayout>
-        ROCWMMA_HOST_DEVICE constexpr static bool testRegisterLayoutMmaAcc()
-        {
-            // MMA acc must be compatible with MMA dim and MaxVW
-            if constexpr(traits::is_storage && !traits::is_interleaved)
-            {
-                return testRegisterLayoutSoa<RegisterLayout>()
-                       && testSupportedMmaDim<RegisterLayout>()
-                       && testSupportedMmaAccMaxVW<RegisterLayout>();
-            }
-            else
-            {
-                // Interleaved storage layouts and MmaInput are not compatible
-                // with MMA acc format
-                return traits::is_mma_acc && testSupportedMmaDim<RegisterLayout>();
-            }
-        }
-
-        // As a predicate to is_layout_same or is_layout_orthogonal, their register parameters must
-        // be compatible (see above table).
+        // As a predicate to is_layout_same or is_layout_orthogonal, their register traits must
+        // be compatible as per above.
         template <typename RegisterLayoutLhs, typename RegisterLayoutRhs>
         ROCWMMA_HOST_DEVICE constexpr static bool testCompatibleRegisterParams()
         {
             // Basic test:
             // Matching MmaDim, interleaving and validity
+            // Note: matching validity does not imply valid!
+            // Cannot mix valid with invalid layouts
             constexpr bool BaseTest = (traits_lhs::MmaDim == traits_rhs::MmaDim)
                                       && (traits_lhs::is_interleaved == traits_rhs::is_interleaved)
                                       && (traits_lhs::is_valid == traits_rhs::is_valid);
 
-            // Storage <-> Storage must check Matrix compatibility
-            if constexpr(traits_lhs::is_storage && traits_rhs::is_storage)
-            {
-                return testCompatibleMatrixParams<typename traits_lhs::MatrixLayout,
-                                                  typename traits_rhs::MatrixLayout>()
-                       && BaseTest;
-            }
             // MmaInput <-> MmaInput
             // MmaAcc <-> MmaAcc
             // Storage <-> MmaInput
-            else if constexpr((traits_lhs::is_mma_input && traits_rhs::is_mma_input)
-                              || (traits_lhs::is_mma_acc && traits_rhs::is_mma_acc)
-                              || (traits_lhs::is_storage && traits_rhs::is_mma_input)
-                              || (traits_lhs::is_mma_input && traits_rhs::is_storage))
+            // MmaDim must match and be supported
+            if constexpr((traits_lhs::is_mma_input && traits_rhs::is_mma_input)
+                         || (traits_lhs::is_mma_acc && traits_rhs::is_mma_acc)
+                         || (traits_lhs::is_storage && traits_rhs::is_mma_input)
+                         || (traits_lhs::is_mma_input && traits_rhs::is_storage))
             {
-                return BaseTest;
+                return BaseTest && testSupportedMmaDim<RegisterLayoutLhs>();
             }
-
-            // Storage <-> MmaAcc must also check MaxVW
+            // Storage <-> MmaAcc
+            // MmaAcc must check MaxVW
+            // MmaDim must match and be supported
             else if constexpr((traits_lhs::is_storage && traits_rhs::is_mma_acc)
                               || (traits_lhs::is_mma_acc && traits_rhs::is_storage))
             {
                 using test_traits = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
 
-                constexpr uint32_t ExpectedAccMaxVW
-                    = ((bool)ROCWMMA_ARCH_GFX12) ? 8u
-                      : ((bool)ROCWMMA_ARCH_GFX11
-                         || is_same<typename test_traits::DataT, float64_t>::value)
-                          ? 1u
-                          : 4u;
+                if constexpr(test_traits::is_interleaved)
+                {
+                    return ((test_traits::Format == RegisterLayout::Format::ACC_INT_A_MAJOR)
+                            || (test_traits::Format == RegisterLayout::Format::ACC_INT_B_MAJOR))
+                           && BaseTest && testSupportedMmaDim<RegisterLayoutLhs>();
+                }
+                else
+                {
+                    // Acc layout architecture quirks
+                    constexpr uint32_t ExpectedAccMaxVW
+                        = ((bool)ROCWMMA_ARCH_GFX12) ? 8u
+                          : ((bool)ROCWMMA_ARCH_GFX11
+                             || is_same<typename test_traits::DataT, float64_t>::value)
+                              ? 1u
+                              : 4u;
 
-                constexpr bool TestMmaAccMaxVW = (ExpectedAccMaxVW == test_traits::MaxVectorWidth);
+                    constexpr bool TestMmaAccMaxVW
+                        = (ExpectedAccMaxVW == test_traits::MaxVectorWidth);
 
-                return TestMmaAccMaxVW && BaseTest;
+                    return TestMmaAccMaxVW && BaseTest && testSupportedMmaDim<RegisterLayoutLhs>();
+                }
+            }
+            // Storage <-> Storage
+            // Must check Matrix compatibility
+            // Not necessary to check MmaDim because doesn't involve MmaInput of MmaAcc
+            else if constexpr(traits_lhs::is_storage && traits_rhs::is_storage)
+            {
+                return testCompatibleMatrixParams<typename traits_lhs::MatrixLayout,
+                                                  typename traits_rhs::MatrixLayout>()
+                       && BaseTest;
             }
             // MmaInput <-> MmaAcc not compatible
             else
@@ -532,56 +383,24 @@ namespace rocwmma
             constexpr bool TestCompatibleParams
                 = testCompatibleRegisterParams<RegisterLayoutLhs, RegisterLayoutRhs>();
 
-            // Test both register layouts in same format
-            constexpr bool TestFormatMatch = (traits_lhs::Format == traits_rhs::Format);
-
-            if constexpr(traits_lhs::is_storage && traits_rhs::is_storage)
+            if constexpr((traits_lhs::is_storage && traits_rhs::is_storage)
+                         && (traits_lhs::is_interleaved && traits_rhs::is_interleaved))
             {
-                // Exact match for same matrix and data layouts
-                constexpr bool TestExactMatch
-                    = testMatrixLayoutSame<typename traits_lhs::MatrixLayout,
-                                           typename traits_rhs::MatrixLayout>()
-                      && testDataLayoutSame<typename traits_lhs::DataLayout,
-                                            typename traits_rhs::DataLayout>();
+                // Special case: interleaved layouts
+                // Check matching thread dims and if either one is == 1u.
+                // Format match not required because the in this case,
+                // register contents for SOA and AOS are identical
+                constexpr bool TestIdentityQuirks
+                    = (traits_lhs::DimPerThread == traits_rhs::DimPerThread)
+                      && (traits_lhs::KPerThread == traits_rhs::KPerThread)
+                      && ((traits_lhs::DimPerThread == 1u) || (traits_lhs::KPerThread == 1u));
 
-                // Orthogonal matrix layout and orthogonal data layout (implicit transpose)
-                constexpr bool TestImplicitTranspose
-                    = testMatrixLayoutOrthogonal<typename traits_lhs::MatrixLayout,
-                                                 typename traits_rhs::MatrixLayout>()
-                      && testDataLayoutOrthogonal<typename traits_lhs::DataLayout,
-                                                  typename traits_rhs::DataLayout>();
-
-                // Special case: interleaved VW dimension
-                // Check matching dims and if either one is == 1u
-                if constexpr(traits_lhs::is_interleaved && traits_rhs::is_interleaved)
-                {
-                    constexpr bool TestIdentityQuirks
-                        = (traits_lhs::DimPerThread == traits_rhs::DimPerThread)
-                          && (traits_lhs::KPerThread == traits_rhs::KPerThread)
-                          && ((traits_lhs::DimPerThread == 1u) || (traits_lhs::KPerThread == 1u));
-
-                    return (TestExactMatch || TestImplicitTranspose || TestFormatMatch
-                            || TestIdentityQuirks)
-                           && TestCompatibleParams;
-                }
-
-                return (TestExactMatch || TestImplicitTranspose || TestFormatMatch)
-                       && TestCompatibleParams;
+                return TestIdentityQuirks && TestCompatibleParams;
             }
-            else // Mix of storage, MmaInput, MmaAcc
+            else
             {
-                // Test both sides for MmaInput compatibility
-                constexpr bool TestMmaInputMatch
-                    = testRegisterLayoutMmaInput<RegisterLayoutLhs>()
-                      && testRegisterLayoutMmaInput<RegisterLayoutRhs>() && TestCompatibleParams;
-
-                // Test both sides for MmaAcc compatibility
-                constexpr bool TestMmaAccMatch = testRegisterLayoutMmaAcc<RegisterLayoutLhs>()
-                                                 && testRegisterLayoutMmaAcc<RegisterLayoutRhs>()
-                                                 && TestCompatibleParams;
-
-                return (TestMmaInputMatch || TestMmaAccMatch || TestFormatMatch)
-                       && TestCompatibleParams;
+                // Test both register layouts in same format
+                return TestCompatibleParams && (traits_lhs::Format == traits_rhs::Format);
             }
         }
 
@@ -591,38 +410,38 @@ namespace rocwmma
             // Required not same and compatible params
             constexpr bool TestNotSame
                 = !testRegisterLayoutSame<RegisterLayoutLhs, RegisterLayoutRhs>();
+
             constexpr bool TestCompatibleParams
                 = testCompatibleRegisterParams<RegisterLayoutLhs, RegisterLayoutRhs>();
 
-            // Path between valid AOS and SOA formats
+            // Identify valid paths in orthogonality.
+            // SOA <-> AOS
+            // ACC_INT_A_MAJOR <-> AOS, SOA
+            // ACC_INT_B_MAJOR <-> AOS, SOA
+            // Register layouts must be valid to be orthogonal
+            using RegisterLayout::Format;
             constexpr bool TestOpposingFormat
-                = (traits_lhs::is_soa_format && traits_rhs::is_aos_format)
-                  || (traits_lhs::is_aos_format && traits_rhs::is_soa_format);
+                = ((traits_lhs::Format == Format::SOA && traits_rhs::Format == Format::AOS)
+                   || (traits_lhs::Format == Format::AOS && traits_rhs::Format == Format::SOA)
+                   || (traits_lhs::Format == Format::ACC_INT_A_MAJOR
+                       && traits_rhs::Format == Format::SOA)
+                   || (traits_lhs::Format == Format::ACC_INT_A_MAJOR
+                       && traits_rhs::Format == Format::AOS)
+                   || (traits_lhs::Format == Format::SOA
+                       && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
+                   || (traits_lhs::Format == Format::AOS
+                       && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
+                   || (traits_lhs::Format == Format::ACC_INT_B_MAJOR
+                       && traits_rhs::Format == Format::SOA)
+                   || (traits_lhs::Format == Format::ACC_INT_B_MAJOR
+                       && traits_rhs::Format == Format::AOS)
+                   || (traits_lhs::Format == Format::SOA
+                       && traits_rhs::Format == Format::ACC_INT_B_MAJOR)
+                   || (traits_lhs::Format == Format::AOS
+                       && traits_rhs::Format == Format::ACC_INT_B_MAJOR))
+                  && (traits_lhs::is_valid && traits_rhs::is_valid);
 
-            // (testRegisterLayoutAos<RegisterLayoutLhs>() && testRegisterLayoutSoa<RegisterLayoutRhs>())
-            // || (testRegisterLayoutSoa<RegisterLayoutLhs>() && testRegisterLayoutAos<RegisterLayoutRhs>());
-
-            if constexpr((traits_lhs::is_interleaved && traits_rhs::is_interleaved)
-                         && (traits_lhs::is_mma_acc || traits_rhs::is_mma_acc))
-            {
-                using RegisterLayoutMmaAcc
-                    = conditional_t<traits_lhs::is_mma_acc, RegisterLayoutLhs, RegisterLayoutRhs>;
-                using RegisterLayoutOther
-                    = conditional_t<traits_lhs::is_mma_acc, RegisterLayoutRhs, RegisterLayoutLhs>;
-
-                // Special case: path between valid interleaved AOS/SOA and MmaAcc register layouts exists.
-                constexpr bool TestStorageToAcc
-                    = testRegisterLayoutMmaAcc<RegisterLayoutMmaAcc>()
-                      && (testRegisterLayoutAos<RegisterLayoutOther>()
-                          || testRegisterLayoutSoa<RegisterLayoutOther>());
-
-                return (TestOpposingFormat || TestStorageToAcc) && TestNotSame
-                       && TestCompatibleParams;
-            }
-            else
-            {
-                return TestOpposingFormat && TestNotSame && TestCompatibleParams;
-            }
+            return TestNotSame && TestCompatibleParams && TestOpposingFormat;
         }
 
         // Checks if both RegisterLayout storages are the same with compatible params
@@ -690,8 +509,8 @@ namespace std
         stream << "is_mma_acc: " << traits.is_mma_acc << std::endl;
         stream << "is_interleaved: " << traits.is_interleaved << std::endl;
         stream << "MmaDim: " << traits.MmaDim << std::endl;
-        stream << "is_aos_format: " << traits.is_aos_format << std::endl;
-        stream << "is_soa_format: " << traits.is_soa_format << std::endl;
+        // stream << "is_aos_format: " << traits.is_aos_format << std::endl;
+        // stream << "is_soa_format: " << traits.is_soa_format << std::endl;
         stream << "is_valid: " << traits.is_valid << std::endl;
         stream << "Format: " << traits.Format << std::endl;
 
