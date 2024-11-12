@@ -35,7 +35,8 @@ namespace rocwmma
         KernelGeneratorImpl,
         std::tuple<std::tuple<float16_t, float32_t, float32_t>>,
         std::tuple<std::tuple<I<16>, I<16>, I<16>>, std::tuple<I<32>, I<32>, I<8>>>,
-        TestLayoutsNN);
+        TestLayoutsTT,
+        TestBlocks4x2);
 
     ROCWMMA_GENERATE_GEMM_GTEST_SUITE_PARAMS(
         TestParamsBF16F32,
@@ -43,7 +44,8 @@ namespace rocwmma
         KernelGeneratorImpl,
         std::tuple<std::tuple<bfloat16_t, float32_t, float32_t>>,
         std::tuple<std::tuple<I<16>, I<16>, I<16>>, std::tuple<I<32>, I<32>, I<8>>>,
-        TestLayoutsNN);
+        TestLayoutsTT,
+        TestBlocks4x2);
 
     ROCWMMA_GENERATE_GEMM_GTEST_SUITE_PARAMS(
         TestParamsI8I32,
@@ -51,7 +53,8 @@ namespace rocwmma
         KernelGeneratorImpl,
         std::tuple<std::tuple<int8_t, int32_t, int32_t>>,
         std::tuple<std::tuple<I<32>, I<32>, I<16>>, std::tuple<I<16>, I<16>, I<32>>>,
-        TestLayoutsNN);
+        TestLayoutsTT,
+        TestBlocks4x2);
 
     ROCWMMA_GENERATE_GEMM_GTEST_SUITE_PARAMS(
         TestParamsF32F32,
@@ -59,7 +62,8 @@ namespace rocwmma
         KernelGeneratorImpl,
         std::tuple<std::tuple<float32_t, float32_t, float32_t>>,
         std::tuple<std::tuple<I<16>, I<16>, I<4>>, std::tuple<I<32>, I<32>, I<2>>>,
-        TestLayoutsNN);
+        TestLayoutsTT,
+        TestBlocks4x2);
 
     ROCWMMA_GENERATE_GEMM_GTEST_SUITE_PARAMS(
         TestParamsF64F64,
@@ -67,7 +71,8 @@ namespace rocwmma
         KernelGeneratorImpl,
         std::tuple<std::tuple<float64_t, float64_t, float64_t>>,
         std::tuple<std::tuple<I<16>, I<16>, I<4>>>,
-        TestLayoutsNN);
+        TestLayoutsTT,
+        TestBlocks4x2);
 
 #if ROCWMMA_FP8
     ROCWMMA_GENERATE_GEMM_GTEST_SUITE_PARAMS(TestParamsF8F32,
@@ -75,7 +80,8 @@ namespace rocwmma
                                              KernelGeneratorImpl,
                                              std::tuple<std::tuple<float8_t, float32_t, float32_t>>,
                                              std::tuple<std::tuple<I<16>, I<16>, I<32>>>,
-                                             TestLayoutsNN);
+                                             TestLayoutsTT,
+                                             TestBlocks4x2);
 
     ROCWMMA_GENERATE_GEMM_GTEST_SUITE_PARAMS(
         TestParamsBF8F32,
@@ -83,7 +89,8 @@ namespace rocwmma
         KernelGeneratorImpl,
         std::tuple<std::tuple<bfloat8_t, float32_t, float32_t>>,
         std::tuple<std::tuple<I<16>, I<16>, I<32>>>,
-        TestLayoutsNN);
+        TestLayoutsTT,
+        TestBlocks4x2);
 #endif
 
 #if ROCWMMA_FP8_FNUZ
@@ -93,7 +100,8 @@ namespace rocwmma
         KernelGeneratorImpl,
         std::tuple<std::tuple<float8_fnuz_t, float32_t, float32_t>>,
         std::tuple<std::tuple<I<16>, I<16>, I<32>>>,
-        TestLayoutsNN);
+        TestLayoutsTT,
+        TestBlocks4x2);
 
     ROCWMMA_GENERATE_GEMM_GTEST_SUITE_PARAMS(
         TestParamsBF8fnuzF32,
@@ -101,45 +109,46 @@ namespace rocwmma
         KernelGeneratorImpl,
         std::tuple<std::tuple<bfloat8_fnuz_t, float32_t, float32_t>>,
         std::tuple<std::tuple<I<16>, I<16>, I<32>>>,
-        TestLayoutsNN);
+        TestLayoutsTT,
+        TestBlocks4x2);
 #endif
 
 } // namespace rocwmma
 
 // Instantiate kernels as a test suite
 ROCWMMA_INSTANTIATE_GEMM_GTEST_SUITE(Gemm_PGR0_LB0_MP0_SB_NC,
-                                     _EmulationSmoke_16x16_NN_2x2_F16F32,
+                                     _EmulationSmoke_16x16_TT_4x2_F16F32,
                                      rocwmma::TestParamsF16F32);
 ROCWMMA_INSTANTIATE_GEMM_GTEST_SUITE(Gemm_PGR0_LB0_MP0_SB_NC,
-                                     _EmulationSmoke_16x16_NN_2x2_BF16F32,
+                                     _EmulationSmoke_16x16_TT_4x2_BF16F32,
                                      rocwmma::TestParamsBF16F32);
 ROCWMMA_INSTANTIATE_GEMM_GTEST_SUITE(Gemm_PGR0_LB0_MP0_SB_NC,
-                                     _EmulationSmoke_16x16_NN_2x2_I8I32,
+                                     _EmulationSmoke_16x16_TT_4x2_I8I32,
                                      rocwmma::TestParamsI8I32);
 ROCWMMA_INSTANTIATE_GEMM_GTEST_SUITE(Gemm_PGR0_LB0_MP0_SB_NC,
-                                     _EmulationSmoke_16x16_NN_2x2_F32F32,
+                                     _EmulationSmoke_16x16_TT_4x2_F32F32,
                                      rocwmma::TestParamsF32F32);
 ROCWMMA_INSTANTIATE_GEMM_GTEST_SUITE(Gemm_PGR0_LB0_MP0_SB_NC,
-                                     _EmulationSmoke_16x16_NN_2x2_F64F64,
+                                     _EmulationSmoke_16x16_TT_4x2_F64F64,
                                      rocwmma::TestParamsF64F64);
 #if ROCWMMA_FP8
 ROCWMMA_INSTANTIATE_GEMM_GTEST_SUITE(Gemm_PGR0_LB0_MP0_SB_NC,
-                                     _EmulationSmoke_16x16_NN_2x2_F8F32,
+                                     _EmulationSmoke_16x16_TT_4x2_F8F32,
                                      rocwmma::TestParamsF8F32);
-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(_EmulationSmoke_16x16_NN_2x2_F8F32);
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(_EmulationSmoke_16x16_TT_4x2_F8F32);
 ROCWMMA_INSTANTIATE_GEMM_GTEST_SUITE(Gemm_PGR0_LB0_MP0_SB_NC,
-                                     _EmulationSmoke_16x16_NN_2x2_BF8F32,
+                                     _EmulationSmoke_16x16_TT_4x2_BF8F32,
                                      rocwmma::TestParamsBF8F32);
-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(_EmulationSmoke_16x16_NN_2x2_BF8F32);
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(_EmulationSmoke_16x16_TT_4x2_BF8F32);
 #endif
 
 #if(ROCWMMA_FP8_FNUZ)
 ROCWMMA_INSTANTIATE_GEMM_GTEST_SUITE(Gemm_PGR0_LB0_MP0_SB_NC,
-                                     _EmulationSmoke_16x16_NN_2x2_F8fnuzF32,
+                                     _EmulationSmoke_16x16_TT_4x2_F8fnuzF32,
                                      rocwmma::TestParamsF8fnuzF32);
-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(_EmulationSmoke_16x16_NN_2x2_F8fnuzF32);
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(_EmulationSmoke_16x16_TT_4x2_F8fnuzF32);
 ROCWMMA_INSTANTIATE_GEMM_GTEST_SUITE(Gemm_PGR0_LB0_MP0_SB_NC,
-                                     _EmulationSmoke_16x16_NN_2x2_BF8fnuzF32,
+                                     _EmulationSmoke_16x16_TT_4x2_BF8fnuzF32,
                                      rocwmma::TestParamsBF8fnuzF32);
-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(_EmulationSmoke_16x16_NN_2x2_BF8fnuzF32);
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(_EmulationSmoke_16x16_TT_4x2_BF8fnuzF32);
 #endif

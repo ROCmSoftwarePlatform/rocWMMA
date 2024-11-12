@@ -30,7 +30,7 @@ namespace rocwmma
 {
 
     ROCWMMA_GENERATE_GEMM_GTEST_SUITE_PARAMS(TestParams,
-                                             CommonTestParams,
+                                             EmulationCommonTestParams,
                                              KernelGeneratorImpl,
                                              TestTypes16x16,
                                              TestBlockSizes16x16,

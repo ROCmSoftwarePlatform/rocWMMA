@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -48,6 +48,27 @@ namespace rocwmma
         using KernelGeneratorImpl = KernelGenerator_PGR0_LB0_MP0_MB_NC;
     };
 
+    ///
+    /// Generalized kernel params for smoke tests
+    ///
+    struct EmulationCommonTestParams : public GemmCommonTestParams
+    {
+        ///
+        /// Kernel generator impl objects
+        ///
+        using KernelGeneratorImpl = KernelGenerator_PGR0_LB0_MP0_MB_NC;
+
+        static inline std::vector<ThreadBlockT> threadBlocks()
+        {
+            auto warpSize = HipDevice::instance()->warpSize();
+
+            return {{warpSize * 2, 2}};
+        }
+        static inline std::vector<ProblemSizeT> problemSizes()
+        {
+            return {{256, 256, 256}};
+        }
+    };
 } // namespace rocwmma
 
 #endif // ROCWMMA_GEMM_COMMON_TEST_PARAMS

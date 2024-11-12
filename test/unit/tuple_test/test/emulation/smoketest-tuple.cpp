@@ -34,7 +34,7 @@
 namespace rocwmma
 {
 
-    struct TestParams : public UnitTestParams
+    struct TestParams : public EmulationUnitTestParams
     {
         using Base = UnitTestParams;
 

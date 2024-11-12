@@ -29,17 +29,16 @@
 namespace rocwmma
 {
 
-    ROCWMMA_GENERATE_GEMM_GTEST_SUITE_PARAMS(
-        TestParams,
-        CommonTestParams,
-        KernelGeneratorImpl,
-        std::tuple<std::tuple<float32_t, float32_t, float32_t>>,
-        std::tuple<std::tuple<I<16>, I<16>, I<16>>>,
-        TestLayoutsNN);
+    ROCWMMA_GENERATE_GEMM_GTEST_SUITE_PARAMS(TestParams,
+                                             EmulationCommonTestParams,
+                                             KernelGeneratorImpl,
+                                             TestTypes16x16,
+                                             TestBlockSizes16x16,
+                                             TestLayoutsTT);
 
 } // namespace rocwmma
 
 // Instantiate kernels as a test suite
 ROCWMMA_INSTANTIATE_GEMM_GTEST_SUITE(Gemm_PGR0_LB0_MP0_SB_NC,
-                                     _EmulationSmoke_32x32_NN,
+                                     EmulationRegression_16x16_TT,
                                      rocwmma::TestParams);
