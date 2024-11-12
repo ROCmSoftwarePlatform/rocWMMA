@@ -44,7 +44,9 @@ int main(int argc, char** argv)
     }
     else if(loggingOptions->emulationOption() == rocwmma::EmulationOption::EXTENDED)
     {
-        ::testing::GTEST_FLAG(filter) = "*Emulation*Extended*";
+        // Run regression tests when param is 'extended' since there is no specific
+        // tests in 'extended' group
+        ::testing::GTEST_FLAG(filter) = "*Emulation*Regression*";
     }
     else
     {
