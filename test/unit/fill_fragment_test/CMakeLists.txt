@@ -50,7 +50,15 @@ set(FillFragmentTestSources ${UnitCommonSources}
 
                        # Emulation Regression
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-fill_fragment_a_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-fill_fragment_a_32.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-fill_fragment_a_64.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-fill_fragment_a_128.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-fill_fragment_a_256.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-fill_fragment_b_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-fill_fragment_b_32.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-fill_fragment_b_64.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-fill_fragment_b_128.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-fill_fragment_b_256.cpp
                        )
 
 

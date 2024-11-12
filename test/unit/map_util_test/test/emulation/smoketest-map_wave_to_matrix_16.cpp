@@ -33,9 +33,9 @@
 
 namespace rocwmma
 {
-    using TestParams = MapUtilTestParams<UnitTestParams::TestAllSizeTypes,
-                                         std::tuple<std::tuple<I<16>, I<16>>>,
-                                         MapWaveToMatrixGenerator>;
+    using TestParams = EmulationMapUtilTestParams<UnitTestParams::TestAllSizeTypes,
+                                                  std::tuple<std::tuple<I<16>, I<16>>>,
+                                                  MapWaveToMatrixGenerator>;
 } // namespace rocwmma
 
 // Test suite for unique parameterization

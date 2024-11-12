@@ -34,9 +34,9 @@
 namespace rocwmma
 {
 
-    using TestParams = MapUtilTestParams<UnitTestParams::TestAllSizeTypes,
-                                         UnitTestParams::TestBlockSizes16,
-                                         MapBlockToMatrixGenerator>;
+    using TestParams = EmulationMapUtilTestParams<UnitTestParams::TestAllSizeTypes,
+                                                  UnitTestParams::TestBlockSizes16,
+                                                  MapBlockToMatrixGenerator>;
 
 } // namespace rocwmma
 

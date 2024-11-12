@@ -34,9 +34,9 @@
 namespace rocwmma
 {
 
-    using TestParams = ContaminationTestParams<UnitTestParams::TestAllSizeTypes,
-                                               UnitTestParams::TestBlockSizes16,
-                                               StoreContaminationGeneratorB>;
+    using TestParams = EmulationContaminationTestParams<UnitTestParams::TestAllSizeTypes,
+                                                        UnitTestParams::TestBlockSizes16,
+                                                        StoreContaminationGeneratorB>;
 
 } // namespace rocwmma
 

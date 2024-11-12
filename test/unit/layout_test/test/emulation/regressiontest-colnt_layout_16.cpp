@@ -33,9 +33,9 @@
 
 namespace rocwmma
 {
-    using TestParams = LayoutTestParams<UnitTestParams::TestTypes16,
-                                        UnitTestParams::TestBlockSizes16,
-                                        ColNTLayoutGenerator>;
+    using TestParams = EmulationLayoutTestParams<UnitTestParams::TestTypes16,
+                                                 UnitTestParams::TestBlockSizes16,
+                                                 ColNTLayoutGenerator>;
 
 } // namespace rocwmma
 

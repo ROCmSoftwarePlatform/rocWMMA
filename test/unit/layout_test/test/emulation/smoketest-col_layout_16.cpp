@@ -33,9 +33,9 @@
 
 namespace rocwmma
 {
-    using TestParams = LayoutTestParams<UnitTestParams::TestAllSizeTypes,
-                                        std::tuple<std::tuple<I<16>, I<16>>>,
-                                        ColLayoutGenerator>;
+    using TestParams = EmulationLayoutTestParams<UnitTestParams::TestAllSizeTypes,
+                                                 std::tuple<std::tuple<I<16>, I<16>>>,
+                                                 ColLayoutGenerator>;
 
 } // namespace rocwmma
 

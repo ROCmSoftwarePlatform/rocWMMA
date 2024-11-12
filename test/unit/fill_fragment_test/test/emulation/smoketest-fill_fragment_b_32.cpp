@@ -33,9 +33,9 @@
 
 namespace rocwmma
 {
-    using TestParams = FillFragmentTestParams<UnitTestParams::TestAllSizeTypes,
-                                              UnitTestParams::TestBlockSizes16,
-                                              FillFragmentGeneratorB>;
+    using TestParams = EmulationFillFragmentTestParams<UnitTestParams::TestAllSizeTypes,
+                                                       UnitTestParams::TestBlockSizes16,
+                                                       FillFragmentGeneratorB>;
 } // namespace rocwmma
 
 // Test suite for unique parameterization

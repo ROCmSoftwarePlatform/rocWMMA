@@ -80,6 +80,61 @@ namespace rocwmma
         }
     };
 
+    template <typename Types, typename BlockSizes, typename GeneratorImpl>
+    struct EmulationLoadStoreMatrixCoopSyncTestParams : public UnitTestParams
+    {
+        using Base = UnitTestParams;
+
+        // Types: Base IOC
+        // Block Sizes: 32 x BlockK
+        // Layouts: N, T
+        using Layouts      = typename Base::TestLayoutsAll;
+        using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
+
+        // Assemble the kernel generator
+        // Kernel: LoadStoreMatrixCoopSyncB
+        using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
+
+        // Sanity check for kernel generator
+        static_assert(std::is_same<typename GeneratorImpl::ResultT, typename Base::KernelT>::value,
+                      "Kernels from this generator do not match testing interface");
+
+        static inline typename KernelGenerator::ResultT kernels()
+        {
+            return KernelGenerator::generate();
+        }
+
+        static inline std::vector<Base::Param1T> param1s()
+        {
+            return {0.0, 1.0}; // Split by waves in same rol and col
+        }
+
+        static inline std::vector<Base::Param2T> param2s()
+        {
+            return
+            {
+                0.0, 1.0, 2.0,
+                    3.0 // 1 - 4 waves
+#if ROCWMMA_EXTENDED_TESTS
+                    ,
+                    4.0, 5.0, 6.0,
+                    7.0 // 8 waves
+#endif // ROCWMMA_EXTENDED_TESTS
+            };
+        }
+
+        static inline std::vector<ThreadBlockT> threadBlocks()
+        {
+            auto warpSize = HipDevice::instance()->warpSize();
+
+            return {{warpSize * 2, 2}};
+        }
+
+        static inline std::vector<ProblemSizeT> problemSizes()
+        {
+            return {{512, 512}};
+        }
+    };
 } // namespace rocwmma
 
 #endif // LOAD_STORE_MATRIX_COOP_SYNC_TEST_PARAMS_HPP
