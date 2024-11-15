@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -86,7 +86,7 @@ namespace rocwmma
             if constexpr(Depth == (VecTraits<decay_t<StrideCounts>>::size() - 1u))
             {
 #pragma unroll
-                for(int i = 0; i < strideCount; i++)
+                for(unsigned int i = 0; i < strideCount; i++)
                 {
                     Traits::Storer::exec(dataPtr, *in);
                     dataPtr += strideOffset;
@@ -97,7 +97,7 @@ namespace rocwmma
             else
             {
 #pragma unroll
-                for(int i = 0; i < strideCount; i++)
+                for(unsigned int i = 0; i < strideCount; i++)
                 {
                     unroll_right<Depth + 1>(dataPtr, in, ldm, strideCounts, strides2d);
                     dataPtr += strideOffset;
@@ -121,11 +121,16 @@ namespace rocwmma
                                        MatrixLayout::strideCounts()),
                           "IOCount inconsistent with total strides");
 
+            // Initialize the stride details as constexpr
+            // so that the compiler can optimize them as args.
+            constexpr auto strideCounts = MatrixLayout::strideCounts();
+            constexpr auto strides      = MatrixLayout::strides();
+
             unroll_right(dataPtr + DataLayout::fromMatrixCoord(baseOffset2d, ldm),
                          it,
                          ldm,
-                         MatrixLayout::strideCounts(),
-                         MatrixLayout::strides());
+                         strideCounts,
+                         strides);
         }
     };
 
