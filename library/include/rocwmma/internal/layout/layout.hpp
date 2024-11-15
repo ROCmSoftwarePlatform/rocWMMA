@@ -147,10 +147,16 @@ namespace rocwmma
         // Format for data locality
         enum struct Format : uint32_t
         {
-            SOA             = 0u, // Structure of Arrays (SOA), e.g., [{XX}, {YY}, {ZZ}]
-            AOS             = 1u, // Array of Structures (AOS), e.g., [{X,Y,Z}, {X,Y,Z}]
-            ACC_INT_A_MAJOR = 2u, // Interleaved Mma 'A' major order
-            ACC_INT_B_MAJOR = 3u, // Interleaved Mma 'B' major order
+            SOA                        = 0u, // Structure of Arrays (SOA), e.g., [{XX}, {YY}, {ZZ}]
+            AOS                        = 1u, // Array of Structures (AOS), e.g., [{X,Y,Z}, {X,Y,Z}]
+            SOA_INT                    = 2u, // SOA interleaved
+            AOS_INT                    = 3u, // AOS interleaved
+            ACC_INT_A_MAJOR            = 4u, // Interleaved MmaAcc 'A' major order
+            ACC_INT_B_MAJOR            = 5u, // Interleaved MmaAcc 'B' major order
+            WMMA_INPUT_GFX11           = 6u, // Gfx11 input format
+            WMMA_ACC_GFX11             = 7u, // Gfx11 acc format
+            WMMA_ACC_INT_A_MAJOR_GFX11 = 8u, // Gfx11 interleaved MmaAcc 'A' major order
+            WMMA_ACC_INT_B_MAJOR_GFX11 = 9u, // Gfx11 interleaved MmaAcc 'B' major order
             Invalid, // Invalid register format
         };
 
@@ -161,7 +167,9 @@ namespace rocwmma
         };
 
         // A mnemonic used to describe the register layout is suitable for mma input for A/B
-        template <uint32_t MmaSize, bool Interleaved, Format Fmt = Format::SOA>
+        template <uint32_t MmaSize,
+                  bool     Interleaved,
+                  Format   Fmt = Interleaved ? Format::SOA_INT : Format::SOA>
         struct MmaInput
         {
         };
@@ -211,13 +219,16 @@ namespace std
 {
     inline ostream& operator<<(ostream& stream, rocwmma::RegisterLayout::Format const& fmt)
     {
-        return stream << (fmt == rocwmma::RegisterLayout::Format::AOS     ? "AOS"
-                          : (fmt == rocwmma::RegisterLayout::Format::SOA) ? "SOA"
-                          : (fmt == rocwmma::RegisterLayout::Format::ACC_INT_A_MAJOR)
-                              ? "ACC_INT_A_MAJOR"
-                          : (fmt == rocwmma::RegisterLayout::Format::ACC_INT_B_MAJOR)
-                              ? "ACC_INT_B_MAJOR"
-                              : "INVALID");
+        return stream
+               << (fmt == rocwmma::RegisterLayout::Format::AOS                  ? "AOS"
+                   : (fmt == rocwmma::RegisterLayout::Format::SOA)              ? "SOA"
+                   : (fmt == rocwmma::RegisterLayout::Format::AOS_INT)          ? "AOS_INT"
+                   : (fmt == rocwmma::RegisterLayout::Format::SOA_INT)          ? "SOA_INT"
+                   : (fmt == rocwmma::RegisterLayout::Format::ACC_INT_A_MAJOR)  ? "ACC_INT_A_MAJOR"
+                   : (fmt == rocwmma::RegisterLayout::Format::ACC_INT_B_MAJOR)  ? "ACC_INT_B_MAJOR"
+                   : (fmt == rocwmma::RegisterLayout::Format::WMMA_INPUT_GFX11) ? "WMMA_INPUT_GFX11"
+                   : (fmt == rocwmma::RegisterLayout::Format::WMMA_ACC_GFX11)   ? "WMMA_ACC_GFX11"
+                                                                                : "INVALID");
     }
 
     template <typename MatrixLayout, typename DataLayout>
@@ -238,8 +249,8 @@ namespace std
 
     template <uint32_t MmaDim, bool Interleaved, rocwmma::RegisterLayout::Format Fmt>
     inline ostream&
-        operator<<(ostream&                                                    stream,
-                   rocwmma::RegisterLayout::MmaAcc<MmaDim, Interleaved> const& register_layout)
+        operator<<(ostream&                                                         stream,
+                   rocwmma::RegisterLayout::MmaAcc<MmaDim, Interleaved, Fmt> const& register_layout)
     {
         return stream << "MmaAcc<" << MmaDim << ", " << Interleaved << ", " << Fmt << ">";
     }

@@ -37,12 +37,8 @@ namespace rocwmma
         using LayoutTraits_impl::register_layout_traits;
 
 // Keeps things a bit more tidy. Quick access to register layout traits.
-#define reg_traits_lhs register_layout_traits<RegisterLayoutLhs>
-#define reg_traits_rhs register_layout_traits<RegisterLayoutRhs>
-
-// Quick access to matrix layout traits, that are embedded in the register layout traits.
-#define mat_traits_lhs matrix_layout_traits<typename reg_traits_lhs::MatrixLayout>
-#define mat_traits_rhs matrix_layout_traits<typename reg_traits_rhs::MatrixLayout>
+#define traits_lhs register_layout_traits<RegisterLayoutLhs>
+#define traits_rhs register_layout_traits<RegisterLayoutRhs>
 
         // Note: If you arrive at an undefined register_transform error, it is likely
         // the layout transformation is not currently supported. Need to either implement
@@ -65,41 +61,50 @@ namespace rocwmma
             }
         };
 
-        // Non-interleaved orthogonal transforms
-        //
+        // Apply paths between orthogonal transforms
         template <typename RegisterLayoutLhs, typename RegisterLayoutRhs>
         struct register_layout_transform<
             RegisterLayoutLhs,
             RegisterLayoutRhs,
-            enable_if_t<(!mat_traits_lhs::is_interleaved || !mat_traits_rhs::is_interleaved)
+            enable_if_t<(traits_lhs::is_register_layout && traits_rhs::is_register_layout)
                         && is_layout_orthogonal_v<RegisterLayoutLhs, RegisterLayoutRhs>>>
         {
             template <typename VecT>
             ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
             {
-                // Orthogonality promises:
-                // BlockDim, KDim, MaxVW match on lhs and rhs
+                using RegisterLayout::Format;
 
-                // Inline to ortho layout (AOS -> SOA)
-                if constexpr(mat_traits_lhs::is_col_inline || mat_traits_lhs::is_row_inline)
+                // Non-interleaved AOS to SOA
+                if constexpr(traits_lhs::Format == Format::AOS && traits_rhs::Format == Format::SOA)
                 {
+                    using storage_traits
+                        = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
                     return Transforms::
-                        AosToSoa<mat_traits_lhs::BlockDim, mat_traits_lhs::MaxVectorWidth>::exec(
+                        AosToSoa<storage_traits::BlockDim, storage_traits::MaxVectorWidth>::exec(
                             forward<VecT>(v));
                 }
-                // Ortho to inline layout (SOA -> AOS)
-                else if constexpr(mat_traits_lhs::is_col_ortho || mat_traits_lhs::is_row_ortho)
+                else if constexpr(traits_lhs::Format == Format::SOA
+                                  && traits_rhs::Format == Format::AOS)
                 {
+                    using storage_traits
+                        = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
                     return Transforms::
-                        SoaToAos<mat_traits_lhs::BlockDim, mat_traits_lhs::MaxVectorWidth>::exec(
+                        SoaToAos<storage_traits::BlockDim, storage_traits::MaxVectorWidth>::exec(
                             forward<VecT>(v));
                 }
-                // MmaInput (ortho) to inline layout (SOA -> AOS)
-                else if constexpr(reg_traits_lhs::is_mma_input)
+                else if constexpr(traits_lhs::Format == Format::AOS_INT
+                                  && traits_rhs::Format == Format::SOA_INT)
                 {
-                    return Transforms::
-                        SoaToAos<mat_traits_rhs::BlockDim, mat_traits_rhs::MaxVectorWidth>::exec(
-                            forward<VecT>(v));
+                    using storage_traits
+                        = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
+                    return interleave<1u, storage_traits::DimPerThread>(forward<VecT>(v));
+                }
+                else if constexpr(traits_lhs::Format == Format::SOA_INT
+                                  && traits_rhs::Format == Format::AOS_INT)
+                {
+                    using storage_traits
+                        = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
+                    return interleave<1u, storage_traits::KPerThread>(forward<VecT>(v));
                 }
                 else
                 {
@@ -109,50 +114,8 @@ namespace rocwmma
             }
         };
 
-        // Interleaved orthogonal transforms
-        template <typename RegisterLayoutLhs, typename RegisterLayoutRhs>
-        struct register_layout_transform<
-            RegisterLayoutLhs,
-            RegisterLayoutRhs,
-            enable_if_t<(mat_traits_lhs::is_interleaved || mat_traits_rhs::is_interleaved)
-                        && is_layout_orthogonal_v<RegisterLayoutLhs, RegisterLayoutRhs>>>
-        {
-            template <typename VecT>
-            ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
-            {
-                // Orthogonality promises:
-                // BlockDim, KDim, MmaDim match on lhs and rhs
-
-                // Inline to ortho layout (AOS -> SOA)
-                if constexpr(mat_traits_lhs::is_col_inline || mat_traits_lhs::is_row_inline)
-                {
-                    // Leading dim VW
-                    return interleave<1u, mat_traits_lhs::DimPerThread>(forward<VecT>(v));
-                }
-                // Ortho to inline layout (SOA -> AOS)
-                else if constexpr(mat_traits_lhs::is_col_ortho || mat_traits_lhs::is_row_ortho)
-                {
-                    // KDim VW
-                    return interleave<1u, mat_traits_lhs::KPerThread>(forward<VecT>(v));
-                }
-                // MmaInput (ortho) to inline
-                else if constexpr(reg_traits_lhs::is_mma_input)
-                {
-                    // Leading dim VW
-                    return interleave<1u, mat_traits_rhs::DimPerThread>(forward<VecT>(v));
-                }
-                else
-                {
-                    static_assert(0, "Shouldn't get here");
-                    return v;
-                }
-            }
-        };
-
-#undef reg_traits_lhs
-#undef reg_traits_rhs
-#undef mat_traits_lhs
-#undef mat_traits_rhs
+#undef traits_lhs
+#undef traits_rhs
 
     } // namespace RegisterTransform_impl
 

@@ -187,10 +187,30 @@ namespace rocwmma
             using rocwmma::RegisterLayout::Format;
             if constexpr(traits::is_mma_input)
             {
-                return (traits::Format == Format::SOA) || (traits::Format == Format::AOS);
+                if constexpr(traits::is_interleaved)
+                {
+                    return (traits::Format == Format::SOA_INT)
+                           || (traits::Format == Format::AOS_INT);
+                }
+                else
+                {
+                    return (traits::Format == Format::SOA) || (traits::Format == Format::AOS);
+                }
             }
             else if constexpr(traits::is_mma_acc)
             {
+#if ROCWMMA_ARCH_GFX11
+                if constexpr(traits::is_interleaved)
+                {
+                    // Intermediate accumulation format for interleaved layout
+                    return (traits::Format == Format::WMMA_ACC_INT_A_MAJOR_GFX11)
+                           || (traits::Format == Format::WMMA_ACC_INT_B_MAJOR_GFX11);
+                }
+                else
+                {
+                    return (traits::Format == WMMA_ACC_GFX11);
+                }
+#else
                 if constexpr(traits::is_interleaved)
                 {
                     // Intermediate accumulation format for interleaved layout
@@ -201,12 +221,51 @@ namespace rocwmma
                 {
                     return (traits::Format == Format::SOA) || (traits::Format == Format::AOS);
                 }
+#endif // ROCWMMA_ARCH_GFX11
             }
             else
             {
                 return traits::is_storage
                        && ((traits::Format == Format::SOA) || (traits::Format == Format::AOS)
+                           || (traits::Format == Format::SOA_INT)
+                           || (traits::Format == Format::AOS_INT)
                            || (traits::Format == Format::Invalid));
+            }
+        }
+
+        template <typename RegisterLayout>
+        ROCWMMA_HOST_DEVICE constexpr static inline auto registerFormat()
+        {
+            using traits = register_layout_traits<RegisterLayout>;
+            using rocwmma::RegisterLayout::Format;
+
+            // MmaInput and MmaAcc are statically assigned
+            if constexpr(traits::is_mma_input || traits::is_mma_acc)
+            {
+                return traits::Format;
+            }
+            // Determine the register format of the current storage layout
+            // based on the layout traits.
+            else if constexpr(traits::is_storage)
+            {
+                if constexpr(traits::is_interleaved)
+                {
+                    return testStorageLayoutAos<RegisterLayout>()
+                               ? Format::AOS_INT
+                               : (testStorageLayoutSoa<RegisterLayout>() ? Format::SOA_INT
+                                                                         : Format::Invalid);
+                }
+                else
+                {
+                    return testStorageLayoutAos<RegisterLayout>()
+                               ? Format::AOS
+                               : (testStorageLayoutSoa<RegisterLayout>() ? Format::SOA
+                                                                         : Format::Invalid);
+                }
+            }
+            else
+            {
+                return Format::Invalid;
             }
         }
 
@@ -223,13 +282,8 @@ namespace rocwmma
             using MatrixLayout = MatrixLayoutInternal;
             using DataLayout   = DataLayoutInternal;
 
-            // Determine the register format of the current storage layout
             constexpr static RegisterLayout::Format Format
-                = testStorageLayoutAos<Storage<MatrixLayout, DataLayout>>()
-                      ? RegisterLayout::Format::AOS
-                      : (testStorageLayoutSoa<Storage<MatrixLayout, DataLayout>>()
-                             ? RegisterLayout::Format::SOA
-                             : RegisterLayout::Format::Invalid);
+                = registerFormat<Storage<MatrixLayout, DataLayout>>();
 
             constexpr static bool is_valid
                 = testStorageLayoutIdentity<Storage<MatrixLayout, DataLayout>>()
@@ -321,28 +375,27 @@ namespace rocwmma
 
             // MmaInput <-> MmaInput
             // MmaAcc <-> MmaAcc
-            // Storage <-> MmaInput
-            // MmaDim must match and be supported
             if constexpr((traits_lhs::is_mma_input && traits_rhs::is_mma_input)
-                         || (traits_lhs::is_mma_acc && traits_rhs::is_mma_acc)
-                         || (traits_lhs::is_storage && traits_rhs::is_mma_input)
-                         || (traits_lhs::is_mma_input && traits_rhs::is_storage))
+                         || (traits_lhs::is_mma_acc && traits_rhs::is_mma_acc))
             {
-                return BaseTest && testSupportedMmaDim<RegisterLayoutLhs>();
+                return BaseTest;
             }
             // Storage <-> MmaAcc
-            // MmaAcc must check MaxVW
-            // MmaDim must match and be supported
-            else if constexpr((traits_lhs::is_storage && traits_rhs::is_mma_acc)
+            // Storage <-> MmaInput
+            // Storage must be valid layout
+            // Non-interleaved MmaAcc must check MaxVW
+            else if constexpr((traits_lhs::is_storage && traits_rhs::is_mma_input)
+                              || (traits_lhs::is_mma_input && traits_rhs::is_storage)
+                              || (traits_lhs::is_storage && traits_rhs::is_mma_acc)
                               || (traits_lhs::is_mma_acc && traits_rhs::is_storage))
             {
-                using test_traits = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
+                using storage_traits
+                    = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
+                using mma_traits = conditional_t<traits_lhs::is_storage, traits_rhs, traits_lhs>;
 
-                if constexpr(test_traits::is_interleaved)
+                if constexpr(mma_traits::is_mma_input || mma_traits::is_interleaved)
                 {
-                    return ((test_traits::Format == RegisterLayout::Format::ACC_INT_A_MAJOR)
-                            || (test_traits::Format == RegisterLayout::Format::ACC_INT_B_MAJOR))
-                           && BaseTest && testSupportedMmaDim<RegisterLayoutLhs>();
+                    return BaseTest && storage_traits::is_valid;
                 }
                 else
                 {
@@ -350,19 +403,18 @@ namespace rocwmma
                     constexpr uint32_t ExpectedAccMaxVW
                         = ((bool)ROCWMMA_ARCH_GFX12) ? 8u
                           : ((bool)ROCWMMA_ARCH_GFX11
-                             || is_same<typename test_traits::DataT, float64_t>::value)
+                             || is_same<typename storage_traits::DataT, float64_t>::value)
                               ? 1u
                               : 4u;
 
                     constexpr bool TestMmaAccMaxVW
-                        = (ExpectedAccMaxVW == test_traits::MaxVectorWidth);
+                        = (ExpectedAccMaxVW == storage_traits::MaxVectorWidth);
 
-                    return TestMmaAccMaxVW && BaseTest && testSupportedMmaDim<RegisterLayoutLhs>();
+                    return TestMmaAccMaxVW && BaseTest && storage_traits::is_valid;
                 }
             }
             // Storage <-> Storage
             // Must check Matrix compatibility
-            // Not necessary to check MmaDim because doesn't involve MmaInput of MmaAcc
             else if constexpr(traits_lhs::is_storage && traits_rhs::is_storage)
             {
                 return testCompatibleMatrixParams<typename traits_lhs::MatrixLayout,
@@ -383,24 +435,29 @@ namespace rocwmma
             constexpr bool TestCompatibleParams
                 = testCompatibleRegisterParams<RegisterLayoutLhs, RegisterLayoutRhs>();
 
-            if constexpr((traits_lhs::is_storage && traits_rhs::is_storage)
-                         && (traits_lhs::is_interleaved && traits_rhs::is_interleaved))
+            // General case the formats match
+            constexpr bool TestFormatMatch = (traits_lhs::Format == traits_rhs::Format);
+
+            if constexpr((traits_lhs::is_interleaved && traits_rhs::is_interleaved)
+                         && ((traits_lhs::is_storage && traits_rhs::is_storage)
+                             || (traits_lhs::is_storage && traits_rhs::is_mma_input)
+                             || (traits_lhs::is_mma_input && traits_rhs::is_storage)))
             {
+                using storage_traits
+                    = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
+
                 // Special case: interleaved layouts
                 // Check matching thread dims and if either one is == 1u.
-                // Format match not required because the in this case,
-                // register contents for SOA and AOS are identical
+                // Register contents will be identical, regardless if the format matches.
                 constexpr bool TestIdentityQuirks
-                    = (traits_lhs::DimPerThread == traits_rhs::DimPerThread)
-                      && (traits_lhs::KPerThread == traits_rhs::KPerThread)
-                      && ((traits_lhs::DimPerThread == 1u) || (traits_lhs::KPerThread == 1u));
+                    = (storage_traits::DimPerThread == 1u) || (storage_traits::KPerThread == 1u);
 
-                return TestIdentityQuirks && TestCompatibleParams;
+                return TestCompatibleParams && (TestFormatMatch || TestIdentityQuirks);
             }
             else
             {
                 // Test both register layouts in same format
-                return TestCompatibleParams && (traits_lhs::Format == traits_rhs::Format);
+                return TestCompatibleParams && TestFormatMatch;
             }
         }
 
@@ -423,21 +480,25 @@ namespace rocwmma
             constexpr bool TestOpposingFormat
                 = ((traits_lhs::Format == Format::SOA && traits_rhs::Format == Format::AOS)
                    || (traits_lhs::Format == Format::AOS && traits_rhs::Format == Format::SOA)
+                   || (traits_lhs::Format == Format::SOA_INT
+                       && traits_rhs::Format == Format::AOS_INT)
+                   || (traits_lhs::Format == Format::AOS_INT
+                       && traits_rhs::Format == Format::SOA_INT)
                    || (traits_lhs::Format == Format::ACC_INT_A_MAJOR
-                       && traits_rhs::Format == Format::SOA)
+                       && traits_rhs::Format == Format::SOA_INT)
                    || (traits_lhs::Format == Format::ACC_INT_A_MAJOR
-                       && traits_rhs::Format == Format::AOS)
-                   || (traits_lhs::Format == Format::SOA
+                       && traits_rhs::Format == Format::AOS_INT)
+                   || (traits_lhs::Format == Format::SOA_INT
                        && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
-                   || (traits_lhs::Format == Format::AOS
+                   || (traits_lhs::Format == Format::AOS_INT
                        && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
                    || (traits_lhs::Format == Format::ACC_INT_B_MAJOR
-                       && traits_rhs::Format == Format::SOA)
+                       && traits_rhs::Format == Format::SOA_INT)
                    || (traits_lhs::Format == Format::ACC_INT_B_MAJOR
-                       && traits_rhs::Format == Format::AOS)
-                   || (traits_lhs::Format == Format::SOA
+                       && traits_rhs::Format == Format::AOS_INT)
+                   || (traits_lhs::Format == Format::SOA_INT
                        && traits_rhs::Format == Format::ACC_INT_B_MAJOR)
-                   || (traits_lhs::Format == Format::AOS
+                   || (traits_lhs::Format == Format::AOS_INT
                        && traits_rhs::Format == Format::ACC_INT_B_MAJOR))
                   && (traits_lhs::is_valid && traits_rhs::is_valid);
 
@@ -509,8 +570,6 @@ namespace std
         stream << "is_mma_acc: " << traits.is_mma_acc << std::endl;
         stream << "is_interleaved: " << traits.is_interleaved << std::endl;
         stream << "MmaDim: " << traits.MmaDim << std::endl;
-        // stream << "is_aos_format: " << traits.is_aos_format << std::endl;
-        // stream << "is_soa_format: " << traits.is_soa_format << std::endl;
         stream << "is_valid: " << traits.is_valid << std::endl;
         stream << "Format: " << traits.Format << std::endl;
 

@@ -1083,7 +1083,7 @@ namespace std
         rocwmma::MatrixLayout::
             RowOrthoVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth> const& matrix_layout)
     {
-        return stream << "ColOrthoVW<" << BlockDim << ", " << BlockK << ", "
+        return stream << "RowOrthoVW<" << BlockDim << ", " << BlockK << ", "
                       << rocwmma::dataTypeToString<DataT>() << ", " << VectorWidth << ", "
                       << MaxVectorWidth << ">";
     }
@@ -1098,7 +1098,7 @@ namespace std
         rocwmma::MatrixLayout::
             RowInlineVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth> const& matrix_layout)
     {
-        return stream << "ColInlineVW<" << BlockDim << ", " << BlockK << ", "
+        return stream << "RowInlineVW<" << BlockDim << ", " << BlockK << ", "
                       << rocwmma::dataTypeToString<DataT>() << ", " << VectorWidth << ", "
                       << MaxVectorWidth << ">";
     }
@@ -1131,7 +1131,7 @@ namespace std
         rocwmma::MatrixLayout::RowOrthoInt<BlockDim, BlockK, DataT, MmaDim, SplitK> const&
             matrix_layout)
     {
-        return stream << "ColOrthoInt<" << BlockDim << ", " << BlockK << ", "
+        return stream << "RowOrthoInt<" << BlockDim << ", " << BlockK << ", "
                       << rocwmma::dataTypeToString<DataT>() << ", " << MmaDim << ", " << SplitK
                       << ">";
     }
@@ -1142,7 +1142,7 @@ namespace std
         rocwmma::MatrixLayout::RowInlineInt<BlockDim, BlockK, DataT, MmaDim, SplitK> const&
             matrix_layout)
     {
-        return stream << "ColInlineInt<" << BlockDim << ", " << BlockK << ", "
+        return stream << "RowInlineInt<" << BlockDim << ", " << BlockK << ", "
                       << rocwmma::dataTypeToString<DataT>() << ", " << MmaDim << ", " << SplitK
                       << ">";
     }
