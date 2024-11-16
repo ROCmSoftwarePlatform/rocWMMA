@@ -138,15 +138,32 @@ namespace rocwmma
             VW = is_same<DataLayoutT, row_major>::value || BlockDim > 32 ? MaxVW : 1u
         };
 
-        // Layout profile for 'matrix_a': ColNT for small frags, Col for large frags
-        using Profile = conditional_t<
-            BlockDim <= 32,
-            LayoutProfile::template ColNT<BlockDim, BlockK, DataT, DataLayoutT, VW, MaxVW>,
-            LayoutProfile::template Col<BlockDim, BlockK, DataT, DataLayoutT, VW, MaxVW>>;
+        // DataLayout
+        using DataLayout = DataLayout::template Array1d<DataLayoutT>;
 
-        using DataLayout     = typename Profile::DataLayout;
-        using MatrixLayout   = typename Profile::MatrixLayout;
-        using RegisterLayout = typename Profile::RegisterLayout;
+        // Matrix Layouts
+        // Layout profile for 'matrix_a': ColNT for small frags, Col for large frags
+        using SmallDimMatrixLayout
+            = conditional_t<is_same_v<DataLayoutT, col_major>,
+                            MatrixLayout::ColOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>,
+                            MatrixLayout::ColOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>>;
+
+        using LargeDimMatrixLayout
+            = conditional_t<is_same_v<DataLayoutT, col_major>,
+                            MatrixLayout::ColInlineVW<BlockDim, BlockK, DataT, VW, MaxVW>,
+                            MatrixLayout::ColOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>>;
+
+        using MatrixLayout
+            = conditional_t<BlockDim <= 32, SmallDimMatrixLayout, LargeDimMatrixLayout>;
+
+        // Register layouts
+        using MemoryLayout   = RegisterLayout::Storage<MatrixLayout, DataLayout>;
+        using FragmentLayout = MemoryLayout;
+        using MmaLayout      = RegisterLayout::MmaInput<BlockDim,
+                                                   false,
+                                                   (bool)ROCWMMA_ARCH_GFX11
+                                                            ? RegisterLayout::Format::WMMA_INPUT_GFX11
+                                                            : RegisterLayout::Format::SOA>;
     };
 
     template <uint32_t BlockDim,
@@ -165,15 +182,32 @@ namespace rocwmma
             VW = is_same<DataLayoutT, col_major>::value || BlockDim > 32 ? MaxVW : 1u
         };
 
-        // Layout profile for 'matrix_b': RowNT for small frags, Row for large frags
-        using Profile = conditional_t<
-            BlockDim <= 32,
-            LayoutProfile::template RowNT<BlockDim, BlockK, DataT, DataLayoutT, VW, MaxVW>,
-            LayoutProfile::template Row<BlockDim, BlockK, DataT, DataLayoutT, VW, MaxVW>>;
+        // DataLayout
+        using DataLayout = DataLayout::template Array1d<DataLayoutT>;
 
-        using DataLayout     = typename Profile::DataLayout;
-        using MatrixLayout   = typename Profile::MatrixLayout;
-        using RegisterLayout = typename Profile::RegisterLayout;
+        // Matrix Layouts
+        // Layout profile for 'matrix_a': ColNT for small frags, Col for large frags
+        using SmallDimMatrixLayout
+            = conditional_t<is_same_v<DataLayoutT, col_major>,
+                            MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>,
+                            MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>>;
+
+        using LargeDimMatrixLayout
+            = conditional_t<is_same_v<DataLayoutT, row_major>,
+                            MatrixLayout::RowInlineVW<BlockDim, BlockK, DataT, VW, MaxVW>,
+                            MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>>;
+
+        using MatrixLayout
+            = conditional_t<BlockDim <= 32, SmallDimMatrixLayout, LargeDimMatrixLayout>;
+
+        // Register layouts
+        using MemoryLayout   = RegisterLayout::Storage<MatrixLayout, DataLayout>;
+        using FragmentLayout = MemoryLayout;
+        using MmaLayout      = RegisterLayout::MmaInput<BlockDim,
+                                                   false,
+                                                   (bool)ROCWMMA_ARCH_GFX11
+                                                            ? RegisterLayout::Format::WMMA_INPUT_GFX11
+                                                            : RegisterLayout::Format::SOA>;
     };
 
     template <uint32_t BlockDim,
@@ -192,19 +226,35 @@ namespace rocwmma
             VW    = is_same<DataLayoutT, col_major>::value ? MaxVW : 1u
         };
 
-        // Layout profile for 'accumulator' set to RowNT
-        using Profile
-            = LayoutProfile::template RowNT<BlockDim, BlockK, DataT, DataLayoutT, VW, MaxVW>;
+        // DataLayout
+        using DataLayout = DataLayout::template Array1d<DataLayoutT>;
 
-        using DataLayout     = typename Profile::DataLayout;
-        using MatrixLayout   = typename Profile::MatrixLayout;
-        using RegisterLayout = typename Profile::RegisterLayout;
+        // Layout profile for 'accumulator' set to RowNT, small frags
+        using MatrixLayout
+            = conditional_t<is_same_v<DataLayoutT, row_major>,
+                            MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>,
+                            MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>>;
+
+        // Register layouts
+        using MemoryLayout   = RegisterLayout::Storage<MatrixLayout, DataLayout>;
+        using MmaLayout      = RegisterLayout::MmaAcc<BlockDim,
+                                                 false,
+                                                 (bool)ROCWMMA_ARCH_GFX11
+                                                          ? RegisterLayout::Format::WMMA_ACC_GFX11
+                                                          : RegisterLayout::Format::SOA>;
+        using FragmentLayout = MemoryLayout;
     };
 
     template <uint32_t BlockDim, uint32_t BlockK, typename DataT, uint32_t WaveCount>
     struct IOLayout<accumulator, BlockDim, BlockK, DataT, void, WaveCount>
     {
-        // No layout mapping without VW, MaxVW and DataLayoutT info
+        using MemoryLayout   = void;
+        using MmaLayout      = RegisterLayout::MmaAcc<BlockDim,
+                                                 false,
+                                                 (bool)ROCWMMA_ARCH_GFX11
+                                                          ? RegisterLayout::Format::WMMA_ACC_GFX11
+                                                          : RegisterLayout::Format::SOA>;
+        using FragmentLayout = MmaLayout;
     };
 
 } // namespace rocwmma

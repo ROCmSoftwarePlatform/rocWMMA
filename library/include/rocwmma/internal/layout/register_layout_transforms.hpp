@@ -26,6 +26,7 @@
 #ifndef ROCWMMA_REGISTER_LAYOUT_TRANSFORMS_HPP
 #define ROCWMMA_REGISTER_LAYOUT_TRANSFORMS_HPP
 
+#include "../transforms.hpp"
 #include "layout.hpp"
 #include "layout_traits.hpp"
 

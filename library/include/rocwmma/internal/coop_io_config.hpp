@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@
 #ifndef ROCWMMA_COOP_IO_CONFIG_HPP
 #define ROCWMMA_COOP_IO_CONFIG_HPP
 
+#include "./layout/register_layout_transforms.hpp"
 #include "coop_load.hpp"
 #include "coop_store.hpp"
 #include "io_layout.hpp"
@@ -84,6 +85,15 @@ namespace rocwmma
                                        typename IOLayout::DataLayout,
                                        typename IOLayout::MatrixLayout,
                                        IOLayout::VW>;
+
+        using PostLoadXForm = register_layout_transform<typename IOLayout::MemoryLayout,
+                                                        typename IOLayout::FragmentLayout>;
+
+        using PreMmaXForm = register_layout_transform<typename IOLayout::FragmentLayout,
+                                                      typename IOLayout::MmaLayout>;
+
+        using PreStoreXForm = register_layout_transform<typename IOLayout::FragmentLayout,
+                                                        typename IOLayout::MemoryLayout>;
 
         using Storer = CooperativeStore<IOShape::BlockDim,
                                         IOShape::KDim,

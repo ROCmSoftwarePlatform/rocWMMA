@@ -95,8 +95,8 @@ namespace rocwmma
                                                  typename IOConfigB::IOLayout::MatrixLayout>,
                           "Matrix Layouts are not orthogonal");
 
-            static_assert(is_layout_same_v<typename IOConfigA::IOLayout::RegisterLayout,
-                                           typename IOConfigB::IOLayout::RegisterLayout>,
+            static_assert(is_layout_same_v<typename IOConfigA::IOLayout::FragmentLayout,
+                                           typename IOConfigB::IOLayout::FragmentLayout>,
                           "Register layouts do not match");
 
         public:
@@ -150,9 +150,9 @@ namespace rocwmma
                                                  typename IOConfigB::IOLayout::MatrixLayout>,
                           "Matrix Layouts are not orthogonal");
 
-            static_assert(is_layout_same_v<typename IOConfigA::IOLayout::RegisterLayout,
-                                           typename IOConfigB::IOLayout::RegisterLayout>,
-                          "Register layouts do not match");
+            static_assert(is_layout_same_v<typename IOConfigA::IOLayout::FragmentLayout,
+                                           typename IOConfigB::IOLayout::FragmentLayout>,
+                          "Fragment register layouts do not match");
 
         public:
             // Interface
@@ -183,25 +183,6 @@ namespace rocwmma
         template <typename FragT, typename NewDataLayoutT>
         struct ApplyDataLayout;
 
-        // Same layout case
-        template <typename MatrixT,
-                  uint32_t BlockM,
-                  uint32_t BlockN,
-                  uint32_t BlockK,
-                  typename DataT,
-                  typename DataLayoutT>
-        struct ApplyDataLayout<fragment<MatrixT, BlockM, BlockN, BlockK, DataT, DataLayoutT>,
-                               DataLayoutT>
-        {
-            // Interface
-            using Type = fragment<MatrixT, BlockM, BlockN, BlockK, DataT, DataLayoutT>;
-            template <uint32_t WaveCount = 1>
-            ROCWMMA_DEVICE constexpr static inline Type const& exec(Type const& frag)
-            {
-                return frag;
-            }
-        };
-
         // Other layout case
         template <typename MatrixT,
                   uint32_t BlockM,
@@ -213,62 +194,26 @@ namespace rocwmma
         struct ApplyDataLayout<fragment<MatrixT, BlockM, BlockN, BlockK, DataT, DataLayoutT>,
                                NewDataLayoutT>
         {
-        private:
-            using FragIn  = fragment<MatrixT, BlockM, BlockN, BlockK, DataT, DataLayoutT>;
-            using FragOut = fragment<MatrixT, BlockM, BlockN, BlockK, DataT, NewDataLayoutT>;
+            using Type = fragment<MatrixT, BlockM, BlockN, BlockK, DataT, NewDataLayoutT>;
 
-            using IOConfigIn = GetIOConfig_t<FragIn>;
-
-            using RegisterLayoutIn  = typename GetIOConfig_t<FragIn>::IOLayout::RegisterLayout;
-            using RegisterLayoutOut = typename GetIOConfig_t<FragOut>::IOLayout::RegisterLayout;
-
-            // Matrix context, BlockDim and KDim implicitly the same due to re-use of
-            // MatrixT, BlockM, BlockN, BlockK
-
-        public:
-            // Interface
-            using Type = FragOut;
-
-            // Optimal case: input and output register layouts match
-            template <uint32_t WaveCount = 1,
-                      typename FragT,
-                      enable_if_t<is_same_v<FragT, FragIn>
-                                      && is_layout_same_v<RegisterLayoutIn, RegisterLayoutOut>,
-                                  int>
-                      = 0>
+            template <uint32_t WaveCount = 1, typename FragT>
             ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(FragT const& frag)
             {
-                return reinterpret_cast<FragOut const&>(frag);
-            }
+                static_assert(
+                    is_same_v<fragment<MatrixT, BlockM, BlockN, BlockK, DataT, DataLayoutT>, FragT>,
+                    "Input fragment types do not match");
 
-            // Input and output register layouts do not match: must transform using AOS<->SOA
-            template <uint32_t WaveCount = 1,
-                      typename FragT,
-                      enable_if_t<is_same_v<FragT, FragIn>
-                                      && !is_layout_same_v<RegisterLayoutIn, RegisterLayoutOut>,
-                                  int>
-                      = 0>
-            ROCWMMA_DEVICE constexpr static inline auto exec(FragT const& frag)
-            {
-                // TODO: Make sure to use coop configs to get the right MaxVW!!!
-                // using IOConfigCoopIn           = GetCoopIOConfig_t<FragIn, WaveCount>;
-                // constexpr uint32_t BlockDim  = IOConfigCoop::IOShape::BlockDim;
-                // constexpr uint32_t MaxVW     = IOConfigCoop::IOLayout::MaxVW;
-                // using RegisterLayoutIncoming = typename IOConfigCoop::IOLayout::RegisterLayout;
+                using DstFrag = Type;
 
-                // // Target layouts
-                // using AosLayout = RegisterLayout::template Aos<BlockDim, MaxVW>;
-                // using SoaLayout = RegisterLayout::template Soa<BlockDim, MaxVW>;
+                // Make sure to use coop configs to get the right MaxVW!!!
+                using SrcLayout =
+                    typename GetCoopIOConfig_t<FragT, WaveCount>::IOLayout::FragmentLayout;
+                using DstLayout =
+                    typename GetCoopIOConfig_t<DstFrag, WaveCount>::IOLayout::FragmentLayout;
 
-                using SrcRegLayout =
-                    typename GetCoopIOConfig_t<FragIn, WaveCount>::IOLayout::RegisterLayout;
-                using DstRegLayout =
-                    typename GetCoopIOConfig_t<FragOut, WaveCount>::IOLayout::RegisterLayout;
-
-                auto result = FragOut{};
+                auto result = DstFrag{};
                 result.mAccess
-                    = register_layout_transform<SrcRegLayout, DstRegLayout>::exec(frag.mAccess);
-
+                    = register_layout_transform<SrcLayout, DstLayout>::exec(frag.mAccess);
                 return result;
             }
         };
