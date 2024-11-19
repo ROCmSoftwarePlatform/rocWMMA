@@ -89,14 +89,14 @@ namespace rocwmma
                                   typename IOLayout::MatrixLayout,
                                   IOLayout::VW>;
 
-        using PostLoadXForm = register_layout_transform<typename IOLayout::MemoryLayout,
+        using PostLoadXForm = register_layout_transform<typename IOLayout::StorageLayout,
                                                         typename IOLayout::FragmentLayout>;
 
         using PreMmaXForm = register_layout_transform<typename IOLayout::FragmentLayout,
                                                       typename IOLayout::MmaLayout>;
 
         using PreStoreXForm = register_layout_transform<typename IOLayout::FragmentLayout,
-                                                        typename IOLayout::MemoryLayout>;
+                                                        typename IOLayout::StorageLayout>;
 
         using Storer = OpaqueStore<IOShape::BlockDim,
                                    IOShape::KDim,

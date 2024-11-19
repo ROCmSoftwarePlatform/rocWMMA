@@ -46,47 +46,66 @@ namespace rocwmma
                   = 4u * Constants::AMDGCN_DWORD_SIZE_BYTES / (uint32_t)sizeof(DataT)>
         struct MaxVWSelector
         {
-
         private:
-            enum : uint32_t
-            {
-                // For small block sizes (16, 32):
-                // Best to keep MaxVW high and reduce splits amongst waves.
-                WaveCountFactor = (BlockDim <= 32) ? 1u : WaveCount,
+            // For small block sizes (16, 32):
+            // Best to keep MaxVW high and reduce splits amongst waves.
+            static constexpr uint32_t WaveCountFactor = (BlockDim <= 32) ? 1u : WaveCount;
 
-                // Total number of elements in a single I/O operation
-                ElementsPerIO = Constants::AMDGCN_WAVE_SIZE * TestWidth * WaveCountFactor,
+            // Total number of elements in a single I/O operation
+            static constexpr uint32_t ElementsPerIO
+                = Constants::AMDGCN_WAVE_SIZE * TestWidth * WaveCountFactor;
 
-                // Total number of elements for the entire block
-                ElementCount = BlockDim * BlockK,
+            // Total number of elements for the entire block
+            static constexpr uint32_t ElementCount = BlockDim * BlockK;
 
-                // Ensure that for MaxVW:
-                // - A minimum of one IO from each wave can fit
-                // - A balanced multiple of IOs from each wave
-                ElementCountTest
-                = (ElementsPerIO <= ElementCount) && (ElementCount % ElementsPerIO == 0),
+            // Ensure that for MaxVW:
+            // - A minimum of one IO from each wave can fit
+            // - A balanced multiple of IOs from each wave
+            static constexpr bool ElementCountTest
+                = (ElementsPerIO <= ElementCount) && (ElementCount % ElementsPerIO == 0);
 
-                // Currently, all layouts are using ColOrthoVW. This means that VW must be less than BlockK
-                LeadingDimTest = (TestWidth <= BlockK),
+            // Currently, all layouts are using ColOrthoVW. This means that VW must be less than BlockK
+            static constexpr bool LeadingDimTest = (TestWidth <= BlockK);
 
-                MaxVectorWidth = (bool)ElementCountTest && (bool)LeadingDimTest
-                                     ? TestWidth
-                                     : MaxVWSelector<MatrixT,
-                                                     BlockDim,
-                                                     BlockK,
-                                                     DataT,
-                                                     DataLayoutT,
-                                                     WaveCount,
-                                                     TestWidth / 2>::Result,
-            };
+            // Decide on final MaxVW
+            static constexpr uint32_t MaxVectorWidth = (ElementCountTest && LeadingDimTest)
+                                                           ? TestWidth
+                                                           : MaxVWSelector<MatrixT,
+                                                                           BlockDim,
+                                                                           BlockK,
+                                                                           DataT,
+                                                                           DataLayoutT,
+                                                                           WaveCount,
+                                                                           TestWidth / 2>::Result;
 
         public:
-            enum : uint32_t
-            {
-                Result = (uint32_t)MaxVectorWidth
-            };
+            static constexpr uint32_t Result = MaxVectorWidth;
         };
 
+        // Accumulator case, is architecture specific
+        template <uint32_t BlockDim,
+                  uint32_t BlockK,
+                  typename DataT,
+                  typename DataLayoutT,
+                  uint32_t WaveCount,
+                  uint32_t TestWidth>
+        struct MaxVWSelector<accumulator,
+                             BlockDim,
+                             BlockK,
+                             DataT,
+                             DataLayoutT,
+                             WaveCount,
+                             TestWidth>
+        {
+            static_assert(WaveCount == 1u, "Accumulators are not cooperative");
+
+            constexpr static uint32_t Result
+                = (bool)ROCWMMA_ARCH_GFX12
+                      ? 8u
+                      : ((is_same_v<DataT, float64_t> || (bool)ROCWMMA_ARCH_GFX11) ? 1u : 4u);
+        };
+
+        // Fallback case for bad test. Stay safe to VW=1
         template <typename MatrixT,
                   uint32_t BlockDim,
                   uint32_t BlockK,
@@ -95,25 +114,22 @@ namespace rocwmma
                   uint32_t WaveCount>
         struct MaxVWSelector<MatrixT, BlockDim, BlockK, DataT, DataLayoutT, WaveCount, 0u>
         {
-            enum : uint32_t
-            {
-                Result = 1u
-            };
+            static constexpr uint32_t Result = 1u;
         };
 
     } // namespace detail
 
     /*! \struct IOLayout
- *  \brief Definition of VW, MaxVW, data and matrix mapping utilities
- *         in specific matrix context.
- *
- * @tparam MatrixT fragment context
- * @tparam BlockDim Block leading dimension
- * @tparam BlockK Block K-dimension
- * @tparam DataT data type
- * @tparam DataLayoutT in-memory layout as col_major or row_major
- * @tparam WaveCount number of cooperative waves
- */
+    *  \brief Definition of VW, MaxVW, data and matrix mapping utilities
+    *         in specific matrix context.
+    *
+    * @tparam MatrixT fragment context
+    * @tparam BlockDim Block leading dimension
+    * @tparam BlockK Block K-dimension
+    * @tparam DataT data type
+    * @tparam DataLayoutT in-memory layout as col_major or row_major
+    * @tparam WaveCount number of cooperative waves
+    */
     template <typename MatrixT,
               uint32_t BlockDim,
               uint32_t BlockK,
@@ -130,40 +146,43 @@ namespace rocwmma
     struct IOLayout<matrix_a, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>
     {
         // Vector size properties
-        enum : uint32_t
-        {
-            MaxVW = detail::
-                MaxVWSelector<matrix_a, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>::Result,
-
-            VW = is_same<DataLayoutT, row_major>::value || BlockDim > 32 ? MaxVW : 1u
-        };
+        constexpr static uint32_t MaxVW = detail::
+            MaxVWSelector<matrix_a, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>::Result;
+        constexpr static uint32_t VW
+            = is_same_v<DataLayoutT, row_major> || BlockDim > 32u ? MaxVW : 1u;
 
         // DataLayout
         using DataLayout = DataLayout::template Array1d<DataLayoutT>;
 
         // Matrix Layouts
-        // Layout profile for 'matrix_a': ColNT for small frags, Col for large frags
+        // Small dim mma friendly
         using SmallDimMatrixLayout
             = conditional_t<is_same_v<DataLayoutT, col_major>,
                             MatrixLayout::ColOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>,
                             MatrixLayout::ColOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>>;
 
+        // Large dim not mma friendly
         using LargeDimMatrixLayout
             = conditional_t<is_same_v<DataLayoutT, col_major>,
                             MatrixLayout::ColInlineVW<BlockDim, BlockK, DataT, VW, MaxVW>,
                             MatrixLayout::ColOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>>;
 
         using MatrixLayout
-            = conditional_t<BlockDim <= 32, SmallDimMatrixLayout, LargeDimMatrixLayout>;
+            = conditional_t<BlockDim <= 32u, SmallDimMatrixLayout, LargeDimMatrixLayout>;
 
-        // Register layouts
-        using MemoryLayout   = RegisterLayout::Storage<MatrixLayout, DataLayout>;
-        using FragmentLayout = MemoryLayout;
-        using MmaLayout      = RegisterLayout::MmaInput<BlockDim,
+        // Register layout direct to memory storage (load / store)
+        using StorageLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
+
+        // Register layout required for mma. Expect non-interleaved SOA format.
+        using MmaLayout = RegisterLayout::MmaInput<BlockDim,
                                                    false,
                                                    (bool)ROCWMMA_ARCH_GFX11
-                                                            ? RegisterLayout::Format::WMMA_INPUT_GFX11
-                                                            : RegisterLayout::Format::SOA>;
+                                                       ? RegisterLayout::Format::WMMA_INPUT_GFX11
+                                                       : RegisterLayout::Format::SOA>;
+        // Fragments will keep storage register layout.
+        // No post-load / pre-store xform
+        // May require pre-mma xform
+        using FragmentLayout = StorageLayout;
     };
 
     template <uint32_t BlockDim,
@@ -174,24 +193,22 @@ namespace rocwmma
     struct IOLayout<matrix_b, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>
     {
         // Vector size properties
-        enum : uint32_t
-        {
-            MaxVW = detail::
-                MaxVWSelector<matrix_b, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>::Result,
-
-            VW = is_same<DataLayoutT, col_major>::value || BlockDim > 32 ? MaxVW : 1u
-        };
+        constexpr static uint32_t MaxVW = detail::
+            MaxVWSelector<matrix_b, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>::Result;
+        constexpr static uint32_t VW
+            = is_same_v<DataLayoutT, col_major> || BlockDim > 32 ? MaxVW : 1u;
 
         // DataLayout
         using DataLayout = DataLayout::template Array1d<DataLayoutT>;
 
         // Matrix Layouts
-        // Layout profile for 'matrix_a': ColNT for small frags, Col for large frags
+        // Small dim mma friendly
         using SmallDimMatrixLayout
             = conditional_t<is_same_v<DataLayoutT, col_major>,
                             MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>,
                             MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>>;
 
+        // Large dim not mma friendly
         using LargeDimMatrixLayout
             = conditional_t<is_same_v<DataLayoutT, row_major>,
                             MatrixLayout::RowInlineVW<BlockDim, BlockK, DataT, VW, MaxVW>,
@@ -200,14 +217,20 @@ namespace rocwmma
         using MatrixLayout
             = conditional_t<BlockDim <= 32, SmallDimMatrixLayout, LargeDimMatrixLayout>;
 
-        // Register layouts
-        using MemoryLayout   = RegisterLayout::Storage<MatrixLayout, DataLayout>;
-        using FragmentLayout = MemoryLayout;
-        using MmaLayout      = RegisterLayout::MmaInput<BlockDim,
+        // Register layout direct to memory storage (load / store)
+        using StorageLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
+
+        // Register layout required for mma. Expect non-interleaved SOA format.
+        using MmaLayout = RegisterLayout::MmaInput<BlockDim,
                                                    false,
                                                    (bool)ROCWMMA_ARCH_GFX11
-                                                            ? RegisterLayout::Format::WMMA_INPUT_GFX11
-                                                            : RegisterLayout::Format::SOA>;
+                                                       ? RegisterLayout::Format::WMMA_INPUT_GFX11
+                                                       : RegisterLayout::Format::SOA>;
+
+        // Fragments will keep storage register layout.
+        // No post-load / pre-store xform
+        // May require pre-mma xform
+        using FragmentLayout = StorageLayout;
     };
 
     template <uint32_t BlockDim,
@@ -218,42 +241,215 @@ namespace rocwmma
     struct IOLayout<accumulator, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>
     {
         // Vector size properties
-        enum : uint32_t
-        {
-            MaxVW = ROCWMMA_ARCH_GFX12
-                        ? 8u
-                        : ((is_same<DataT, float64_t>::value || ROCWMMA_ARCH_GFX11) ? 1u : 4u),
-            VW    = is_same<DataLayoutT, col_major>::value ? MaxVW : 1u
-        };
+        constexpr static uint32_t MaxVW = detail::
+            MaxVWSelector<accumulator, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>::Result;
+        constexpr static uint32_t VW = is_same_v<DataLayoutT, col_major> ? MaxVW : 1u;
 
         // DataLayout
         using DataLayout = DataLayout::template Array1d<DataLayoutT>;
 
-        // Layout profile for 'accumulator' set to RowNT, small frags
+        // Always mma friendly
         using MatrixLayout
             = conditional_t<is_same_v<DataLayoutT, row_major>,
                             MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>,
                             MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>>;
 
-        // Register layouts
-        using MemoryLayout   = RegisterLayout::Storage<MatrixLayout, DataLayout>;
-        using MmaLayout      = RegisterLayout::MmaAcc<BlockDim,
+        // Register layout direct to memory storage (load / store)
+        using StorageLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
+
+        // Register layout required for mma. Expect non-interleaved SOA format.
+        using MmaLayout = RegisterLayout::MmaAcc<BlockDim,
                                                  false,
                                                  (bool)ROCWMMA_ARCH_GFX11
-                                                          ? RegisterLayout::Format::WMMA_ACC_GFX11
-                                                          : RegisterLayout::Format::SOA>;
-        using FragmentLayout = MemoryLayout;
+                                                     ? RegisterLayout::Format::WMMA_ACC_GFX11
+                                                     : RegisterLayout::Format::SOA>;
+
+        // Fragments will keep storage register layout.
+        // No post-load / pre-store xform
+        // May require pre-mma xform.
+        // TODO: Ideally, should really be MmaLayout
+        // However, MmaAcc frags are restricted to 16/32 MmaDim.
+        // Once restriction is lifted, should be adjusted.
+        using FragmentLayout = StorageLayout;
     };
 
     template <uint32_t BlockDim, uint32_t BlockK, typename DataT, uint32_t WaveCount>
     struct IOLayout<accumulator, BlockDim, BlockK, DataT, void, WaveCount>
     {
-        using MemoryLayout   = void;
-        using MmaLayout      = RegisterLayout::MmaAcc<BlockDim,
+        // We don't know which storage is needed: no DataLayout
+        using StorageLayout = void;
+
+        // Register layout required for mma. Expect non-interleaved SOA format.
+        using MmaLayout = RegisterLayout::MmaAcc<BlockDim,
                                                  false,
                                                  (bool)ROCWMMA_ARCH_GFX11
-                                                          ? RegisterLayout::Format::WMMA_ACC_GFX11
-                                                          : RegisterLayout::Format::SOA>;
+                                                     ? RegisterLayout::Format::WMMA_ACC_GFX11
+                                                     : RegisterLayout::Format::SOA>;
+
+        // Fragments will keep mma register layout.
+        // No pre-mma xform
+        using FragmentLayout = MmaLayout;
+    };
+
+    namespace detail
+    {
+        template <uint32_t BlockDim,
+                  typename DataT,
+                  uint32_t TestMmaDim = (bool)ROCWMMA_BLOCK_DIM_32_SUPPORTED ? 32u : 16u>
+        struct MmaDimSelector
+        {
+        private:
+            // Try to get the best interleaved VW along BlockDim axis.
+            static constexpr uint32_t SizeB128       = 128u >> 2u;
+            static constexpr uint32_t InterleaveVW   = BlockDim / TestMmaDim;
+            static constexpr uint32_t BytesPerThread = InterleaveVW * sizeof(DataT);
+
+        public:
+            static constexpr uint32_t Result = (BytesPerThread < SizeB128 ? 16u : TestMmaDim);
+        };
+
+    } // namespace detail
+
+    /*! \struct IOLayoutInt
+    *  \brief Definition of VW, MaxVW, data and matrix mapping utilities
+    *         in specific matrix context.
+    *
+    * @tparam MatrixT fragment context
+    * @tparam BlockDim Block leading dimension
+    * @tparam BlockK Block K-dimension
+    * @tparam DataT data type
+    * @tparam DataLayoutT in-memory layout as col_major or row_major
+    * @tparam WaveCount number of cooperative waves
+    */
+    template <typename MatrixT,
+              uint32_t BlockDim,
+              uint32_t BlockK,
+              typename DataT,
+              typename DataLayoutT,
+              uint32_t WaveCount>
+    struct IOLayoutInt;
+
+    template <uint32_t BlockDim,
+              uint32_t BlockK,
+              typename DataT,
+              typename DataLayoutT,
+              uint32_t WaveCount>
+    struct IOLayoutInt<matrix_a, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>
+    {
+        // Select an appropriate MmaDim
+        constexpr static uint32_t MmaDim = detail::MmaDimSelector<BlockDim, DataT>::Result;
+
+        // DataLayout
+        using DataLayout = DataLayout::template Array1d<DataLayoutT>;
+
+        // Matrix Layouts
+        using MatrixLayout
+            = conditional_t<is_same_v<DataLayoutT, col_major>,
+                            MatrixLayout::ColInlineInt<BlockDim, BlockK, DataT, MmaDim, WaveCount>,
+                            MatrixLayout::ColOrthoInt<BlockDim, BlockK, DataT, MmaDim, WaveCount>>;
+
+        // Register layout direct to memory storage (load / store)
+        using StorageLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
+
+        // Register layout required for mma. Expect interleaved SOA format.
+        using MmaLayout = RegisterLayout::MmaInput<BlockDim,
+                                                   true,
+                                                   (bool)ROCWMMA_ARCH_GFX11
+                                                       ? RegisterLayout::Format::WMMA_INPUT_GFX11
+                                                       : RegisterLayout::Format::SOA_INT>;
+
+        // Fragments will keep storage register layout.
+        // No post-load / pre-store xform
+        // May require pre-mma xform
+        using FragmentLayout = StorageLayout;
+    };
+
+    template <uint32_t BlockDim,
+              uint32_t BlockK,
+              typename DataT,
+              typename DataLayoutT,
+              uint32_t WaveCount>
+    struct IOLayoutInt<matrix_b, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>
+    {
+        // Select an appropriate MmaDim
+        constexpr static uint32_t MmaDim = detail::MmaDimSelector<BlockDim, DataT>::Result;
+
+        // DataLayout
+        using DataLayout = DataLayout::template Array1d<DataLayoutT>;
+
+        // Matrix Layouts
+        using MatrixLayout
+            = conditional_t<is_same_v<DataLayoutT, col_major>,
+                            MatrixLayout::RowOrthoInt<BlockDim, BlockK, DataT, MmaDim, WaveCount>,
+                            MatrixLayout::RowInlineInt<BlockDim, BlockK, DataT, MmaDim, WaveCount>>;
+
+        // Register layout direct to memory storage (load / store)
+        using StorageLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
+
+        // Register layout required for mma. Expect interleaved SOA format.
+        using MmaLayout = RegisterLayout::MmaInput<BlockDim,
+                                                   true,
+                                                   (bool)ROCWMMA_ARCH_GFX11
+                                                       ? RegisterLayout::Format::WMMA_INPUT_GFX11
+                                                       : RegisterLayout::Format::SOA_INT>;
+        // Fragments will keep storage register layout.
+        // No post-load / pre-store xform
+        // May require pre-mma xform
+        using FragmentLayout = StorageLayout;
+    };
+
+    template <uint32_t BlockDim,
+              uint32_t BlockK,
+              typename DataT,
+              typename DataLayoutT,
+              uint32_t WaveCount>
+    struct IOLayoutInt<accumulator, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>
+    {
+        // Select an appropriate MmaDim
+        constexpr static uint32_t MmaDim = detail::MmaDimSelector<BlockDim, DataT>::Result;
+
+        // DataLayout
+        using DataLayout = DataLayout::template Array1d<DataLayoutT>;
+
+        // Matrix Layouts
+        using MatrixLayout
+            = conditional_t<is_same_v<DataLayoutT, col_major>,
+                            MatrixLayout::RowOrthoInt<BlockDim, BlockK, DataT, MmaDim, WaveCount>,
+                            MatrixLayout::RowInlineInt<BlockDim, BlockK, DataT, MmaDim, WaveCount>>;
+
+        // Register layout direct to memory storage (load / store)
+        using StorageLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
+
+        // Register layout required for mma. Expect interleaved accum format for multiple blocks.
+        using MmaLayout
+            = RegisterLayout::MmaAcc<BlockDim,
+                                     true,
+                                     (bool)ROCWMMA_ARCH_GFX11
+                                         ? RegisterLayout::Format::WMMA_ACC_INT_A_MAJOR_GFX11
+                                         : RegisterLayout::Format::ACC_INT_A_MAJOR>;
+
+        // Fragments will keep mma register layout.
+        // May require post-load / pre-store xform
+        // No pre-mma xform
+        using FragmentLayout = MmaLayout;
+    };
+
+    template <uint32_t BlockDim, uint32_t BlockK, typename DataT, uint32_t WaveCount>
+    struct IOLayoutInt<accumulator, BlockDim, BlockK, DataT, void, WaveCount>
+    {
+        // We don't know which storage is needed: no DataLayout
+        using StorageLayout = void;
+
+        // Register layout required for mma. Expect interleaved accum format for multiple blocks.
+        using MmaLayout
+            = RegisterLayout::MmaAcc<BlockDim,
+                                     true,
+                                     (bool)ROCWMMA_ARCH_GFX11
+                                         ? RegisterLayout::Format::WMMA_ACC_INT_A_MAJOR_GFX11
+                                         : RegisterLayout::Format::ACC_INT_A_MAJOR>;
+
+        // Fragments will keep mma register layout.
+        // No pre-mma xform
         using FragmentLayout = MmaLayout;
     };
 
