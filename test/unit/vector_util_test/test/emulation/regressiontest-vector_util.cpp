@@ -79,18 +79,18 @@ namespace rocwmma
 } // namespace rocwmma
 
 // Test suite for unique parameterization
-class VectorUtilTest : public rocwmma::UnitTest
+class EmulationRegressionVectorUtilTest : public rocwmma::UnitTest
 {
 };
 
-TEST_P(VectorUtilTest, RunKernel)
+TEST_P(EmulationRegressionVectorUtilTest, RunKernel)
 {
     this->RunKernel();
 }
 
 INSTANTIATE_TEST_SUITE_P(
     KernelTests,
-    VectorUtilTest,
+    EmulationRegressionVectorUtilTest,
     ::testing::Combine(::testing::ValuesIn(rocwmma::TestParams::kernels()),
                        ::testing::ValuesIn(rocwmma::TestParams::threadBlocks()),
                        ::testing::ValuesIn(rocwmma::TestParams::problemSizes()),

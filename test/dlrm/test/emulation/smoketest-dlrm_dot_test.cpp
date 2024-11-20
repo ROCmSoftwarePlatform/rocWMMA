@@ -61,12 +61,6 @@ class EmulationSmokeDlrmDotTestBasic : public rocwmma::DlrmDotTest
 
 TEST_P(EmulationSmokeDlrmDotTestBasic, RunKernel)
 {
-    static bool ranWarmup = false;
-    if(!ranWarmup)
-    {
-        this->Warmup();
-        ranWarmup = true;
-    }
     this->RunKernel();
 }
 

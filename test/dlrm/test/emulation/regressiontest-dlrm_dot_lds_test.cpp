@@ -65,12 +65,6 @@ class EmulationRegressionDlrmDotLdsTestBasic : public rocwmma::DlrmDotTest
 
 TEST_P(EmulationRegressionDlrmDotLdsTestBasic, RunKernel)
 {
-    static bool ranWarmup = false;
-    if(!ranWarmup)
-    {
-        this->Warmup();
-        ranWarmup = true;
-    }
     this->RunKernel();
 }
 

@@ -44,18 +44,9 @@ set(${ROCWMMA_TARGET_SOURCES} ${GemmCommonSources}
                           ${CMAKE_CURRENT_SOURCE_DIR}/test/32x32_nt.cpp
                           ${CMAKE_CURRENT_SOURCE_DIR}/test/32x32_tn.cpp
                           ${CMAKE_CURRENT_SOURCE_DIR}/test/32x32_tt.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-16x16_nn.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-16x16_nt.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-16x16_tn.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-16x16_tt.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-16x16_nn.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-16x16_nt.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-16x16_tn.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-16x16_tt.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-32x32_nn.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-32x32_nt.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-32x32_tn.cpp
-                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-32x32_tt.cpp
+                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-16x16.cpp
+                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-16x16.cpp
+                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-32x32.cpp
                           )
 
 # Ad hoc test

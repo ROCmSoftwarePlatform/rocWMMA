@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -57,33 +57,33 @@ namespace rocwmma
         // float8
         using TestTypesF8 = std::tuple<
 #if ROCWMMA_FP8
-        std::tuple<float8_t, float32_t, float32_t>
+            std::tuple<float8_t, float32_t, float32_t>
 #endif // ROCWMMA_FP8
 
 // Only host will ever include both
 #if ROCWMMA_FP8 && ROCWMMA_FP8_FNUZ
-        ,
+            ,
 #endif // ROCWMMA_FP8 && ROCWMMA_FP8_FNUZ
 
 #if ROCWMMA_FP8_FNUZ
-         std::tuple<float8_fnuz_t, float32_t, float32_t>
+            std::tuple<float8_fnuz_t, float32_t, float32_t>
 #endif // ROCWMMA_FP8_FNUZ
-        >;
+            >;
 
         using TestTypesBF8 = std::tuple<
 #if ROCWMMA_FP8
-        std::tuple<bfloat8_t, float32_t, float32_t>
+            std::tuple<bfloat8_t, float32_t, float32_t>
 #endif // ROCWMMA_FP8
 
 // Only host will ever include both
 #if ROCWMMA_FP8 && ROCWMMA_FP8_FNUZ
-        ,
+            ,
 #endif // ROCWMMA_FP8 && ROCWMMA_FP8_FNUZ
 
 #if ROCWMMA_FP8_FNUZ
-         std::tuple<bfloat8_fnuz_t, float32_t, float32_t>
+            std::tuple<bfloat8_fnuz_t, float32_t, float32_t>
 #endif // ROCWMMA_FP8_FNUZ
-        >;
+            >;
 
         // Non-native bfloat16_t
         using TestTypesBF16 = std::tuple<
@@ -191,6 +191,9 @@ namespace rocwmma
 #else
             std::tuple<std::tuple<row_major, row_major, col_major>>;
 #endif // ROCWMMA_EXTENDED_TESTS
+
+        using TestLayoutsAll =
+            typename Concat<TestLayoutsNN, TestLayoutsNT, TestLayoutsNT, TestLayoutsTT>::Result;
 
         ///
         /// MFMA block sizes

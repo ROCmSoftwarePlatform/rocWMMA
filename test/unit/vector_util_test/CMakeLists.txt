@@ -30,6 +30,7 @@ set(ROCWMMA_TEST_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${ROCWMMA_TEST_INCLUDE
 set(VectorUtilTestSources ${UnitCommonSources}
                           ${CMAKE_CURRENT_SOURCE_DIR}/test/vector_util.cpp
                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-vector_util.cpp
+                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-vector_util.cpp
                        )
 
 add_rocwmma_unit_test(vector_util_test ${VectorUtilTestSources})

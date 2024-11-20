@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,15 +27,50 @@
 #include <type_traits>
 
 #include "detail/io_shape.hpp"
-#include "io_shape_test_params.hpp"
 #include "kernel_generator.hpp"
 #include "unit_test.hpp"
 
 namespace rocwmma
 {
 
-    using TestParams
-        = IoShapeTestParams<UnitTestParams::TestBlockSizes32, UnitTestParams::TestTypes16>;
+    struct TestParams : public UnitTestParams
+    {
+        using Base        = UnitTestParams;
+        using MatrixTypes = std::tuple<matrix_a, matrix_b, accumulator>;
+        using BlockSizes  = typename Base::TestBlockSizes32;
+        using DataTypes   = typename Base::TestTypes16;
+        using DataLayouts = typename Base::TestLayoutsAll;
+        using KernelParams =
+            typename CombineLists<MatrixTypes, BlockSizes, DataTypes, DataLayouts>::Result;
+
+        // Assemble the kernel generator
+        using GeneratorImpl   = IOShapeGenerator;
+        using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
+
+        // Sanity check for kernel generator
+        static_assert(std::is_same<typename GeneratorImpl::ResultT, typename Base::KernelT>::value,
+                      "Kernels from this generator do not match testing interface");
+
+        static inline typename KernelGenerator::ResultT kernels()
+        {
+            return KernelGenerator::generate();
+        }
+
+        static inline std::vector<ThreadBlockT> threadBlocks()
+        {
+            auto warpSize = HipDevice::instance()->warpSize();
+            // clang-format off
+            return { {warpSize, 1} };
+            // clang-format on
+        }
+
+        static inline std::vector<ProblemSizeT> problemSizes()
+        {
+            // clang-format off
+            return { {1024, 1024} };
+            // clang-format on
+        }
+    };
 
 } // namespace rocwmma
 

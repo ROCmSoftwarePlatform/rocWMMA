@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,16 +26,50 @@
 
 #include <type_traits>
 
-#include "contamination_test_params.hpp"
 #include "detail/store_contamination.hpp"
 #include "kernel_generator.hpp"
 #include "unit_test.hpp"
 
 namespace rocwmma
 {
-    using TestParams = ContaminationTestParams<UnitTestParams::TestTypes16,
-                                               UnitTestParams::TestBlockSizes16,
-                                               StoreContaminationGeneratorB>;
+
+    struct TestParams : public UnitTestParams
+    {
+        using Base = UnitTestParams;
+
+        // Types: Base IOC + double
+        // Block Sizes: 16 x BlockK
+        // Layouts: N, T
+        using Types        = typename Base::TestTypes16;
+        using BlockSizes   = typename Base::TestBlockSizes16;
+        using Layouts      = typename Base::TestLayoutsAll;
+        using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
+
+        // Assemble the kernel generator
+        // Kernel: StoreContaminationB
+        using GeneratorImpl   = StoreContaminationGeneratorB;
+        using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
+
+        // Sanity check for kernel generator
+        static_assert(std::is_same<typename GeneratorImpl::ResultT, typename Base::KernelT>::value,
+                      "Kernels from this generator do not match testing interface");
+
+        static inline typename KernelGenerator::ResultT kernels()
+        {
+            return KernelGenerator::generate();
+        }
+
+        static inline std::vector<Param1T> param1s()
+        {
+            return {4.0, 3.0};
+        }
+
+        static inline std::vector<Param2T> param2s()
+        {
+            return {8.0, 1.0};
+        }
+    };
+
 } // namespace rocwmma
 
 // Test suite for unique parameterization

@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,16 +28,38 @@
 
 #include "detail/load_store_matrix_sync.hpp"
 #include "kernel_generator.hpp"
-#include "load_store_matrix_sync_test_params.hpp"
 #include "unit_test.hpp"
 #include "unit_test_params.hpp"
 
 namespace rocwmma
 {
 
-    using TestParams = LoadStoreMatrixSyncTestParams<UnitTestParams::TestTypesIOC,
-                                                     UnitTestParams::TestBlockSizes128,
-                                                     LoadStoreMatrixSyncGeneratorAcc>;
+    struct TestParams : public UnitTestParams
+    {
+        using Base = UnitTestParams;
+
+        // Types: Base IOC
+        // Block Sizes: 128 x BlockN
+        // Layouts: N, T
+        using Types        = typename Base::TestTypesIOC;
+        using BlockSizes   = typename Base::TestBlockSizes128;
+        using Layouts      = typename Base::TestLayoutsAll;
+        using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
+
+        // Assemble the kernel generator
+        // Kernel: LoadStoreMatrixSyncAcc
+        using GeneratorImpl   = LoadStoreMatrixSyncGeneratorAcc;
+        using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
+
+        // Sanity check for kernel generator
+        static_assert(std::is_same<typename GeneratorImpl::ResultT, typename Base::KernelT>::value,
+                      "Kernels from this generator do not match testing interface");
+
+        static inline typename KernelGenerator::ResultT kernels()
+        {
+            return KernelGenerator::generate();
+        }
+    };
 
 } // namespace rocwmma
 
