@@ -434,7 +434,7 @@ namespace rocwmma
         static_assert((GatherSize >= 1u) && (GatherSize <= ElementStride)
                           && (ElementStride % GatherSize == 0) && (VecSize % GatherSize == 0),
                       "Invalid GatherSize");
-        static_assert(ElementStride >= 1u && ElementStride < VecSize, "Invalid Stride");
+        static_assert(ElementStride >= 1u && ElementStride <= VecSize, "Invalid Stride");
 
         // No transform is needed (NOP)
         if constexpr(GatherSize == ElementStride || ElementStride == VecSize)

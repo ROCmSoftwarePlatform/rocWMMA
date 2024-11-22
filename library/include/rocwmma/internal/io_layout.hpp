@@ -352,7 +352,7 @@ namespace rocwmma
         using StorageLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
 
         // Register layout required for mma. Expect interleaved SOA format.
-        using MmaLayout = RegisterLayout::MmaInput<BlockDim,
+        using MmaLayout = RegisterLayout::MmaInput<MmaDim,
                                                    true,
                                                    (bool)ROCWMMA_ARCH_GFX11
                                                        ? RegisterLayout::Format::WMMA_INPUT_GFX11
@@ -362,6 +362,10 @@ namespace rocwmma
         // No post-load / pre-store xform
         // May require pre-mma xform
         using FragmentLayout = StorageLayout;
+
+        // Vector size properties derived from the matrix layout
+        constexpr static uint32_t MaxVW = layout_traits<MatrixLayout>::MaxVectorWidth;
+        constexpr static uint32_t VW    = MaxVW;
     };
 
     template <uint32_t BlockDim,
@@ -387,7 +391,7 @@ namespace rocwmma
         using StorageLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
 
         // Register layout required for mma. Expect interleaved SOA format.
-        using MmaLayout = RegisterLayout::MmaInput<BlockDim,
+        using MmaLayout = RegisterLayout::MmaInput<MmaDim,
                                                    true,
                                                    (bool)ROCWMMA_ARCH_GFX11
                                                        ? RegisterLayout::Format::WMMA_INPUT_GFX11
@@ -396,6 +400,10 @@ namespace rocwmma
         // No post-load / pre-store xform
         // May require pre-mma xform
         using FragmentLayout = StorageLayout;
+
+        // Vector size properties derived from the matrix layout
+        constexpr static uint32_t MaxVW = layout_traits<MatrixLayout>::MaxVectorWidth;
+        constexpr static uint32_t VW    = MaxVW;
     };
 
     template <uint32_t BlockDim,
@@ -422,7 +430,7 @@ namespace rocwmma
 
         // Register layout required for mma. Expect interleaved accum format for multiple blocks.
         using MmaLayout
-            = RegisterLayout::MmaAcc<BlockDim,
+            = RegisterLayout::MmaAcc<MmaDim,
                                      true,
                                      (bool)ROCWMMA_ARCH_GFX11
                                          ? RegisterLayout::Format::WMMA_ACC_INT_A_MAJOR_GFX11
@@ -432,17 +440,24 @@ namespace rocwmma
         // May require post-load / pre-store xform
         // No pre-mma xform
         using FragmentLayout = MmaLayout;
+
+        // Vector size properties derived from the matrix layout
+        constexpr static uint32_t MaxVW = layout_traits<MatrixLayout>::MaxVectorWidth;
+        constexpr static uint32_t VW    = MaxVW;
     };
 
     template <uint32_t BlockDim, uint32_t BlockK, typename DataT, uint32_t WaveCount>
     struct IOLayoutInt<accumulator, BlockDim, BlockK, DataT, void, WaveCount>
     {
+        // Select an appropriate MmaDim
+        constexpr static uint32_t MmaDim = detail::MmaDimSelector<BlockDim, DataT>::Result;
+
         // We don't know which storage is needed: no DataLayout
         using StorageLayout = void;
 
         // Register layout required for mma. Expect interleaved accum format for multiple blocks.
         using MmaLayout
-            = RegisterLayout::MmaAcc<BlockDim,
+            = RegisterLayout::MmaAcc<MmaDim,
                                      true,
                                      (bool)ROCWMMA_ARCH_GFX11
                                          ? RegisterLayout::Format::WMMA_ACC_INT_A_MAJOR_GFX11

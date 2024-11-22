@@ -355,15 +355,12 @@ namespace rocwmma
                           && (IOConfigB::IOShape::BlockDim <= 32),
                       "Input fragment BlockDim is not mfma friendly");
 
-        static_assert(IOConfigA::IOShape::KDim == IOConfigB::IOShape::KDim,
-                      "KDim of input fragments must match");
+        static_assert((IOConfigA::IOShape::BlockDim == IOConfigB::IOShape::BlockDim)
+                          && (IOConfigA::IOShape::KDim == IOConfigB::IOShape::KDim),
+                      "BlockDim and KDim of input fragments must match");
 
-        static_assert(is_layout_orthogonal_v<typename IOConfigA::IOLayout::MatrixLayout,
-                                             typename IOConfigB::IOLayout::MatrixLayout>,
-                      "Input fragment matrix layouts are not orthogonal");
-
-        static_assert(is_layout_same_v<typename IOConfigA::IOLayout::FragmentLayout,
-                                       typename IOConfigB::IOLayout::FragmentLayout>,
+        static_assert(is_layout_same_v<typename IOConfigA::IOLayout::MmaLayout,
+                                       typename IOConfigB::IOLayout::MmaLayout>,
                       "Input fragment register layouts do not match");
 
         // Gfx9 uses MFMA, gfx11 uses WMMA

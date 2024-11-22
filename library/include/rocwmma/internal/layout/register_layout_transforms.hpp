@@ -62,6 +62,17 @@ namespace rocwmma
             }
         };
 
+        template <typename RegisterLayoutLhs, typename RegisterLayoutRhs>
+        struct register_layout_transform<
+            RegisterLayoutLhs,
+            RegisterLayoutRhs,
+            enable_if_t<!is_layout_same_v<RegisterLayoutLhs, RegisterLayoutRhs>
+                        && (!traits_lhs::is_register_layout || !traits_rhs::is_register_layout
+                            || !is_layout_orthogonal_v<RegisterLayoutLhs, RegisterLayoutRhs>)>>
+        {
+            static_assert(0, "Register layout transform is not supported");
+        };
+
         // Apply paths between orthogonal transforms
         template <typename RegisterLayoutLhs, typename RegisterLayoutRhs>
         struct register_layout_transform<
@@ -107,9 +118,38 @@ namespace rocwmma
                         = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
                     return interleave<1u, storage_traits::KPerThread>(forward<VecT>(v));
                 }
+                else if constexpr(traits_lhs::Format == Format::AOS_INT
+                                  && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
+                {
+                    using storage_traits
+                        = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
+                    return interleave<1u, storage_traits::KPerThread>(forward<VecT>(v));
+                }
+                else if constexpr(traits_lhs::Format == Format::SOA_INT
+                                  && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
+                {
+                    using storage_traits
+                        = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
+
+                    return interleave<1u, 4u>(forward<VecT>(v));
+                }
+                else if constexpr(traits_lhs::Format == Format::ACC_INT_A_MAJOR
+                                  && traits_rhs::Format == Format::AOS_INT)
+                {
+                    using storage_traits
+                        = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
+                    return interleave<1u, 4u>(forward<VecT>(v));
+                }
+                else if constexpr(traits_lhs::Format == Format::ACC_INT_A_MAJOR
+                                  && traits_rhs::Format == Format::SOA_INT)
+                {
+                    using storage_traits
+                        = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
+                    return interleave<1u, storage_traits::KPerThread>(forward<VecT>(v));
+                }
                 else
                 {
-                    static_assert(0, "Shouldn't get here");
+                    static_assert(0, "Register layout transform is not implemented");
                     return v;
                 }
             }
