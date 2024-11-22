@@ -78,29 +78,9 @@ namespace rocwmma
                 mOmitCout = true;
         }
 
-        bool setEmulationOption(std::string const& value)
+        void setEmulationOption(EmulationOption value)
         {
-            std::string lowercase_value = value;
-            std::transform(
-                lowercase_value.begin(), lowercase_value.end(), lowercase_value.begin(), ::tolower);
-
-            if(lowercase_value == "smoke")
-            {
-                mEmulationOption = EmulationOption::SMOKE;
-            }
-            else if(lowercase_value == "regression")
-            {
-                mEmulationOption = EmulationOption::REGRESSION;
-            }
-            else if(lowercase_value == "extended")
-            {
-                mEmulationOption = EmulationOption::EXTENDED;
-            }
-            else
-            {
-                return false;
-            }
-            return true;
+            mEmulationOption = value;
         }
 
         void parseOptions(int argc, char** argv)
@@ -147,12 +127,14 @@ namespace rocwmma
                         std::cerr << "Usage: --emulation [smoke|regression|extended]\n";
                         exit(EXIT_FAILURE);
                     }
-                    if(!setEmulationOption(args[i + 1]))
+                    auto emulationValue = parseEmulationOption(args[i + 1]);
+                    if(emulationValue == EmulationOption::NONE)
                     {
                         std::cerr << "Invalid emulation option: " << args[i + 1] << "\n";
                         std::cerr << "Usage: --emulation [smoke|regression|extended]\n";
                         exit(EXIT_FAILURE);
                     }
+                    setEmulationOption(emulationValue);
                     i++;
                     continue;
                 }
@@ -191,7 +173,31 @@ namespace rocwmma
             return mEmulationOption;
         }
 
-    protected:
+    private:
+        EmulationOption parseEmulationOption(std::string const& value)
+        {
+            std::string lowercase_value = value;
+            std::transform(
+                lowercase_value.begin(), lowercase_value.end(), lowercase_value.begin(), ::tolower);
+
+            if(lowercase_value == "smoke")
+            {
+                return EmulationOption::SMOKE;
+            }
+            else if(lowercase_value == "regression")
+            {
+                return EmulationOption::REGRESSION;
+            }
+            else if(lowercase_value == "extended")
+            {
+                return EmulationOption::EXTENDED;
+            }
+            else
+            {
+                return EmulationOption::NONE;
+            }
+        }
+
         rocwmmaOStream mOstream;
 
         bool mOmitSkipped, mOmitFailed, mOmitPassed, mOmitCout;

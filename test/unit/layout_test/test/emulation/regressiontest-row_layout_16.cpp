@@ -33,7 +33,7 @@
 
 namespace rocwmma
 {
-    using TestParams = EmulationLayoutTestParams<UnitTestParams::TestTypes16,
+    using TestParams = EmulationLayoutTestParams<UnitTestParams::TestAllSizeTypes,
                                                  UnitTestParams::TestBlockSizes16,
                                                  RowLayoutGenerator>;
 

@@ -35,7 +35,7 @@ namespace rocwmma
 {
 
     using TestParams
-        = EmulationLoadStoreMatrixCoopSyncTestParams<UnitTestParams::TestTypesIOC,
+        = EmulationLoadStoreMatrixCoopSyncTestParams<UnitTestParams::TestAllSizeTypes,
                                                      UnitTestParams::TestBlockSizes32,
                                                      LoadStoreMatrixCoopSyncGeneratorA>;
 
