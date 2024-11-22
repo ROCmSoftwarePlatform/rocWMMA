@@ -36,12 +36,12 @@
 namespace rocwmma
 {
 
-    using TestParams = CrossLaneTestParams<
-        PermuteKernelParams<std::tuple<PermuteImpl::OpsBase::RotateR<1, 32>,
-                                       PermuteImpl::OpsBase::RotateR<5, 32>,
-                                       PermuteImpl::OpsBase::RotateL<8, 32>,
-                                       PermuteImpl::OpsBase::RotateL<15, 32>>>,
-        PermuteOpsGenerator>;
+    using TestParams
+        = CrossLaneTestParams<PermuteKernelParams<PermuteImpl::OpsBase::RotateR<1, 32>,
+                                                  PermuteImpl::OpsBase::RotateR<5, 32>,
+                                                  PermuteImpl::OpsBase::RotateL<8, 32>,
+                                                  PermuteImpl::OpsBase::RotateL<15, 32>>,
+                              PermuteOpsGenerator>;
 
 } // namespace rocwmma
 

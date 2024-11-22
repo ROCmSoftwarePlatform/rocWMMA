@@ -36,10 +36,9 @@
 namespace rocwmma
 {
 
-    using TestParams
-        = CrossLaneTestParams<SwizzleKernelParams<std::tuple<SwizzleImpl::Ops::RotateL2<0>,
-                                                             SwizzleImpl::Ops::RotateL2<1>>>,
-                              SwizzleOpsGenerator>;
+    using TestParams = CrossLaneTestParams<
+        SwizzleKernelParams<SwizzleImpl::Ops::RotateL2<0>, SwizzleImpl::Ops::RotateL2<1>>,
+        SwizzleOpsGenerator>;
 
 } // namespace rocwmma
 

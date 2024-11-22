@@ -37,8 +37,7 @@ namespace rocwmma
 {
 
     using TestParams
-        = CrossLaneTestParams<BlendKernelParams<std::tuple<BlendImpl::Ops::UnpackByteLo>>,
-                              BlendOpsGenerator>;
+        = CrossLaneTestParams<BlendKernelParams<BlendImpl::Ops::UnpackByteLo>, BlendOpsGenerator>;
 
 } // namespace rocwmma
 

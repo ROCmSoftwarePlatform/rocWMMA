@@ -36,11 +36,11 @@
 namespace rocwmma
 {
 
-    using TestParams = CrossLaneTestParams<BlendKernelParams<std::tuple<BlendImpl::Ops::Zip2,
-                                                                        BlendImpl::Ops::Zip4,
-                                                                        BlendImpl::Ops::Zip8,
-                                                                        BlendImpl::Ops::Zip16,
-                                                                        BlendImpl::Ops::Zip32>>,
+    using TestParams = CrossLaneTestParams<BlendKernelParams<BlendImpl::Ops::Zip2,
+                                                             BlendImpl::Ops::Zip4,
+                                                             BlendImpl::Ops::Zip8,
+                                                             BlendImpl::Ops::Zip16,
+                                                             BlendImpl::Ops::Zip32>,
                                            BlendOpsGenerator>;
 
 } // namespace rocwmma

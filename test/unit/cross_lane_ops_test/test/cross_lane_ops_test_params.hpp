@@ -74,23 +74,23 @@ namespace rocwmma
 
     // Test random assortment of banks and rows
 
-    template <typename DppOps>
+    template <typename... DppOps>
     using DppKernelParams = typename CombineLists<std::tuple<uint32_t, uint64_t>,
-                                                  DppOps,
+                                                  std::tuple<DppOps...>,
                                                   std::tuple<I<0xF>, I<0x5>, I<0xA>>,
                                                   std::tuple<I<0xF>, I<0x7>, I<0x3>>,
                                                   std::tuple<I<false>, I<true>>>::Result;
 
-    template <typename BlendOps>
+    template <typename... BlendOps>
     using BlendKernelParams =
-        typename CombineLists<std::tuple<uint32_t, uint64_t>, BlendOps>::Result;
+        typename CombineLists<std::tuple<uint32_t, uint64_t>, std::tuple<BlendOps...>>::Result;
 
-    template <typename SwizzleOps>
+    template <typename... SwizzleOps>
     using SwizzleKernelParams =
-        typename CombineLists<std::tuple<uint32_t, uint64_t>, SwizzleOps>::Result;
+        typename CombineLists<std::tuple<uint32_t, uint64_t>, std::tuple<SwizzleOps...>>::Result;
 
-    template <typename PermuteOps>
+    template <typename... PermuteOps>
     using PermuteKernelParams =
-        typename CombineLists<std::tuple<uint32_t, uint64_t>, PermuteOps>::Result;
+        typename CombineLists<std::tuple<uint32_t, uint64_t>, std::tuple<PermuteOps...>>::Result;
 } // namespace rocwmma
 #endif //CROSS_LANE_OPS_TEST_PARAMS_HPP

@@ -36,9 +36,9 @@
 namespace rocwmma
 {
 
-    using TestParams = CrossLaneTestParams<
-        DppKernelParams<std::tuple<DppImpl::Ops::BCast2<0>, DppImpl::Ops::BCast2<1>>>,
-        DppOpsGenerator>;
+    using TestParams
+        = CrossLaneTestParams<DppKernelParams<DppImpl::Ops::BCast2<0>, DppImpl::Ops::BCast2<1>>,
+                              DppOpsGenerator>;
 
 } // namespace rocwmma
 
