@@ -56,39 +56,6 @@ namespace rocwmma
             return KernelGenerator::generate();
         }
     };
-
-    template <typename Types, typename BlockSizes, typename GeneratorImpl>
-    struct EmulationLoadStoreMatrixSyncTestParams : public UnitTestParams
-    {
-        using Base = UnitTestParams;
-
-        using Layouts      = typename Base::TestLayoutsAll;
-        using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
-
-        // Assemble the kernel generator
-        using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
-
-        // Sanity check for kernel generator
-        static_assert(std::is_same<typename GeneratorImpl::ResultT, typename Base::KernelT>::value,
-                      "Kernels from this generator do not match testing interface");
-
-        static inline typename KernelGenerator::ResultT kernels()
-        {
-            return KernelGenerator::generate();
-        }
-
-        static inline std::vector<ThreadBlockT> threadBlocks()
-        {
-            auto warpSize = HipDevice::instance()->warpSize();
-
-            return {{warpSize * 2, 2}};
-        }
-
-        static inline std::vector<ProblemSizeT> problemSizes()
-        {
-            return {{512, 512}};
-        }
-    };
 } // namespace rocwmma
 
 #endif // LOAD_STORE_MATRIX_SYNC_TEST_PARAMS_HPP

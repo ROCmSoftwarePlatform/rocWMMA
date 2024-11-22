@@ -24,7 +24,7 @@
  *
  *******************************************************************************/
 
-#include "../load_store_matrix_sync_test_params.hpp"
+#include "load_store_matrix_sync_test_emulation_params.hpp"
 
 namespace rocwmma
 {

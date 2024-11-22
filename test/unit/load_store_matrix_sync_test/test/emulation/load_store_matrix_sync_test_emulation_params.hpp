@@ -24,22 +24,21 @@
  *
  *******************************************************************************/
 
-#include <type_traits>
-
-#include "kernel_generator.hpp"
-#include "unit_test.hpp"
+#ifndef LOAD_STORE_MATRIX_SYNC_TEST_EMULATION_PARAMS_HPP
+#define LOAD_STORE_MATRIX_SYNC_TEST_EMULATION_PARAMS_HPP
+#include "../load_store_matrix_sync_test_params.hpp"
 
 namespace rocwmma
 {
-
     template <typename Types, typename BlockSizes, typename GeneratorImpl>
-    struct FillFragmentTestParams : public UnitTestParams
+    struct EmulationLoadStoreMatrixSyncTestParams : public UnitTestParams
     {
         using Base = UnitTestParams;
 
         using Layouts      = typename Base::TestLayoutsAll;
         using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
 
+        // Assemble the kernel generator
         using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
 
         // Sanity check for kernel generator
@@ -50,5 +49,19 @@ namespace rocwmma
         {
             return KernelGenerator::generate();
         }
+
+        static inline std::vector<ThreadBlockT> threadBlocks()
+        {
+            auto warpSize = HipDevice::instance()->warpSize();
+
+            return {{warpSize * 2, 2}};
+        }
+
+        static inline std::vector<ProblemSizeT> problemSizes()
+        {
+            return {{512, 512}};
+        }
     };
 } // namespace rocwmma
+
+#endif // LOAD_STORE_MATRIX_SYNC_TEST_EMULATION_PARAMS_HPP

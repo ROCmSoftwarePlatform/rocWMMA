@@ -26,9 +26,9 @@
 
 #include <type_traits>
 
-#include "../load_store_matrix_sync_test_params.hpp"
 #include "detail/load_store_matrix_sync.hpp"
 #include "kernel_generator.hpp"
+#include "load_store_matrix_sync_test_emulation_params.hpp"
 #include "unit_test.hpp"
 
 namespace rocwmma

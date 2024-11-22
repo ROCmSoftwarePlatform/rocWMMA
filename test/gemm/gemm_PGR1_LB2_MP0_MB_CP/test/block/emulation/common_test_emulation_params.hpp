@@ -24,49 +24,17 @@
  *
  *******************************************************************************/
 
-#ifndef ROCWMMA_GEMM_COMMON_TEST_PARAMS
-#define ROCWMMA_GEMM_COMMON_TEST_PARAMS
+#ifndef ROCWMMA_GEMM_COMMON_TEST_EMULATION_PARAMS
+#define ROCWMMA_GEMM_COMMON_TEST_EMULATION_PARAMS
 
-#include "gemm_common_test_params.hpp"
+#include "../common_test_params.hpp"
 
 namespace rocwmma
 {
     ///
-    /// FWD declarations
+    /// Generalized kernel params for smoke tests
     ///
-
-    class KernelGenerator_PGR1_LB2_MP0_MB_CP;
-
-    namespace CooperativeGemm
-    {
-        namespace BlockLevel
-        {
-            class LdsNT;
-            class LdsTN;
-            class LdsRF;
-
-        } // namespace BlockLevel
-
-        namespace WaveLevel
-        {
-            class LdsNT;
-            class LdsTN;
-
-        } // namespace WaveLevel
-
-        namespace WorkgroupLevel
-        {
-            class LdsNT;
-            class LdsTN;
-
-        } // namespace WaveLevel
-
-    } // namespace CooperativeGemm
-
-    ///
-    /// Generalized kernel params for most cooperative tests
-    ///
-    struct CommonTestParams : public GemmCommonTestParams
+    struct EmulationCommonTestParams : public GemmCommonTestParams
     {
         ///
         /// Cooperative GEMM configurations
@@ -94,7 +62,18 @@ namespace rocwmma
         /// Kernel generator impl objects
         ///
         using KernelGeneratorImpl = KernelGenerator_PGR1_LB2_MP0_MB_CP;
+
+        static inline std::vector<ThreadBlockT> threadBlocks()
+        {
+            auto warpSize = HipDevice::instance()->warpSize();
+
+            return {{warpSize * 2, 2}};
+        }
+        static inline std::vector<ProblemSizeT> problemSizes()
+        {
+            return {{256, 256, 256}};
+        }
     };
 } // namespace rocwmma
 
-#endif // ROCWMMA_GEMM_COMMON_TEST_PARAMS
+#endif // ROCWMMA_GEMM_COMMON_TEST_EMULATION_PARAMS

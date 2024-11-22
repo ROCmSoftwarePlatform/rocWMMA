@@ -24,35 +24,34 @@
  *
  *******************************************************************************/
 
-#include <type_traits>
+#ifndef ROCWMMA_GEMM_COMMON_TEST_EMULATION_PARAMS
+#define ROCWMMA_GEMM_COMMON_TEST_EMULATION_PARAMS
 
-#include "detail/col_layout.hpp"
-#include "kernel_generator.hpp"
-#include "layout_test_emulation_params.hpp"
-#include "unit_test.hpp"
+#include "../common_test_params.hpp"
 
 namespace rocwmma
 {
-    using TestParams = EmulationLayoutTestParams<UnitTestParams::TestTypes16,
-                                                 UnitTestParams::TestBlockSizes16,
-                                                 ColLayoutGenerator>;
+    ///
+    /// Generalized kernel params for smoke tests
+    ///
+    struct EmulationCommonTestParams : public GemmCommonTestParams
+    {
+        ///
+        /// Kernel generator impl objects
+        ///
+        using KernelGeneratorImpl = KernelGenerator_PGR0_LB0_MP0_SB_NC;
+
+        static inline std::vector<ThreadBlockT> threadBlocks()
+        {
+            auto warpSize = HipDevice::instance()->warpSize();
+
+            return {{warpSize * 2, 2}};
+        }
+        static inline std::vector<ProblemSizeT> problemSizes()
+        {
+            return {{256, 256, 256}};
+        }
+    };
 } // namespace rocwmma
 
-// Test suite for unique parameterization
-class EmulationRegressionColLayoutTest16 : public rocwmma::UnitTest
-{
-};
-
-TEST_P(EmulationRegressionColLayoutTest16, RunKernel)
-{
-    this->RunKernel();
-}
-
-INSTANTIATE_TEST_SUITE_P(
-    KernelTests,
-    EmulationRegressionColLayoutTest16,
-    ::testing::Combine(::testing::ValuesIn(rocwmma::TestParams::kernels()),
-                       ::testing::ValuesIn(rocwmma::TestParams::threadBlocks()),
-                       ::testing::ValuesIn(rocwmma::TestParams::problemSizes()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param1s()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param2s())));
+#endif // ROCWMMA_GEMM_COMMON_TEST_EMULATION_PARAMS

@@ -26,9 +26,9 @@
 
 #include <type_traits>
 
-#include "../layout_test_params.hpp"
 #include "detail/col_layout.hpp"
 #include "kernel_generator.hpp"
+#include "layout_test_emulation_params.hpp"
 #include "unit_test.hpp"
 
 namespace rocwmma

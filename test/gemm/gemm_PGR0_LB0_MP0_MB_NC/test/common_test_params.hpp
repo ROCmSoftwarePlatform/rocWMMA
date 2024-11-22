@@ -47,28 +47,6 @@ namespace rocwmma
         ///
         using KernelGeneratorImpl = KernelGenerator_PGR0_LB0_MP0_MB_NC;
     };
-
-    ///
-    /// Generalized kernel params for smoke tests
-    ///
-    struct EmulationCommonTestParams : public GemmCommonTestParams
-    {
-        ///
-        /// Kernel generator impl objects
-        ///
-        using KernelGeneratorImpl = KernelGenerator_PGR0_LB0_MP0_MB_NC;
-
-        static inline std::vector<ThreadBlockT> threadBlocks()
-        {
-            auto warpSize = HipDevice::instance()->warpSize();
-
-            return {{warpSize * 2, 2}};
-        }
-        static inline std::vector<ProblemSizeT> problemSizes()
-        {
-            return {{256, 256, 256}};
-        }
-    };
 } // namespace rocwmma
 
 #endif // ROCWMMA_GEMM_COMMON_TEST_PARAMS

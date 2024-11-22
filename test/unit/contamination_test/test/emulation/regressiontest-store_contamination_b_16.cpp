@@ -26,7 +26,7 @@
 
 #include <type_traits>
 
-#include "../contamination_test_params.hpp"
+#include "contamination_test_emulation_params.hpp"
 #include "detail/store_contamination.hpp"
 #include "kernel_generator.hpp"
 #include "unit_test.hpp"

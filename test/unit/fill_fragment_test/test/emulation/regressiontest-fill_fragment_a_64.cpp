@@ -26,8 +26,8 @@
 
 #include <type_traits>
 
-#include "../fill_fragment_test_params.hpp"
 #include "detail/fill_fragment.hpp"
+#include "fill_fragment_test_emulation_params.hpp"
 #include "kernel_generator.hpp"
 #include "unit_test.hpp"
 

@@ -26,9 +26,9 @@
 
 #include <type_traits>
 
-#include "../map_util_test_params.hpp"
 #include "detail/map_wave_to_matrix.hpp"
 #include "kernel_generator.hpp"
+#include "map_util_test_emulation_params.hpp"
 #include "unit_test.hpp"
 
 namespace rocwmma

@@ -24,6 +24,7 @@
  *
  *******************************************************************************/
 
+#include "common_test_emulation_params.hpp.hpp"
 #include "test/test_includes.hpp"
 
 namespace rocwmma

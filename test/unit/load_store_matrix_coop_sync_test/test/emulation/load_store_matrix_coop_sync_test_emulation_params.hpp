@@ -24,22 +24,25 @@
  *
  *******************************************************************************/
 
-#include <type_traits>
-
-#include "kernel_generator.hpp"
-#include "unit_test.hpp"
+#ifndef LOAD_STORE_MATRIX_COOP_SYNC_TEST_EMULATION_PARAMS_HPP
+#define LOAD_STORE_MATRIX_COOP_SYNC_TEST_EMULATION_PARAMS_HPP
+#include "../load_store_matrix_coop_sync_test_params.hpp"
 
 namespace rocwmma
 {
-
     template <typename Types, typename BlockSizes, typename GeneratorImpl>
-    struct FillFragmentTestParams : public UnitTestParams
+    struct EmulationLoadStoreMatrixCoopSyncTestParams : public UnitTestParams
     {
         using Base = UnitTestParams;
 
+        // Types: Base IOC
+        // Block Sizes: 32 x BlockK
+        // Layouts: N, T
         using Layouts      = typename Base::TestLayoutsAll;
         using KernelParams = typename CombineLists<Types, BlockSizes, Layouts>::Result;
 
+        // Assemble the kernel generator
+        // Kernel: LoadStoreMatrixCoopSyncB
         using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
 
         // Sanity check for kernel generator
@@ -50,5 +53,38 @@ namespace rocwmma
         {
             return KernelGenerator::generate();
         }
+
+        static inline std::vector<Base::Param1T> param1s()
+        {
+            return {0.0, 1.0}; // Split by waves in same rol and col
+        }
+
+        static inline std::vector<Base::Param2T> param2s()
+        {
+            return
+            {
+                0.0, 1.0, 2.0,
+                    3.0 // 1 - 4 waves
+#if ROCWMMA_EXTENDED_TESTS
+                    ,
+                    4.0, 5.0, 6.0,
+                    7.0 // 8 waves
+#endif // ROCWMMA_EXTENDED_TESTS
+            };
+        }
+
+        static inline std::vector<ThreadBlockT> threadBlocks()
+        {
+            auto warpSize = HipDevice::instance()->warpSize();
+
+            return {{warpSize * 2, 2}};
+        }
+
+        static inline std::vector<ProblemSizeT> problemSizes()
+        {
+            return {{512, 512}};
+        }
     };
 } // namespace rocwmma
+
+#endif // LOAD_STORE_MATRIX_COOP_SYNC_TEST_EMULATION_PARAMS_HPP
