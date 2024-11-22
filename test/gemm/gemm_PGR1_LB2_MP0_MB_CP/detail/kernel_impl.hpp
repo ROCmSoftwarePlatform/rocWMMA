@@ -179,9 +179,8 @@ namespace rocwmma
                                      (BlocksX == BlocksY == 4)); // BlocksX = 4, BlocksY = 4
             }
 
-            return Base::checkQuirks() && Base::checkTypes()
-                   && Base::template dispatchGuard<TestGuard>() && kernelImplCheck && wgQuirksCheck
-                   && waveQuirksCheck;
+            return Base::checkQuirks() && Base::template dispatchGuard<TestGuard>()
+                   && kernelImplCheck && wgQuirksCheck && waveQuirksCheck;
         }
 
         // Lds memory usage in bytes

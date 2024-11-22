@@ -133,7 +133,6 @@ namespace rocwmma
         virtual bool checkDevice() const;
         virtual bool checkSizes() const;
         virtual bool checkLds() const;
-        virtual bool checkTypes() const;
         virtual bool checkQuirks() const;
 
         // Reset all members to default values

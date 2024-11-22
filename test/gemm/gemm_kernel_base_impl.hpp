@@ -357,43 +357,6 @@ namespace rocwmma
                         LayoutA,
                         LayoutB,
                         LayoutC,
-                        LayoutD>::checkTypes() const
-    {
-        // check if hardwares support data type
-        auto deviceArch = DeviceInfo::instance()->getGcnArch();
-        auto isGfx94X   = ((deviceArch == DeviceInfo::GFX940) || (deviceArch == DeviceInfo::GFX941)
-                         || (deviceArch == DeviceInfo::GFX942));
-        auto isF8       = std::is_same_v<InputT, float8_t> || std::is_same_v<InputT, bfloat8_t>
-                    || std::is_same_v<InputT, float8_fnuz_t>
-                    || std::is_same_v<InputT, bfloat8_fnuz_t> || std::is_same_v<OutputT, float8_t>
-                    || std::is_same_v<OutputT, bfloat8_t> || std::is_same_v<OutputT, float8_fnuz_t>
-                    || std::is_same_v<OutputT, bfloat8_fnuz_t> || std::is_same_v<ComputeT, float8_t>
-                    || std::is_same_v<ComputeT, bfloat8_t>
-                    || std::is_same_v<ComputeT, float8_fnuz_t>
-                    || std::is_same_v<ComputeT, bfloat8_fnuz_t>;
-
-        return !isF8 || isGfx94X;
-    }
-
-    template <uint32_t BlockM,
-              uint32_t BlockN,
-              uint32_t BlockK,
-              typename InputT,
-              typename OutputT,
-              typename ComputeT,
-              typename LayoutA,
-              typename LayoutB,
-              typename LayoutC,
-              typename LayoutD>
-    bool GemmKernelBase<BlockM,
-                        BlockN,
-                        BlockK,
-                        InputT,
-                        OutputT,
-                        ComputeT,
-                        LayoutA,
-                        LayoutB,
-                        LayoutC,
                         LayoutD>::checkQuirks() const
     {
         // Historically, there have been some bugs that are elicited under certain conditions
