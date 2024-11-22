@@ -31,6 +31,7 @@
 #include "detail/vector_util.hpp"
 #include "kernel_generator.hpp"
 #include "unit_test.hpp"
+#include "unit_test_macros.hpp"
 
 namespace rocwmma
 {
@@ -79,20 +80,4 @@ namespace rocwmma
 } // namespace rocwmma
 
 // Test suite for unique parameterization
-class EmulationRegressionVectorUtilTest : public rocwmma::UnitTest
-{
-};
-
-TEST_P(EmulationRegressionVectorUtilTest, RunKernel)
-{
-    this->RunKernel();
-}
-
-INSTANTIATE_TEST_SUITE_P(
-    KernelTests,
-    EmulationRegressionVectorUtilTest,
-    ::testing::Combine(::testing::ValuesIn(rocwmma::TestParams::kernels()),
-                       ::testing::ValuesIn(rocwmma::TestParams::threadBlocks()),
-                       ::testing::ValuesIn(rocwmma::TestParams::problemSizes()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param1s()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param2s())));
+ROCWMMA_GENERATE_UNIT_GTEST_SUITE(EmulationRegressionVectorUtilTest, TestParams)

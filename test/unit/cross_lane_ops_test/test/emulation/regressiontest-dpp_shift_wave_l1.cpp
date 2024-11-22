@@ -31,6 +31,7 @@
 #include "detail/cross_lane_ops.hpp"
 #include "kernel_generator.hpp"
 #include "unit_test.hpp"
+#include "unit_test_macros.hpp"
 
 namespace rocwmma
 {
@@ -41,20 +42,4 @@ namespace rocwmma
 } // namespace rocwmma
 
 // Test suite for unique parameterization
-class EmulationRegressionDppShiftWaveL1Test : public rocwmma::UnitTest
-{
-};
-
-TEST_P(EmulationRegressionDppShiftWaveL1Test, RunKernel)
-{
-    this->RunKernel();
-}
-
-INSTANTIATE_TEST_SUITE_P(
-    CrossLaneOpTests,
-    EmulationRegressionDppShiftWaveL1Test,
-    ::testing::Combine(::testing::ValuesIn(rocwmma::TestParams::kernels()),
-                       ::testing::ValuesIn(rocwmma::TestParams::threadBlocks()),
-                       ::testing::ValuesIn(rocwmma::TestParams::problemSizes()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param1s()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param2s())));
+ROCWMMA_GENERATE_UNIT_GTEST_SUITE(EmulationRegressionDppShiftWaveL1Test, TestParams)

@@ -30,6 +30,7 @@
 #include "kernel_generator.hpp"
 #include "load_store_matrix_coop_sync_test_emulation_params.hpp"
 #include "unit_test.hpp"
+#include "unit_test_macros.hpp"
 
 namespace rocwmma
 {
@@ -42,20 +43,4 @@ namespace rocwmma
 } // namespace rocwmma
 
 // Test suite for unique parameterization
-class EmulationSmokeLoadStoreMatrixSyncCoopATest16 : public rocwmma::UnitTest
-{
-};
-
-TEST_P(EmulationSmokeLoadStoreMatrixSyncCoopATest16, RunKernel)
-{
-    this->RunKernel();
-}
-
-INSTANTIATE_TEST_SUITE_P(
-    KernelTests,
-    EmulationSmokeLoadStoreMatrixSyncCoopATest16,
-    ::testing::Combine(::testing::ValuesIn(rocwmma::TestParams::kernels()),
-                       ::testing::ValuesIn(rocwmma::TestParams::threadBlocks()),
-                       ::testing::ValuesIn(rocwmma::TestParams::problemSizes()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param1s()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param2s())));
+ROCWMMA_GENERATE_UNIT_GTEST_SUITE(EmulationSmokeLoadStoreMatrixSyncCoopATest16, TestParams)
