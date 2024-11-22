@@ -24,7 +24,7 @@
  *
  *******************************************************************************/
 
-#include "common_test_emulation_params.hpp.hpp"
+#include "common_test_emulation_params.hpp"
 #include "test/test_includes.hpp"
 
 namespace rocwmma
@@ -44,5 +44,5 @@ namespace rocwmma
 
 // Instantiate kernels as a test suite
 ROCWMMA_INSTANTIATE_GEMM_GTEST_SUITE_NO_WARMUP(Gemm_PGR1_LB2_MP0_MB_CP,
-                                               EmulationRegression_BLK_16x16_NN_2x2,
+                                               EmulationRegression_BLK_16x16_2x2,
                                                rocwmma::TestParams);

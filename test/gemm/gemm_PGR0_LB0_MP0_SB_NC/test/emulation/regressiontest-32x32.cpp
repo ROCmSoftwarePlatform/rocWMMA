@@ -35,11 +35,11 @@ namespace rocwmma
                                              KernelGeneratorImpl,
                                              TestTypes32x32,
                                              TestBlockSizes32x32,
-                                             TestLayoutsNN);
+                                             TestLayoutsAll);
 
 } // namespace rocwmma
 
 // Instantiate kernels as a test suite
 ROCWMMA_INSTANTIATE_GEMM_GTEST_SUITE_NO_WARMUP(Gemm_PGR0_LB0_MP0_SB_NC,
-                                               EmulationRegression_32x32_NN,
+                                               EmulationRegression_32x32,
                                                rocwmma::TestParams);

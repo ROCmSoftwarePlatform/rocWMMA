@@ -41,5 +41,5 @@ namespace rocwmma
 
 // Instantiate kernels as a test suite
 ROCWMMA_INSTANTIATE_GEMM_GTEST_SUITE_NO_WARMUP(Gemm_PGR0_LB0_MP0_SB_NC,
-                                               EmulationRegression_16x16_NN,
+                                               EmulationRegression_16x16,
                                                rocwmma::TestParams);
