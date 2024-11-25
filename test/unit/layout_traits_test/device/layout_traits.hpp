@@ -117,14 +117,12 @@ namespace rocwmma
 
         bool result = true;
 
-        result
-            &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(DataLayoutT, SameMeta, true, false, debug_on_fail);
-        result
-            &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(DataLayoutT, OrthoMeta, false, true, debug_on_fail);
-        result
-            &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(DataLayoutT, SameFunc, true, false, debug_on_fail);
-        result
-            &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(DataLayoutT, OrthoFunc, false, true, debug_on_fail);
+        // clang-format off
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(DataLayoutT, SameMeta, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(DataLayoutT, OrthoMeta, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(DataLayoutT, SameFunc, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(DataLayoutT, OrthoFunc, false, true, debug_on_fail);
+        // clang-format on
 
         return result;
     }
@@ -150,8 +148,8 @@ namespace rocwmma
             MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>,
             DataLayout>;
 
-        using MmaInput = RegisterLayout::MmaInput<BlockDim, false>;
-        using MmaAcc   = RegisterLayout::MmaAcc<BlockDim, false>;
+        using MmaInput = RegisterLayout::MmaInput<BlockDim, DataT, false>;
+        using MmaAcc   = RegisterLayout::MmaAcc<BlockDim, DataT, false>;
     };
 
     template <typename StorageLayout>
@@ -179,86 +177,27 @@ namespace rocwmma
         bool result = true;
 
         // Matrix <-> Matrix layout
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColOrtho>,
-                                                  MatrixLayout_t<typename Set::ColOrtho>,
-                                                  true,
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColOrtho>,
-                                                  MatrixLayout_t<typename Set::ColInline>,
-                                                  false,
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColOrtho>,
-                                                  MatrixLayout_t<typename Set::RowOrtho>,
-                                                  false,
-                                                  true,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColOrtho>,
-                                                  MatrixLayout_t<typename Set::RowInline>,
-                                                  false,
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColInline>,
-                                                  MatrixLayout_t<typename Set::ColOrtho>,
-                                                  false,
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColInline>,
-                                                  MatrixLayout_t<typename Set::ColInline>,
-                                                  true,
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColInline>,
-                                                  MatrixLayout_t<typename Set::RowOrtho>,
-                                                  false,
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColInline>,
-                                                  MatrixLayout_t<typename Set::RowInline>,
-                                                  false,
-                                                  true,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowOrtho>,
-                                                  MatrixLayout_t<typename Set::ColOrtho>,
-                                                  false,
-                                                  true,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowOrtho>,
-                                                  MatrixLayout_t<typename Set::ColInline>,
-                                                  false,
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowOrtho>,
-                                                  MatrixLayout_t<typename Set::RowOrtho>,
-                                                  true,
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowOrtho>,
-                                                  MatrixLayout_t<typename Set::RowInline>,
-                                                  false,
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowInline>,
-                                                  MatrixLayout_t<typename Set::ColOrtho>,
-                                                  false,
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowInline>,
-                                                  MatrixLayout_t<typename Set::ColInline>,
-                                                  false,
-                                                  true,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowInline>,
-                                                  MatrixLayout_t<typename Set::RowOrtho>,
-                                                  false,
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowInline>,
-                                                  MatrixLayout_t<typename Set::RowInline>,
-                                                  true,
-                                                  false,
-                                                  debug_on_fail);
+        // clang-format off
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColOrtho>, MatrixLayout_t<typename Set::ColOrtho>, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColOrtho>, MatrixLayout_t<typename Set::ColInline>, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColOrtho>, MatrixLayout_t<typename Set::RowOrtho>, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColOrtho>, MatrixLayout_t<typename Set::RowInline>, false, false, debug_on_fail);
+
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColInline>, MatrixLayout_t<typename Set::ColOrtho>,  false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColInline>, MatrixLayout_t<typename Set::ColInline>, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColInline>, MatrixLayout_t<typename Set::RowOrtho>, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::ColInline>, MatrixLayout_t<typename Set::RowInline>, false, true, debug_on_fail);
+
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowOrtho>, MatrixLayout_t<typename Set::ColOrtho>, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowOrtho>, MatrixLayout_t<typename Set::ColInline>, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowOrtho>, MatrixLayout_t<typename Set::RowOrtho>, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowOrtho>, MatrixLayout_t<typename Set::RowInline>, false, false, debug_on_fail);
+
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowInline>, MatrixLayout_t<typename Set::ColOrtho>, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowInline>, MatrixLayout_t<typename Set::ColInline>, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowInline>, MatrixLayout_t<typename Set::RowOrtho>, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(MatrixLayout_t<typename Set::RowInline>, MatrixLayout_t<typename Set::RowInline>, true, false, debug_on_fail);
+        // clang-format on
 
         return result;
     }
@@ -300,53 +239,26 @@ namespace rocwmma
         bool result = true;
 
         // Storage <-> storage layout
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColOrtho, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline,
-                                                  typename Set1::ColOrtho,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  debug_on_fail);
+        // clang-format off
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColOrtho, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColOrtho, false, (is_layout_same_v<DataLayoutT, row_major>), debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColInline, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho,
-                                                  typename Set1::ColInline,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColInline, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColInline, false, (is_layout_same_v<DataLayoutT, col_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColInline, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline,
-                                                  typename Set1::RowOrtho,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowOrtho, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline,typename Set1::RowOrtho, false, (is_layout_same_v<DataLayoutT, col_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowOrtho, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowOrtho, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho,
-                                                  typename Set1::RowInline,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowInline, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowInline, false, (is_layout_same_v<DataLayoutT, row_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, true, false, debug_on_fail);
 
         // Storage <-> mma layouts
 
@@ -369,6 +281,8 @@ namespace rocwmma
         // result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaAcc, typename Set1::ColOrtho,    true,  false, debug_on_fail);
         // result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaAcc, typename Set1::ColInline,  false,  false, debug_on_fail);
         // result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaAcc, typename Set1::RowOrtho,    false,  false, debug_on_fail);
+
+        // clang-format on
 
         return result;
     }
@@ -401,53 +315,27 @@ namespace rocwmma
 
         bool result = true;
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline,
-                                                  typename Set1::ColOrtho,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColOrtho, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColOrtho, false, false, debug_on_fail);
+        // clang-format off
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColOrtho, false, (is_layout_same_v<DataLayoutT, col_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColOrtho, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColOrtho, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho,
-                                                  typename Set1::ColInline,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColInline, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColInline, false, (is_layout_same_v<DataLayoutT, row_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColInline, true, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowOrtho, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline,
-                                                  typename Set1::RowOrtho,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowOrtho, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowOrtho, false, (is_layout_same_v<DataLayoutT, row_major>), debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowInline, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho,
-                                                  typename Set1::RowInline,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowInline, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowInline, false, (is_layout_same_v<DataLayoutT, col_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, false, false, debug_on_fail);
+        // clang-format on
 
         return result;
     }
@@ -480,41 +368,27 @@ namespace rocwmma
 
         bool result = true;
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColOrtho, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColOrtho, false, true, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColOrtho, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColOrtho, false, true, debug_on_fail);
+        // clang-format off
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColOrtho, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColOrtho, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColOrtho, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColOrtho, false, true, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColInline, false, true, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColInline, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColInline, false, true, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColInline, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColInline, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColInline, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColInline, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColInline, true, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowOrtho, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowOrtho, false, true, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowOrtho, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowOrtho, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowOrtho, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowOrtho, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowOrtho, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowOrtho, false, true, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowInline, false, true, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowInline, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowInline, false, true, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowInline, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowInline, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowInline, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowInline, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, true, false, debug_on_fail);
+        // clang-format on
 
         return result;
     }
@@ -547,41 +421,27 @@ namespace rocwmma
 
         bool result = true;
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColOrtho, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColOrtho, false, true, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColOrtho, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColOrtho, false, true, debug_on_fail);
+        // clang-format off
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColOrtho, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColOrtho, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColOrtho, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColOrtho, false, true, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColInline, false, true, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColInline, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColInline, false, true, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColInline, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColInline, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColInline, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColInline, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColInline, true, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowOrtho, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowOrtho, false, true, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowOrtho, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowOrtho, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowOrtho, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowOrtho, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowOrtho, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowOrtho, false, true, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowInline, false, true, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowInline, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowInline, false, true, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowInline, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowInline, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowInline, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowInline, false, true, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, true, false, debug_on_fail);
+        // clang-format on
 
         return result;
     }
@@ -622,89 +482,27 @@ namespace rocwmma
             return result;
         }
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho,
-                                                  typename Set1::ColOrtho,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline,
-                                                  typename Set1::ColOrtho,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho,
-                                                  typename Set1::ColOrtho,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline,
-                                                  typename Set1::ColOrtho,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  debug_on_fail);
+        // clang-format off
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColOrtho, (is_layout_same_v<DataLayoutT, row_major>), false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColOrtho, false, (is_layout_same_v<DataLayoutT, row_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColOrtho, (is_layout_same_v<DataLayoutT, row_major>), false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColOrtho, false, (is_layout_same_v<DataLayoutT, row_major>), debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho,
-                                                  typename Set1::ColInline,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline,
-                                                  typename Set1::ColInline,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho,
-                                                  typename Set1::ColInline,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline,
-                                                  typename Set1::ColInline,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  false,
-                                                  debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColInline, false, (is_layout_same_v<DataLayoutT, col_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColInline, (is_layout_same_v<DataLayoutT, col_major>), false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColInline, false, (is_layout_same_v<DataLayoutT, col_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColInline, (is_layout_same_v<DataLayoutT, col_major>), false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho,
-                                                  typename Set1::RowOrtho,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline,
-                                                  typename Set1::RowOrtho,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho,
-                                                  typename Set1::RowOrtho,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline,
-                                                  typename Set1::RowOrtho,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowOrtho, (is_layout_same_v<DataLayoutT, col_major>), false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowOrtho, false, (is_layout_same_v<DataLayoutT, col_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowOrtho, (is_layout_same_v<DataLayoutT, col_major>), false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowOrtho, false, (is_layout_same_v<DataLayoutT, col_major>), debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho,
-                                                  typename Set1::RowInline,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline,
-                                                  typename Set1::RowInline,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho,
-                                                  typename Set1::RowInline,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline,
-                                                  typename Set1::RowInline,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  false,
-                                                  debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowInline, false, (is_layout_same_v<DataLayoutT, row_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowInline, (is_layout_same_v<DataLayoutT, row_major>), false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowInline, false, (is_layout_same_v<DataLayoutT, row_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, (is_layout_same_v<DataLayoutT, row_major>), false, debug_on_fail);
+        // clang-format on
 
         return result;
     }
@@ -745,89 +543,27 @@ namespace rocwmma
             return result;
         }
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho,
-                                                  typename Set1::ColOrtho,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline,
-                                                  typename Set1::ColOrtho,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho,
-                                                  typename Set1::ColOrtho,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline,
-                                                  typename Set1::ColOrtho,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  debug_on_fail);
+        // clang-format off
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColOrtho, (is_layout_same_v<DataLayoutT, col_major>), false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColOrtho, false, (is_layout_same_v<DataLayoutT, col_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColOrtho, (is_layout_same_v<DataLayoutT, col_major>), false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColOrtho, false, (is_layout_same_v<DataLayoutT, col_major>), debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho,
-                                                  typename Set1::ColInline,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline,
-                                                  typename Set1::ColInline,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho,
-                                                  typename Set1::ColInline,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline,
-                                                  typename Set1::ColInline,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  false,
-                                                  debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColInline, false, (is_layout_same_v<DataLayoutT, row_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColInline, (is_layout_same_v<DataLayoutT, row_major>), false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColInline, false, (is_layout_same_v<DataLayoutT, row_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColInline, (is_layout_same_v<DataLayoutT, row_major>), false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho,
-                                                  typename Set1::RowOrtho,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline,
-                                                  typename Set1::RowOrtho,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho,
-                                                  typename Set1::RowOrtho,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline,
-                                                  typename Set1::RowOrtho,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowOrtho, (is_layout_same_v<DataLayoutT, row_major>), false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowOrtho, false, (is_layout_same_v<DataLayoutT, row_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowOrtho, (is_layout_same_v<DataLayoutT, row_major>), false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowOrtho, false, (is_layout_same_v<DataLayoutT, row_major>), debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho,
-                                                  typename Set1::RowInline,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline,
-                                                  typename Set1::RowInline,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  false,
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho,
-                                                  typename Set1::RowInline,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline,
-                                                  typename Set1::RowInline,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  false,
-                                                  debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowInline, false, (is_layout_same_v<DataLayoutT, col_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowInline, (is_layout_same_v<DataLayoutT, col_major>), false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowInline, false, (is_layout_same_v<DataLayoutT, col_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, (is_layout_same_v<DataLayoutT, col_major>), false, debug_on_fail);
+        // clang-format on
 
         return result;
     }
@@ -864,41 +600,27 @@ namespace rocwmma
 
         bool result = true;
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColOrtho, false, false, debug_on_fail);
+        // clang-format off
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColOrtho, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColInline, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowOrtho, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, false, false, debug_on_fail);
+        // clang-format on
 
         return result;
     }
@@ -935,41 +657,27 @@ namespace rocwmma
 
         bool result = true;
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColOrtho, false, false, debug_on_fail);
+        // clang-format off
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColOrtho, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColInline, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowOrtho, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, false, false, debug_on_fail);
+        // clang-format on
 
         return result;
     }
@@ -1007,41 +715,27 @@ namespace rocwmma
 
         bool result = true;
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColOrtho, false, false, debug_on_fail);
+        // clang-format off
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColOrtho, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColInline, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowOrtho, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, false, false, debug_on_fail);
+        // clang-format on
 
         return result;
     }
@@ -1091,41 +785,27 @@ namespace rocwmma
             return result;
         }
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColOrtho, false, false, debug_on_fail);
+        // clang-format off
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColOrtho, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColInline, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowOrtho, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, false, false, debug_on_fail);
+        // clang-format on
 
         return result;
     }
@@ -1175,53 +855,27 @@ namespace rocwmma
             return result;
         }
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColOrtho, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline,
-                                                  typename Set1::ColOrtho,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  debug_on_fail);
+        // clang-format off
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColOrtho, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColOrtho, false, (is_layout_same_v<DataLayoutT, row_major>), debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::ColInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::ColInline, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho,
-                                                  typename Set1::ColInline,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::ColInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::ColInline, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::ColInline, false, (is_layout_same_v<DataLayoutT, col_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::ColInline, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline,
-                                                  typename Set1::RowOrtho,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, col_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowOrtho, true, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowOrtho, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowOrtho, false, (is_layout_same_v<DataLayoutT, col_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowOrtho, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowOrtho, false, false, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho,
-                                                  typename Set1::RowInline,
-                                                  false,
-                                                  (is_layout_same_v<DataLayoutT, row_major>),
-                                                  debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::ColInline, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowOrtho, typename Set1::RowInline, false, false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(
-            typename Set0::RowInline, typename Set1::RowInline, true, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::RowInline, false, (is_layout_same_v<DataLayoutT, row_major>), debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::RowInline, false, false, debug_on_fail);
+        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, true, false, debug_on_fail);
+        // clang-format on
 
         return result;
     }
@@ -1234,66 +888,21 @@ namespace rocwmma
     ROCWMMA_DEVICE bool testBarrageNonInterleaved()
     {
         bool result = true;
-        result &= matrixLayoutTraitsTestNonInterleaved0<BlockDim,
-                                                        BlockK,
-                                                        DataT,
-                                                        DataLayoutT,
-                                                        MaxVectorWidth>();
-        result &= registerLayoutTraitsTestNonInterleaved0<BlockDim,
-                                                          BlockK,
-                                                          DataT,
-                                                          DataLayoutT,
-                                                          MaxVectorWidth>();
-        result &= registerLayoutTraitsTestNonInterleaved1<BlockDim,
-                                                          BlockK,
-                                                          DataT,
-                                                          DataLayoutT,
-                                                          MaxVectorWidth>();
-        result &= registerLayoutTraitsTestNonInterleaved2<BlockDim,
-                                                          BlockK,
-                                                          DataT,
-                                                          DataLayoutT,
-                                                          MaxVectorWidth>();
-        result &= registerLayoutTraitsTestNonInterleaved3<BlockDim,
-                                                          BlockK,
-                                                          DataT,
-                                                          DataLayoutT,
-                                                          MaxVectorWidth>();
-        result &= registerLayoutTraitsTestNonInterleaved4<BlockDim,
-                                                          BlockK,
-                                                          DataT,
-                                                          DataLayoutT,
-                                                          MaxVectorWidth>();
-        result &= registerLayoutTraitsTestNonInterleaved5<BlockDim,
-                                                          BlockK,
-                                                          DataT,
-                                                          DataLayoutT,
-                                                          MaxVectorWidth>();
-        result &= registerLayoutTraitsTestNonInterleaved6<BlockDim,
-                                                          BlockK,
-                                                          DataT,
-                                                          DataLayoutT,
-                                                          MaxVectorWidth>();
-        result &= registerLayoutTraitsTestNonInterleaved7<BlockDim,
-                                                          BlockK,
-                                                          DataT,
-                                                          DataLayoutT,
-                                                          MaxVectorWidth>();
-        result &= registerLayoutTraitsTestNonInterleaved8<BlockDim,
-                                                          BlockK,
-                                                          DataT,
-                                                          DataLayoutT,
-                                                          MaxVectorWidth>();
-        result &= registerLayoutTraitsTestNonInterleaved9<BlockDim,
-                                                          BlockK,
-                                                          DataT,
-                                                          DataLayoutT,
-                                                          MaxVectorWidth>();
-        result &= registerLayoutTraitsTestNonInterleaved10<BlockDim,
-                                                           BlockK,
-                                                           DataT,
-                                                           DataLayoutT,
-                                                           MaxVectorWidth>();
+
+        // clang-format off
+        result &= matrixLayoutTraitsTestNonInterleaved0<BlockDim, BlockK, DataT, DataLayoutT, MaxVectorWidth>();
+        result &= registerLayoutTraitsTestNonInterleaved0<BlockDim, BlockK, DataT, DataLayoutT, MaxVectorWidth>();
+        result &= registerLayoutTraitsTestNonInterleaved1<BlockDim, BlockK, DataT, DataLayoutT, MaxVectorWidth>();
+        result &= registerLayoutTraitsTestNonInterleaved2<BlockDim, BlockK, DataT, DataLayoutT, MaxVectorWidth>();
+        result &= registerLayoutTraitsTestNonInterleaved3<BlockDim, BlockK, DataT, DataLayoutT, MaxVectorWidth>();
+        result &= registerLayoutTraitsTestNonInterleaved4<BlockDim, BlockK, DataT, DataLayoutT, MaxVectorWidth>();
+        result &= registerLayoutTraitsTestNonInterleaved5<BlockDim, BlockK, DataT, DataLayoutT, MaxVectorWidth>();
+        result &= registerLayoutTraitsTestNonInterleaved6<BlockDim, BlockK, DataT, DataLayoutT, MaxVectorWidth>();
+        result &= registerLayoutTraitsTestNonInterleaved7<BlockDim, BlockK, DataT, DataLayoutT, MaxVectorWidth>();
+        result &= registerLayoutTraitsTestNonInterleaved8<BlockDim, BlockK, DataT, DataLayoutT, MaxVectorWidth>();
+        result &= registerLayoutTraitsTestNonInterleaved9<BlockDim, BlockK, DataT, DataLayoutT, MaxVectorWidth>();
+        result &= registerLayoutTraitsTestNonInterleaved10<BlockDim, BlockK, DataT, DataLayoutT, MaxVectorWidth>();
+        // clang-format on
 
         return result;
     }

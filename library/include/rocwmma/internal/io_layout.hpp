@@ -174,6 +174,7 @@ namespace rocwmma
 
         // Register layout required for mma. Expect non-interleaved SOA format.
         using MmaLayout = RegisterLayout::MmaInput<BlockDim,
+                                                   DataT,
                                                    false,
                                                    (bool)ROCWMMA_ARCH_GFX11
                                                        ? RegisterLayout::Format::WMMA_INPUT_GFX11
@@ -221,6 +222,7 @@ namespace rocwmma
 
         // Register layout required for mma. Expect non-interleaved SOA format.
         using MmaLayout = RegisterLayout::MmaInput<BlockDim,
+                                                   DataT,
                                                    false,
                                                    (bool)ROCWMMA_ARCH_GFX11
                                                        ? RegisterLayout::Format::WMMA_INPUT_GFX11
@@ -258,6 +260,7 @@ namespace rocwmma
 
         // Register layout required for mma. Expect non-interleaved SOA format.
         using MmaLayout = RegisterLayout::MmaAcc<BlockDim,
+                                                 DataT,
                                                  false,
                                                  (bool)ROCWMMA_ARCH_GFX11
                                                      ? RegisterLayout::Format::WMMA_ACC_GFX11
@@ -280,6 +283,7 @@ namespace rocwmma
 
         // Register layout required for mma. Expect non-interleaved SOA format.
         using MmaLayout = RegisterLayout::MmaAcc<BlockDim,
+                                                 DataT,
                                                  false,
                                                  (bool)ROCWMMA_ARCH_GFX11
                                                      ? RegisterLayout::Format::WMMA_ACC_GFX11
@@ -352,6 +356,7 @@ namespace rocwmma
 
         // Register layout required for mma. Expect interleaved SOA format.
         using MmaLayout = RegisterLayout::MmaInput<MmaDim,
+                                                   DataT,
                                                    true,
                                                    (bool)ROCWMMA_ARCH_GFX11
                                                        ? RegisterLayout::Format::WMMA_INPUT_GFX11
@@ -391,6 +396,7 @@ namespace rocwmma
 
         // Register layout required for mma. Expect interleaved SOA format.
         using MmaLayout = RegisterLayout::MmaInput<MmaDim,
+                                                   DataT,
                                                    true,
                                                    (bool)ROCWMMA_ARCH_GFX11
                                                        ? RegisterLayout::Format::WMMA_INPUT_GFX11
@@ -430,6 +436,7 @@ namespace rocwmma
         // Register layout required for mma. Expect interleaved accum format for multiple blocks.
         using MmaLayout
             = RegisterLayout::MmaAcc<MmaDim,
+                                     DataT,
                                      true,
                                      (bool)ROCWMMA_ARCH_GFX11
                                          ? RegisterLayout::Format::WMMA_ACC_INT_A_MAJOR_GFX11
@@ -457,6 +464,7 @@ namespace rocwmma
         // Register layout required for mma. Expect interleaved accum format for multiple blocks.
         using MmaLayout
             = RegisterLayout::MmaAcc<MmaDim,
+                                     DataT,
                                      true,
                                      (bool)ROCWMMA_ARCH_GFX11
                                          ? RegisterLayout::Format::WMMA_ACC_INT_A_MAJOR_GFX11

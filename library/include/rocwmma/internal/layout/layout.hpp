@@ -168,16 +168,18 @@ namespace rocwmma
 
         // A mnemonic used to describe the register layout is suitable for mma input for A/B
         template <uint32_t MmaSize,
-                  bool     Interleaved,
-                  Format   Fmt = Interleaved ? Format::SOA_INT : Format::SOA>
+                  typename DataT,
+                  bool   Interleaved,
+                  Format Fmt = Interleaved ? Format::SOA_INT : Format::SOA>
         struct MmaInput
         {
         };
 
         // A mnemonic used to describe the register layout is suitable for mma input for accumulator input/output
         template <uint32_t MmaSize,
-                  bool     Interleaved,
-                  Format   Fmt = Interleaved ? Format::ACC_INT_A_MAJOR : Format::SOA>
+                  typename DataT,
+                  bool   Interleaved,
+                  Format Fmt = Interleaved ? Format::ACC_INT_A_MAJOR : Format::SOA>
         struct MmaAcc
         {
         };
@@ -239,20 +241,28 @@ namespace std
         return stream << "Storage<" << MatrixLayout{} << ", " << DataLayout{} << ">";
     }
 
-    template <uint32_t MmaDim, bool Interleaved, rocwmma::RegisterLayout::Format Fmt>
+    template <uint32_t MmaDim,
+              typename DataT,
+              bool                            Interleaved,
+              rocwmma::RegisterLayout::Format Fmt>
     inline ostream& operator<<(
-        ostream&                                                           stream,
-        rocwmma::RegisterLayout::MmaInput<MmaDim, Interleaved, Fmt> const& register_layout)
+        ostream&                                                                  stream,
+        rocwmma::RegisterLayout::MmaInput<MmaDim, DataT, Interleaved, Fmt> const& register_layout)
     {
-        return stream << "MmaInput<" << MmaDim << ", " << Interleaved << ", " << Fmt << ">";
+        return stream << "MmaInput<" << MmaDim << ", " << rocwmma::dataTypeToString<DataT>() << ", "
+                      << Interleaved << ", " << Fmt << ">";
     }
 
-    template <uint32_t MmaDim, bool Interleaved, rocwmma::RegisterLayout::Format Fmt>
-    inline ostream&
-        operator<<(ostream&                                                         stream,
-                   rocwmma::RegisterLayout::MmaAcc<MmaDim, Interleaved, Fmt> const& register_layout)
+    template <uint32_t MmaDim,
+              typename DataT,
+              bool                            Interleaved,
+              rocwmma::RegisterLayout::Format Fmt>
+    inline ostream& operator<<(
+        ostream&                                                                stream,
+        rocwmma::RegisterLayout::MmaAcc<MmaDim, DataT, Interleaved, Fmt> const& register_layout)
     {
-        return stream << "MmaAcc<" << MmaDim << ", " << Interleaved << ", " << Fmt << ">";
+        return stream << "MmaAcc<" << MmaDim << ", " << rocwmma::dataTypeToString<DataT>() << ", "
+                      << Interleaved << ", " << Fmt << ">";
     }
 
 } // namespace std

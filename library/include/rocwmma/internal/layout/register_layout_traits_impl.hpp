@@ -55,13 +55,13 @@ namespace rocwmma
         {
         };
 
-        template <uint32_t MmaDim, bool IsInterLeaved>
-        struct is_register_layout<MmaInput<MmaDim, IsInterLeaved>> : public true_type
+        template <uint32_t MmaDim, typename DataT, bool IsInterLeaved>
+        struct is_register_layout<MmaInput<MmaDim, DataT, IsInterLeaved>> : public true_type
         {
         };
 
-        template <uint32_t MmaDim, bool IsInterleaved>
-        struct is_register_layout<MmaAcc<MmaDim, IsInterleaved>> : public true_type
+        template <uint32_t MmaDim, typename DataT, bool IsInterleaved>
+        struct is_register_layout<MmaAcc<MmaDim, DataT, IsInterleaved>> : public true_type
         {
         };
 
@@ -80,8 +80,8 @@ namespace rocwmma
         {
         };
 
-        template <uint32_t MmaSize, bool IsInterleaved>
-        struct is_mma_input<MmaInput<MmaSize, IsInterleaved>> : public true_type
+        template <uint32_t MmaSize, typename DataT, bool IsInterleaved>
+        struct is_mma_input<MmaInput<MmaSize, DataT, IsInterleaved>> : public true_type
         {
         };
 
@@ -90,8 +90,8 @@ namespace rocwmma
         {
         };
 
-        template <uint32_t MmaSize, bool IsInterleaved>
-        struct is_mma_acc<MmaAcc<MmaSize, IsInterleaved>> : public true_type
+        template <uint32_t MmaSize, typename DataT, bool IsInterleaved>
+        struct is_mma_acc<MmaAcc<MmaSize, DataT, IsInterleaved>> : public true_type
         {
         };
 
@@ -290,12 +290,18 @@ namespace rocwmma
                   && testSupportedFormat<Storage<MatrixLayout, DataLayout>>();
         };
 
-        template <uint32_t LayoutMmaDim, bool LayoutIsInterleaved, RegisterLayout::Format Fmt>
-        struct register_layout_derived_traits<MmaInput<LayoutMmaDim, LayoutIsInterleaved, Fmt>>
+        template <uint32_t LayoutMmaDim,
+                  typename LayoutDataT,
+                  bool                   LayoutIsInterleaved,
+                  RegisterLayout::Format Fmt>
+        struct register_layout_derived_traits<
+            MmaInput<LayoutMmaDim, LayoutDataT, LayoutIsInterleaved, Fmt>>
             : public matrix_layout_traits<void>, public data_layout_traits<void>
         {
             using MatrixLayout = void;
             using DataLayout   = void;
+
+            using DataT = LayoutDataT;
 
             // Overrides
             constexpr static bool     is_interleaved = LayoutIsInterleaved;
@@ -305,16 +311,24 @@ namespace rocwmma
             constexpr static RegisterLayout::Format Format = Fmt;
 
             constexpr static bool is_valid
-                = testSupportedMmaDim<MmaInput<LayoutMmaDim, LayoutIsInterleaved, Fmt>>()
-                  && testSupportedFormat<MmaInput<LayoutMmaDim, LayoutIsInterleaved, Fmt>>();
+                = testSupportedMmaDim<
+                      MmaInput<LayoutMmaDim, LayoutDataT, LayoutIsInterleaved, Fmt>>()
+                  && testSupportedFormat<
+                      MmaInput<LayoutMmaDim, LayoutDataT, LayoutIsInterleaved, Fmt>>();
         };
 
-        template <uint32_t LayoutMmaDim, bool LayoutIsInterleaved, RegisterLayout::Format Fmt>
-        struct register_layout_derived_traits<MmaAcc<LayoutMmaDim, LayoutIsInterleaved, Fmt>>
+        template <uint32_t LayoutMmaDim,
+                  typename LayoutDataT,
+                  bool                   LayoutIsInterleaved,
+                  RegisterLayout::Format Fmt>
+        struct register_layout_derived_traits<
+            MmaAcc<LayoutMmaDim, LayoutDataT, LayoutIsInterleaved, Fmt>>
             : public matrix_layout_traits<void>, public data_layout_traits<void>
         {
             using MatrixLayout = void;
             using DataLayout   = void;
+
+            using DataT = LayoutDataT;
 
             // Overrides
             constexpr static bool     is_interleaved = LayoutIsInterleaved;
@@ -324,8 +338,9 @@ namespace rocwmma
             constexpr static RegisterLayout::Format Format = Fmt;
 
             constexpr static bool is_valid
-                = testSupportedMmaDim<MmaAcc<LayoutMmaDim, LayoutIsInterleaved, Fmt>>()
-                  && testSupportedFormat<MmaAcc<LayoutMmaDim, LayoutIsInterleaved, Fmt>>();
+                = testSupportedMmaDim<MmaAcc<LayoutMmaDim, LayoutDataT, LayoutIsInterleaved, Fmt>>()
+                  && testSupportedFormat<
+                      MmaAcc<LayoutMmaDim, LayoutDataT, LayoutIsInterleaved, Fmt>>();
         };
 
         // Combine base instance traits with specific layout classifiers
@@ -369,9 +384,12 @@ namespace rocwmma
             // Matching MmaDim, interleaving and validity
             // Note: matching validity does not imply valid!
             // Cannot mix valid with invalid layouts
-            constexpr bool BaseTest = (traits_lhs::MmaDim == traits_rhs::MmaDim)
-                                      && (traits_lhs::is_interleaved == traits_rhs::is_interleaved)
-                                      && (traits_lhs::is_valid == traits_rhs::is_valid);
+            // Datatype must have same size for same register layout
+            constexpr bool BaseTest
+                = (traits_lhs::MmaDim == traits_rhs::MmaDim)
+                  && (traits_lhs::is_interleaved == traits_rhs::is_interleaved)
+                  && (traits_lhs::is_valid == traits_rhs::is_valid)
+                  && (sizeof(typename traits_lhs::DataT) == sizeof(typename traits_rhs::DataT));
 
             // MmaInput <-> MmaInput
             // MmaAcc <-> MmaAcc
