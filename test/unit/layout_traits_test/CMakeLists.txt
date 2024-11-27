@@ -29,6 +29,10 @@ set(ROCWMMA_TEST_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${ROCWMMA_TEST_INCLUDE
 
 set(LayoutTraitsTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/layout_traits_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/layout_traits_32.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/layout_traits_64.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/layout_traits_128.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/layout_traits_256.cpp
                        )
 
 add_rocwmma_unit_test(layout_traits_test ${LayoutTraitsTestSources})

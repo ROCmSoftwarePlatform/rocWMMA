@@ -37,7 +37,7 @@ namespace rocwmma
     {
         using Base         = UnitTestParams;
         using Types        = typename Base::TestAllSizeTypes;
-        using BlockSizes   = typename Base::TestBlockSizes16;
+        using BlockSizes   = typename Base::TestBlockSizes128;
         using DataLayouts  = typename Base::TestLayoutsAll;
         using KernelParams = typename CombineLists<BlockSizes, Types, DataLayouts>::Result;
 
@@ -73,18 +73,18 @@ namespace rocwmma
 } // namespace rocwmma
 
 // Test suite for unique parameterization
-class LayoutTraitsTest16 : public rocwmma::UnitTest
+class LayoutTraitsTest128 : public rocwmma::UnitTest
 {
 };
 
-TEST_P(LayoutTraitsTest16, RunKernel)
+TEST_P(LayoutTraitsTest128, RunKernel)
 {
     this->RunKernel();
 }
 
 INSTANTIATE_TEST_SUITE_P(
     KernelTests,
-    LayoutTraitsTest16,
+    LayoutTraitsTest128,
     ::testing::Combine(::testing::ValuesIn(rocwmma::TestParams::kernels()),
                        ::testing::ValuesIn(rocwmma::TestParams::threadBlocks()),
                        ::testing::ValuesIn(rocwmma::TestParams::problemSizes()),

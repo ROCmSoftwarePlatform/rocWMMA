@@ -175,8 +175,9 @@ namespace rocwmma
         ROCWMMA_HOST_DEVICE constexpr static inline bool testSupportedMmaDim()
         {
             using traits = register_layout_traits<RegisterLayout>;
-            return ((bool)ROCWMMA_BLOCK_DIM_16_SUPPORTED && traits::MmaDim == 16u)
-                   || ((bool)ROCWMMA_BLOCK_DIM_32_SUPPORTED && traits::MmaDim == 32u);
+            return (traits::MmaDim == 16u && (bool)ROCWMMA_BLOCK_DIM_16_SUPPORTED)
+                   || (traits::MmaDim == 32u && (bool)ROCWMMA_BLOCK_DIM_32_SUPPORTED
+                       && !is_same_v<typename traits::DataT, float64_t>); // f64 mfma only 16
         }
 
         // Based on the current architecture, which register layout formats currently supported
@@ -228,8 +229,7 @@ namespace rocwmma
                 return traits::is_storage
                        && ((traits::Format == Format::SOA) || (traits::Format == Format::AOS)
                            || (traits::Format == Format::SOA_INT)
-                           || (traits::Format == Format::AOS_INT)
-                           || (traits::Format == Format::Invalid));
+                           || (traits::Format == Format::AOS_INT));
             }
         }
 
@@ -384,12 +384,12 @@ namespace rocwmma
             // Matching MmaDim, interleaving and validity
             // Note: matching validity does not imply valid!
             // Cannot mix valid with invalid layouts
-            // Datatype must have same size for same register layout
+            // Datatype must be same
             constexpr bool BaseTest
                 = (traits_lhs::MmaDim == traits_rhs::MmaDim)
                   && (traits_lhs::is_interleaved == traits_rhs::is_interleaved)
                   && (traits_lhs::is_valid == traits_rhs::is_valid)
-                  && (sizeof(typename traits_lhs::DataT) == sizeof(typename traits_rhs::DataT));
+                  && (is_same_v<typename traits_lhs::DataT, typename traits_rhs::DataT>);
 
             // MmaInput <-> MmaInput
             // MmaAcc <-> MmaAcc
@@ -466,7 +466,7 @@ namespace rocwmma
 
                 // Special case: interleaved layouts
                 // Check matching thread dims and if either one is == 1u.
-                // Register contents will be identical, regardless if the format matches.
+                // Register contents will be identical, regardless of different formats.
                 constexpr bool TestIdentityQuirks
                     = (storage_traits::DimPerThread == 1u) || (storage_traits::KPerThread == 1u);
 
