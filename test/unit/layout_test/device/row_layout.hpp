@@ -60,13 +60,15 @@ namespace rocwmma
                 KDim     = BlockM,
 
                 MaxVectorWidth
-                = detail::MaxVWSelector<matrix_b, BlockM, BlockN, DataT, DataLayoutT>::Result,
+                = detail::MaxVWSelector<matrix_b, BlockDim, KDim, DataT, DataLayoutT>::Result,
                 VectorWidth = std::is_same_v<DataLayoutT, col_major> ? MaxVectorWidth : 1
             };
 
             using IOTraits = IOTraits<BlockDim, KDim, DataT, VectorWidth>;
-            using LayoutT  = typename LayoutProfile::
-                Row<BlockDim, KDim, DataT, DataLayoutT, VectorWidth>::MatrixLayout;
+            using LayoutT  = conditional_t<
+                is_same_v<DataLayoutT, row_major>,
+                MatrixLayout::RowInlineVW<BlockDim, KDim, DataT, VectorWidth, MaxVectorWidth>,
+                MatrixLayout::RowOrthoVW<BlockDim, KDim, DataT, VectorWidth, MaxVectorWidth>>;
             using Mapping = MappingUtil<BlockHeight, BlockWidth, DataT, DataLayoutT>;
 
             auto baseOffset  = LayoutT::baseOffset();

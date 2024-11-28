@@ -52,16 +52,23 @@ namespace rocwmma
         {
             enum : uint32_t
             {
+                BlockHeight = BlockM,
+                BlockWidth  = BlockN,
+
+                BlockDim = BlockM,
+                KDim     = BlockN,
+
                 MaxVectorWidth
-                = detail::MaxVWSelector<matrix_a, BlockM, BlockN, DataT, DataLayoutT>::Result,
+                = detail::MaxVWSelector<matrix_a, BlockDim, KDim, DataT, DataLayoutT>::Result,
                 VectorWidth = std::is_same_v<DataLayoutT, row_major> ? MaxVectorWidth : 1
             };
 
-            using IOTraits = IOTraits<BlockM, BlockN, DataT, VectorWidth>;
-            using LayoutT  = typename LayoutProfile::
-                ColNT<BlockM, BlockN, DataT, DataLayoutT, VectorWidth, MaxVectorWidth>::
-                    MatrixLayout;
-            using Mapping = MappingUtil<BlockM, BlockN, DataT, DataLayoutT>;
+            using IOTraits = IOTraits<BlockDim, KDim, DataT, VectorWidth>;
+            using LayoutT  = conditional_t<
+                is_same_v<DataLayoutT, col_major>,
+                MatrixLayout::ColOrthoVW<BlockDim, KDim, DataT, VectorWidth, MaxVectorWidth>,
+                MatrixLayout::ColOrthoVW<BlockDim, KDim, DataT, VectorWidth, MaxVectorWidth>>;
+            using Mapping = MappingUtil<BlockHeight, BlockWidth, DataT, DataLayoutT>;
 
             auto baseOffset  = LayoutT::baseOffset();
             auto iocount     = IOTraits::IOCount;
@@ -75,7 +82,7 @@ namespace rocwmma
 
             for(uint32_t i = 0; i < iocount; ++i)
             {
-                for(int j = 0; j < VectorWidth; j++)
+                for(uint32_t j = 0; j < VectorWidth; j++)
                 {
                     auto index = (get<MajorIndex>(matrixCoord) * ld + get<MinorIndex>(matrixCoord))
                                  + Mapping::dataOffset(baseOffset, ld) + j;
