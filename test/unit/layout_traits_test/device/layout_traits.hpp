@@ -42,7 +42,8 @@ namespace rocwmma
               bool ExpectSame,
               bool ExpectOrthogonal,
               bool DebugOnFail>
-    ROCWMMA_HOST bool testLayoutPair(const char* file, const char* line, std::ostream& stream)
+    ROCWMMA_HOST bool
+        testLayoutPair(const char* file, const char* line, std::ostream& stream = std::cout)
     {
         constexpr bool is_layout_same_result = rocwmma::is_layout_same_v<LayoutLhs, LayoutRhs>;
         constexpr bool is_layout_orthogonal_result
@@ -50,7 +51,7 @@ namespace rocwmma
         constexpr bool compare_result = ((is_layout_same_result == ExpectSame)
                                          && (is_layout_orthogonal_result == ExpectOrthogonal));
 
-        if(DebugOnFail)
+        if constexpr(DebugOnFail)
         {
             stream << "File: " << file << " L:" << line << std::endl;
             stream << "<Test Begin>" << std::endl;

@@ -26,9 +26,8 @@
 
 #include <type_traits>
 
+#include "common_includes.hpp"
 #include "detail/layout_traits_int.hpp"
-#include "kernel_generator.hpp"
-#include "unit_test.hpp"
 
 namespace rocwmma
 {
@@ -36,11 +35,12 @@ namespace rocwmma
     struct TestParams : public UnitTestParams
     {
         using Base        = UnitTestParams;
-        using Types       = std::tuple<float32_t>; //typename Base::TestAllSizeTypes;
-        using MmaDims     = std::tuple<I<16>>; //std::tuple<I<16>, I<32>>;
-        using SplitKs     = std::tuple<I<1>>; //std::tuple<I<1>, I<2>, I<4>>;
+        using Types       = typename Base::TestAllSizeTypes;
+        using MmaDims     = std::tuple<I<16>>;
+        using SplitKs     = std::tuple<I<1>, I<2>, I<4>>;
         using BlockSizes  = typename Base::TestBlockSizes16;
         using DataLayouts = typename Base::TestLayoutsAll;
+
         using KernelParams =
             typename CombineLists<BlockSizes, Types, DataLayouts, MmaDims, SplitKs>::Result;
 
@@ -75,21 +75,4 @@ namespace rocwmma
 
 } // namespace rocwmma
 
-// Test suite for unique parameterization
-class LayoutTraitsIntTest16 : public rocwmma::UnitTest
-{
-};
-
-TEST_P(LayoutTraitsIntTest16, RunKernel)
-{
-    this->RunKernel();
-}
-
-INSTANTIATE_TEST_SUITE_P(
-    KernelTests,
-    LayoutTraitsIntTest16,
-    ::testing::Combine(::testing::ValuesIn(rocwmma::TestParams::kernels()),
-                       ::testing::ValuesIn(rocwmma::TestParams::threadBlocks()),
-                       ::testing::ValuesIn(rocwmma::TestParams::problemSizes()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param1s()),
-                       ::testing::ValuesIn(rocwmma::TestParams::param2s())));
+ROCWMMA_GENERATE_UNIT_GTEST_SUITE(LayoutTraitsIntTest16, TestParams);

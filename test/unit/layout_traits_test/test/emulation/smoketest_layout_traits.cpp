@@ -26,8 +26,8 @@
 
 #include <type_traits>
 
-#include "common_includes.hpp"
 #include "detail/layout_traits.hpp"
+#include "test/common_includes.hpp"
 
 namespace rocwmma
 {
@@ -36,8 +36,8 @@ namespace rocwmma
     {
         using Base         = UnitTestParams;
         using Types        = typename Base::TestAllSizeTypes;
-        using BlockSizes   = typename Base::TestBlockSizes256;
-        using DataLayouts  = typename Base::TestLayoutsAll;
+        using BlockSizes   = std::tuple<std::tuple<I<16u>, I<16u>>, std::tuple<I<32u>, I<32u>>>;
+        using DataLayouts  = std::tuple<row_major>;
         using KernelParams = typename CombineLists<BlockSizes, Types, DataLayouts>::Result;
 
         // Assemble the kernel generator
@@ -71,4 +71,4 @@ namespace rocwmma
 
 } // namespace rocwmma
 
-ROCWMMA_GENERATE_UNIT_GTEST_SUITE(LayoutTraitsTest256, TestParams);
+ROCWMMA_GENERATE_UNIT_GTEST_SUITE(EmulationSmokeLayoutTraitsTest, TestParams);

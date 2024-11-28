@@ -27,21 +27,25 @@
 #include <type_traits>
 
 #include "common_includes.hpp"
-#include "detail/layout_traits.hpp"
+#include "detail/layout_traits_int.hpp"
 
 namespace rocwmma
 {
 
     struct TestParams : public UnitTestParams
     {
-        using Base         = UnitTestParams;
-        using Types        = typename Base::TestAllSizeTypes;
-        using BlockSizes   = typename Base::TestBlockSizes256;
-        using DataLayouts  = typename Base::TestLayoutsAll;
-        using KernelParams = typename CombineLists<BlockSizes, Types, DataLayouts>::Result;
+        using Base        = UnitTestParams;
+        using Types       = typename Base::TestAllSizeTypes;
+        using MmaDims     = std::tuple<I<16>, I<32>, I<64>>;
+        using SplitKs     = std::tuple<I<1>, I<2>, I<4>>;
+        using BlockSizes  = typename Base::TestBlockSizes128;
+        using DataLayouts = typename Base::TestLayoutsAll;
+
+        using KernelParams =
+            typename CombineLists<BlockSizes, Types, DataLayouts, MmaDims, SplitKs>::Result;
 
         // Assemble the kernel generator
-        using GeneratorImpl   = LayoutTraitsGenerator;
+        using GeneratorImpl   = LayoutTraitsIntGenerator;
         using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
 
         // Sanity check for kernel generator
@@ -71,4 +75,4 @@ namespace rocwmma
 
 } // namespace rocwmma
 
-ROCWMMA_GENERATE_UNIT_GTEST_SUITE(LayoutTraitsTest256, TestParams);
+ROCWMMA_GENERATE_UNIT_GTEST_SUITE(LayoutTraitsIntTest128, TestParams);

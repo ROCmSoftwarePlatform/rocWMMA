@@ -33,6 +33,19 @@ set(LayoutTraitsTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/layout_traits_64.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/layout_traits_128.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/layout_traits_256.cpp
+
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/layout_traits_int_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/layout_traits_int_32.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/layout_traits_int_64.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/layout_traits_int_128.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/layout_traits_int_256.cpp
+
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest_layout_traits.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest_layout_traits_int.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest_layout_traits.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest_layout_traits_int.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/extendedtest_layout_traits.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/extendedtest_layout_traits_int.cpp
                        )
 
 add_rocwmma_unit_test(layout_traits_test ${LayoutTraitsTestSources})

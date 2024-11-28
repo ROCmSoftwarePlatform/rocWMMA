@@ -26,22 +26,28 @@
 
 #include <type_traits>
 
-#include "common_includes.hpp"
-#include "detail/layout_traits.hpp"
+#include "detail/layout_traits_int.hpp"
+#include "test/common_includes.hpp"
 
 namespace rocwmma
 {
 
     struct TestParams : public UnitTestParams
     {
-        using Base         = UnitTestParams;
-        using Types        = typename Base::TestAllSizeTypes;
-        using BlockSizes   = typename Base::TestBlockSizes256;
-        using DataLayouts  = typename Base::TestLayoutsAll;
-        using KernelParams = typename CombineLists<BlockSizes, Types, DataLayouts>::Result;
+        using Base        = UnitTestParams;
+        using Types       = typename Base::TestAllSizeTypes;
+        using MmaDims     = std::tuple<I<16u>, I<32u>>;
+        using SplitKs     = std::tuple<I<1u>, I<2u>, I<4u>>;
+        using BlockSizes  = std::tuple<std::tuple<I<16u>, I<16u>>,
+                                      std::tuple<I<32u>, I<32u>>,
+                                      std::tuple<I<64u>, I<64u>>>;
+        using DataLayouts = typename Base::TestLayoutsAll;
+
+        using KernelParams =
+            typename CombineLists<BlockSizes, Types, DataLayouts, MmaDims, SplitKs>::Result;
 
         // Assemble the kernel generator
-        using GeneratorImpl   = LayoutTraitsGenerator;
+        using GeneratorImpl   = LayoutTraitsIntGenerator;
         using KernelGenerator = KernelGenerator<KernelParams, GeneratorImpl>;
 
         // Sanity check for kernel generator
@@ -71,4 +77,4 @@ namespace rocwmma
 
 } // namespace rocwmma
 
-ROCWMMA_GENERATE_UNIT_GTEST_SUITE(LayoutTraitsTest256, TestParams);
+ROCWMMA_GENERATE_UNIT_GTEST_SUITE(EmulationRegressionLayoutTraitsIntTest, TestParams);
