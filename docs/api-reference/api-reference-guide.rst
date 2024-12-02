@@ -268,7 +268,6 @@ layout_t
 ^^^^^^^^
 
 .. doxygenenum:: rocwmma::layout_t
-   :members:
 
 
 rocWMMA API functions
@@ -315,3 +314,14 @@ Sample programs
 
 See a sample code for calling rocWMMA functions ``load_matrix_sync``, ``store_matrix_sync``, ``fill_fragment``, and ``mma_sync`` `here <https://github.com/ROCm/rocWMMA/blob/develop/samples/simple_hgemm.cpp>`_.
 For more such sample programs, refer to the `Samples directory <https://github.com/ROCm/rocWMMA/tree/develop/samples>`_.
+
+Emulation tests
+---------------
+
+The emulation test is a smaller test suite specifically designed for emulators. It comprises a selection of test cases from the full ROCWMM test set, allowing for significantly faster execution on emulated platforms. Despite its concise nature, the emulation test supports ``smoke``, ``regression``, and ``extended`` modes.
+
+For example, run a smoke test.
+
+.. code-block:: bash
+
+   rtest.py --install_dir <build_dir> --emulation smoke
