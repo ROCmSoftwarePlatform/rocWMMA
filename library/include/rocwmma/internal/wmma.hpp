@@ -129,9 +129,9 @@ namespace rocwmma
             exec(InputARegsT const& regsA, InputBRegsT const& regsB, InputCRegsT const& regsC)
         {
             // Inputs from outside will come in as fully packed
-            static_assert(VecTraits<InputARegsT>::size() == IOTraitsA::PackedSize,
+            static_assert(VecTraits<InputARegsT>::size() == VecTraitsA::size() * Traits::WmmaCount,
                           "WMMA input size mismatch");
-            static_assert(VecTraits<InputBRegsT>::size() == IOTraitsB::PackedSize,
+            static_assert(VecTraits<InputBRegsT>::size() == VecTraitsA::size() * Traits::WmmaCount,
                           "WMMA input size mismatch");
             static_assert(VecTraits<InputCRegsT>::size() == IOTraitsAcc::PackedSize,
                           "WMMA input size mismatch");
@@ -144,32 +144,14 @@ namespace rocwmma
             auto accum = PackUtil::template pad<WMMA::Traits::AccumBits>(PackUtil::unpack(regsC));
 
             // Iterate over packed WMMA inputs
-            auto const aIt
-                = makeVectorIterator<VecTraitsA::size() / Traits::InputSizeModifier>(regsA).begin();
-            auto const bIt
-                = makeVectorIterator<VecTraitsB::size() / Traits::InputSizeModifier>(regsB).begin();
+            auto const aIt = makeVectorIterator<VecTraitsA::size()>(regsA).begin();
+            auto const bIt = makeVectorIterator<VecTraitsB::size()>(regsB).begin();
 
             // Accumulate over WMMA count
 #pragma unroll
             for(uint32_t i = 0; i < Traits::WmmaCount; i++)
             {
-#if ROCWMMA_ARCH_GFX11
-                // Swap upper / lower 16 elements
-                auto swappedA = Swizzle::Swap16::exec(*aIt);
-                auto swappedB = Swizzle::Swap16::exec(*bIt);
-
-                // Combine duplicated data for mult/accum.
-                // Evens: non-swapped
-                // Odds: swapped
-                accum = WMMA::exec(concat(unpackLo(*aIt, swappedA), unpackHi(*aIt, swappedA)),
-                                   concat(unpackLo(*bIt, swappedB), unpackHi(*bIt, swappedB)),
-                                   accum);
-#else
-
                 accum = WMMA::exec(*aIt, *bIt, accum);
-
-#endif
-
                 aIt++;
                 bIt++;
             }

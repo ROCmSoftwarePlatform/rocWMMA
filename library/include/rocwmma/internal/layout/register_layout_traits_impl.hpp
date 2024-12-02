@@ -55,13 +55,13 @@ namespace rocwmma
         {
         };
 
-        template <uint32_t MmaDim, typename DataT, bool IsInterLeaved>
-        struct is_register_layout<MmaInput<MmaDim, DataT, IsInterLeaved>> : public true_type
+        template <uint32_t MmaDim, typename DataT, bool IsInterLeaved, RegisterLayout::Format Fmt>
+        struct is_register_layout<MmaInput<MmaDim, DataT, IsInterLeaved, Fmt>> : public true_type
         {
         };
 
-        template <uint32_t MmaDim, typename DataT, bool IsInterleaved>
-        struct is_register_layout<MmaAcc<MmaDim, DataT, IsInterleaved>> : public true_type
+        template <uint32_t MmaDim, typename DataT, bool IsInterleaved, RegisterLayout::Format Fmt>
+        struct is_register_layout<MmaAcc<MmaDim, DataT, IsInterleaved, Fmt>> : public true_type
         {
         };
 
@@ -80,8 +80,8 @@ namespace rocwmma
         {
         };
 
-        template <uint32_t MmaSize, typename DataT, bool IsInterleaved>
-        struct is_mma_input<MmaInput<MmaSize, DataT, IsInterleaved>> : public true_type
+        template <uint32_t MmaSize, typename DataT, bool IsInterleaved, RegisterLayout::Format Fmt>
+        struct is_mma_input<MmaInput<MmaSize, DataT, IsInterleaved, Fmt>> : public true_type
         {
         };
 
@@ -90,8 +90,8 @@ namespace rocwmma
         {
         };
 
-        template <uint32_t MmaSize, typename DataT, bool IsInterleaved>
-        struct is_mma_acc<MmaAcc<MmaSize, DataT, IsInterleaved>> : public true_type
+        template <uint32_t MmaSize, typename DataT, bool IsInterleaved, RegisterLayout::Format Fmt>
+        struct is_mma_acc<MmaAcc<MmaSize, DataT, IsInterleaved, Fmt>> : public true_type
         {
         };
 
@@ -186,50 +186,68 @@ namespace rocwmma
         {
             using traits = register_layout_traits<RegisterLayout>;
             using rocwmma::RegisterLayout::Format;
-            if constexpr(traits::is_mma_input)
+            if constexpr((bool)ROCWMMA_ARCH_GFX11)
             {
-                if constexpr(traits::is_interleaved)
+                if constexpr(traits::is_mma_input)
                 {
-                    return (traits::Format == Format::SOA_INT)
-                           || (traits::Format == Format::AOS_INT);
+                    return traits::Format == Format::WMMA_INPUT_GFX11;
+                }
+                else if constexpr(traits::is_mma_acc)
+                {
+                    if constexpr(traits::is_interleaved)
+                    {
+                        // Intermediate accumulation format for interleaved layout
+                        return (traits::Format == Format::WMMA_ACC_INT_A_MAJOR_GFX11)
+                            || (traits::Format == Format::WMMA_ACC_INT_B_MAJOR_GFX11);
+                    }
+                    else
+                    {
+                        return (traits::Format == Format::WMMA_ACC_GFX11);
+                    }
                 }
                 else
                 {
-                    return (traits::Format == Format::SOA) || (traits::Format == Format::AOS);
+                    return traits::is_storage
+                        && ((traits::Format == Format::SOA) 
+                            || (traits::Format == Format::AOS)
+                            || (traits::Format == Format::SOA_INT)
+                            || (traits::Format == Format::AOS_INT));
                 }
             }
-            else if constexpr(traits::is_mma_acc)
+            else // Other archs
             {
-#if ROCWMMA_ARCH_GFX11
-                if constexpr(traits::is_interleaved)
+                if constexpr(traits::is_mma_input)
                 {
-                    // Intermediate accumulation format for interleaved layout
-                    return (traits::Format == Format::WMMA_ACC_INT_A_MAJOR_GFX11)
-                           || (traits::Format == Format::WMMA_ACC_INT_B_MAJOR_GFX11);
+                    if constexpr(traits::is_interleaved)
+                    {
+                        return (traits::Format == Format::SOA_INT)
+                            || (traits::Format == Format::AOS_INT);
+                    }
+                    else
+                    {
+                        return (traits::Format == Format::SOA) || (traits::Format == Format::AOS);
+                    }
+                }
+                else if constexpr(traits::is_mma_acc)
+                {
+                    if constexpr(traits::is_interleaved)
+                    {
+                        // Intermediate accumulation format for interleaved layout
+                        return (traits::Format == Format::ACC_INT_A_MAJOR)
+                            || (traits::Format == Format::ACC_INT_B_MAJOR);
+                    }
+                    else
+                    {
+                        return (traits::Format == Format::SOA) || (traits::Format == Format::AOS);
+                    }
                 }
                 else
                 {
-                    return (traits::Format == WMMA_ACC_GFX11);
+                    return traits::is_storage
+                        && ((traits::Format == Format::SOA) || (traits::Format == Format::AOS)
+                            || (traits::Format == Format::SOA_INT)
+                            || (traits::Format == Format::AOS_INT));
                 }
-#else
-                if constexpr(traits::is_interleaved)
-                {
-                    // Intermediate accumulation format for interleaved layout
-                    return (traits::Format == Format::ACC_INT_A_MAJOR)
-                           || (traits::Format == Format::ACC_INT_B_MAJOR);
-                }
-                else
-                {
-                    return (traits::Format == Format::SOA) || (traits::Format == Format::AOS);
-                }
-#endif // ROCWMMA_ARCH_GFX11
-            }
-            else
-            {
-                return traits::is_storage
-                       && ((traits::Format == Format::SOA) || (traits::Format == Format::AOS)
-                           || (traits::Format == Format::SOA_INT)
-                           || (traits::Format == Format::AOS_INT));
             }
         }
 
@@ -494,31 +512,25 @@ namespace rocwmma
             // ACC_INT_A_MAJOR <-> AOS, SOA
             // ACC_INT_B_MAJOR <-> AOS, SOA
             // Register layouts must be valid to be orthogonal
+            // clang-format off
             using RegisterLayout::Format;
             constexpr bool TestOpposingFormat
-                = ((traits_lhs::Format == Format::SOA && traits_rhs::Format == Format::AOS)
+                = (   (traits_lhs::Format == Format::SOA && traits_rhs::Format == Format::AOS)
                    || (traits_lhs::Format == Format::AOS && traits_rhs::Format == Format::SOA)
-                   || (traits_lhs::Format == Format::SOA_INT
-                       && traits_rhs::Format == Format::AOS_INT)
-                   || (traits_lhs::Format == Format::AOS_INT
-                       && traits_rhs::Format == Format::SOA_INT)
-                   || (traits_lhs::Format == Format::ACC_INT_A_MAJOR
-                       && traits_rhs::Format == Format::SOA_INT)
-                   || (traits_lhs::Format == Format::ACC_INT_A_MAJOR
-                       && traits_rhs::Format == Format::AOS_INT)
-                   || (traits_lhs::Format == Format::SOA_INT
-                       && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
-                   || (traits_lhs::Format == Format::AOS_INT
-                       && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
-                   || (traits_lhs::Format == Format::ACC_INT_B_MAJOR
-                       && traits_rhs::Format == Format::SOA_INT)
-                   || (traits_lhs::Format == Format::ACC_INT_B_MAJOR
-                       && traits_rhs::Format == Format::AOS_INT)
-                   || (traits_lhs::Format == Format::SOA_INT
-                       && traits_rhs::Format == Format::ACC_INT_B_MAJOR)
-                   || (traits_lhs::Format == Format::AOS_INT
-                       && traits_rhs::Format == Format::ACC_INT_B_MAJOR))
+                   || (traits_lhs::Format == Format::SOA && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
+                   || (traits_lhs::Format == Format::AOS && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
+                   || (traits_lhs::Format == Format::SOA_INT && traits_rhs::Format == Format::AOS_INT)
+                   || (traits_lhs::Format == Format::AOS_INT && traits_rhs::Format == Format::SOA_INT)
+                   || (traits_lhs::Format == Format::ACC_INT_A_MAJOR && traits_rhs::Format == Format::SOA_INT)
+                   || (traits_lhs::Format == Format::ACC_INT_A_MAJOR && traits_rhs::Format == Format::AOS_INT)
+                   || (traits_lhs::Format == Format::SOA_INT && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
+                   || (traits_lhs::Format == Format::AOS_INT && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
+                   || (traits_lhs::Format == Format::ACC_INT_B_MAJOR && traits_rhs::Format == Format::SOA_INT)
+                   || (traits_lhs::Format == Format::ACC_INT_B_MAJOR && traits_rhs::Format == Format::AOS_INT)
+                   || (traits_lhs::Format == Format::SOA_INT && traits_rhs::Format == Format::ACC_INT_B_MAJOR)
+                   || (traits_lhs::Format == Format::AOS_INT && traits_rhs::Format == Format::ACC_INT_B_MAJOR))
                   && (traits_lhs::is_valid && traits_rhs::is_valid);
+            // clang-format on
 
             return TestNotSame && TestCompatibleParams && TestOpposingFormat;
         }

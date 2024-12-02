@@ -368,7 +368,8 @@ namespace rocwmma
                                   Mfma<InputT, ComputeT, BlockM, BlockN, BlockK>,
                                   Wmma<InputT, ComputeT, BlockM, BlockN, BlockK>>;
 
-        // mma functions operate on packed vectors
+        // Operate pre-ops on unpacked vectors
+        // the pack for mma inputs
         (*d) = MMA::exec(PackA::pack(PreMmaA::exec(a.mAccess)),
                          PackB::pack(PreMmaB::exec(b.mAccess)),
                          PackAcc::pack(PreMmaAcc::exec(c.mAccess)));

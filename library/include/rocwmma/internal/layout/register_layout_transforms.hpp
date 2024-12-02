@@ -147,6 +147,21 @@ namespace rocwmma
                         = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
                     return interleave<1u, storage_traits::KPerThread>(forward<VecT>(v));
                 }
+                else if constexpr((traits_lhs::Format == Format::SOA || traits_lhs::Format == Format::AOS) 
+                               && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
+                {
+                    // Input is unpacked
+                    using VecTraits = VecTraits<decay_t<VecT>>;
+                    using PackUtil = PackUtil<typename VecTraits::DataT>;
+
+                    // Swap upper / lower 16's and then concatenate them
+                    // to make sure we have each K value in each half.
+                    // GFX11 wmma layout quirk needs the duplication.
+                    auto packed = PackUtil::pack(v);
+                    auto swapped = Swizzle::Swap16::exec(packed);
+                    auto result = PackUtil::unpack(concat(packed, swapped));
+                    return result; // Return by copy
+                }
                 else
                 {
                     static_assert(0, "Register layout transform is not implemented");
