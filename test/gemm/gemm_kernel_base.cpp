@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,16 @@
 #define ROCWMMA_INSTANTIATE_GEMM_KERNEL_BASE(InputT, OutputT, ComputeT) \
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
+                                   4u,                                  \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   row_major,                           \
+                                   row_major,                           \
+                                   row_major,                           \
+                                   row_major>;                          \
+    template struct GemmKernelBase<16u,                                 \
+                                   16u,                                 \
                                    16u,                                 \
                                    InputT,                              \
                                    OutputT,                             \
@@ -68,6 +78,16 @@
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
                                    256u,                                \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   row_major,                           \
+                                   row_major,                           \
+                                   row_major,                           \
+                                   row_major>;                          \
+    template struct GemmKernelBase<32u,                                 \
+                                   32u,                                 \
+                                   2u,                                  \
                                    InputT,                              \
                                    OutputT,                             \
                                    ComputeT,                            \
@@ -127,6 +147,16 @@
                                    row_major>;                          \
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
+                                   4u,                                  \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   row_major,                           \
+                                   col_major,                           \
+                                   row_major,                           \
+                                   row_major>;                          \
+    template struct GemmKernelBase<16u,                                 \
+                                   16u,                                 \
                                    16u,                                 \
                                    InputT,                              \
                                    OutputT,                             \
@@ -168,6 +198,16 @@
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
                                    256u,                                \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   row_major,                           \
+                                   col_major,                           \
+                                   row_major,                           \
+                                   row_major>;                          \
+    template struct GemmKernelBase<32u,                                 \
+                                   32u,                                 \
+                                   2u,                                  \
                                    InputT,                              \
                                    OutputT,                             \
                                    ComputeT,                            \
@@ -227,6 +267,16 @@
                                    row_major>;                          \
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
+                                   4u,                                  \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   row_major,                           \
+                                   row_major,                           \
+                                   col_major,                           \
+                                   col_major>;                          \
+    template struct GemmKernelBase<16u,                                 \
+                                   16u,                                 \
                                    16u,                                 \
                                    InputT,                              \
                                    OutputT,                             \
@@ -268,6 +318,16 @@
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
                                    256u,                                \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   row_major,                           \
+                                   row_major,                           \
+                                   col_major,                           \
+                                   col_major>;                          \
+    template struct GemmKernelBase<32u,                                 \
+                                   32u,                                 \
+                                   2u,                                  \
                                    InputT,                              \
                                    OutputT,                             \
                                    ComputeT,                            \
@@ -327,6 +387,16 @@
                                    col_major>;                          \
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
+                                   4u,                                  \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   row_major,                           \
+                                   col_major,                           \
+                                   col_major,                           \
+                                   col_major>;                          \
+    template struct GemmKernelBase<16u,                                 \
+                                   16u,                                 \
                                    16u,                                 \
                                    InputT,                              \
                                    OutputT,                             \
@@ -368,6 +438,16 @@
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
                                    256u,                                \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   row_major,                           \
+                                   col_major,                           \
+                                   col_major,                           \
+                                   col_major>;                          \
+    template struct GemmKernelBase<32u,                                 \
+                                   32u,                                 \
+                                   2u,                                  \
                                    InputT,                              \
                                    OutputT,                             \
                                    ComputeT,                            \
@@ -427,6 +507,16 @@
                                    col_major>;                          \
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
+                                   4u,                                  \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   col_major,                           \
+                                   row_major,                           \
+                                   row_major,                           \
+                                   row_major>;                          \
+    template struct GemmKernelBase<16u,                                 \
+                                   16u,                                 \
                                    16u,                                 \
                                    InputT,                              \
                                    OutputT,                             \
@@ -468,6 +558,16 @@
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
                                    256u,                                \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   col_major,                           \
+                                   row_major,                           \
+                                   row_major,                           \
+                                   row_major>;                          \
+    template struct GemmKernelBase<32u,                                 \
+                                   32u,                                 \
+                                   2u,                                  \
                                    InputT,                              \
                                    OutputT,                             \
                                    ComputeT,                            \
@@ -527,6 +627,16 @@
                                    row_major>;                          \
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
+                                   4,                                   \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   col_major,                           \
+                                   col_major,                           \
+                                   row_major,                           \
+                                   row_major>;                          \
+    template struct GemmKernelBase<16u,                                 \
+                                   16u,                                 \
                                    16u,                                 \
                                    InputT,                              \
                                    OutputT,                             \
@@ -568,6 +678,16 @@
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
                                    256u,                                \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   col_major,                           \
+                                   col_major,                           \
+                                   row_major,                           \
+                                   row_major>;                          \
+    template struct GemmKernelBase<32u,                                 \
+                                   32u,                                 \
+                                   2u,                                  \
                                    InputT,                              \
                                    OutputT,                             \
                                    ComputeT,                            \
@@ -627,6 +747,16 @@
                                    row_major>;                          \
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
+                                   4u,                                  \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   col_major,                           \
+                                   row_major,                           \
+                                   col_major,                           \
+                                   col_major>;                          \
+    template struct GemmKernelBase<16u,                                 \
+                                   16u,                                 \
                                    16u,                                 \
                                    InputT,                              \
                                    OutputT,                             \
@@ -668,6 +798,16 @@
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
                                    256u,                                \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   col_major,                           \
+                                   row_major,                           \
+                                   col_major,                           \
+                                   col_major>;                          \
+    template struct GemmKernelBase<32u,                                 \
+                                   32u,                                 \
+                                   2u,                                  \
                                    InputT,                              \
                                    OutputT,                             \
                                    ComputeT,                            \
@@ -727,6 +867,16 @@
                                    col_major>;                          \
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
+                                   4u,                                  \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   col_major,                           \
+                                   col_major,                           \
+                                   col_major,                           \
+                                   col_major>;                          \
+    template struct GemmKernelBase<16u,                                 \
+                                   16u,                                 \
                                    16u,                                 \
                                    InputT,                              \
                                    OutputT,                             \
@@ -768,6 +918,16 @@
     template struct GemmKernelBase<16u,                                 \
                                    16u,                                 \
                                    256u,                                \
+                                   InputT,                              \
+                                   OutputT,                             \
+                                   ComputeT,                            \
+                                   col_major,                           \
+                                   col_major,                           \
+                                   col_major,                           \
+                                   col_major>;                          \
+    template struct GemmKernelBase<32u,                                 \
+                                   32u,                                 \
+                                   2u,                                  \
                                    InputT,                              \
                                    OutputT,                             \
                                    ComputeT,                            \

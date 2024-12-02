@@ -2,7 +2,7 @@
 #
 # MIT License
 #
-# Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +33,13 @@ set(IoTraitsTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/io_traits_64.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/io_traits_128.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/io_traits_256.cpp
+
+                       # Emulation Smoke
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-io_traits_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-io_traits_32.cpp
+                       # Emulation Smoke
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-io_traits_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-io_traits_32.cpp
                        )
 
 add_rocwmma_unit_test(io_traits_test ${IoTraitsTestSources})

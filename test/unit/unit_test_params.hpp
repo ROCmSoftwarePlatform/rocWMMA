@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -49,29 +49,29 @@ namespace rocwmma
         // Testing types as Input/Output/Compute (IOC)
         using TestTypesIOC = std::tuple<
 #if ROCWMMA_FP8
-                                        float8_t,
-                                        bfloat8_t,
+            float8_t,
+            bfloat8_t,
 #endif // ROCWMMA_FP8
 
 #if ROCWMMA_FP8_FNUZ
-                                        float8_fnuz_t,
-                                        bfloat8_fnuz_t,
+            float8_fnuz_t,
+            bfloat8_fnuz_t,
 #endif // ROCWMMA_FP8_FNUZ
-                                        bfloat16_t,
-                                        float16_t,
+            bfloat16_t,
+            float16_t,
 #if !ROCWMMA_TESTS_NO_HALF
-                                        hfloat16_t,
+            hfloat16_t,
 #endif // !ROCWMMA_TESTS_NO_HALF
-                                        float32_t,
-                                        xfloat32_t,
-                                        int8_t,
-                                        int32_t
+            float32_t,
+            xfloat32_t,
+            int8_t,
+            int32_t
 #if ROCWMMA_EXTENDED_TESTS
-                                        ,
-                                        uint8_t,
-                                        uint32_t
+            ,
+            uint8_t,
+            uint32_t
 #endif // ROCWMMA_EXTENDED_TESTS
-                                        >;
+            >;
 
         // Native double
         using TestTypeDouble = float64_t;
@@ -206,6 +206,20 @@ namespace rocwmma
         }
     };
 
+    struct EmulationUnitTestParams : public UnitTestParams
+    {
+        static inline std::vector<ThreadBlockT> threadBlocks()
+        {
+            auto warpSize = HipDevice::instance()->warpSize();
+
+            return {{warpSize * 2, 2}};
+        }
+
+        static inline std::vector<ProblemSizeT> problemSizes()
+        {
+            return {{512, 512}};
+        }
+    };
 } // namespace rocwmma
 
 #endif // ROCWMMA_UNIT_TEST_PARAMS_HPP

@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -143,7 +143,7 @@ namespace rocwmma
         std::ostream& stream /* = std::cout */) const
     {
 
-        return stream << "WSize, TBlkX, TBlkY, BlkM, BlkN, MatM, MatN, Param1, ld, Param2, "
+        return stream << "WSize, TBlkX, TBlkY, BlkM, BlkN, MatM, MatN, ld, Param1, Param2, "
                          "Lyt, Td, elapsedMs, Problem Size(GFlops), TFlops/s, Efficiency(%), "
                          "Result"
                       << std::endl;
@@ -155,8 +155,8 @@ namespace rocwmma
     {
         stream << "w" << DeviceInfo::instance()->warpSize() << ", " << mTBlockX << ", " << mTBlockY
                << ", " << BlockM << ", " << BlockN << ", " << mM << ", " << mN << ", " << mLd
-               << ", " << mParam1 << ", " << mParam2 << ", " << dataTypeToString<Layout>() << ", "
-               << dataTypeToString<DataT>() << ", ";
+               << ", " << static_cast<float>(mParam1) << ", " << static_cast<float>(mParam2) << ", "
+               << dataTypeToString<Layout>() << ", " << dataTypeToString<DataT>() << ", ";
 
         if(!mRunFlag)
         {

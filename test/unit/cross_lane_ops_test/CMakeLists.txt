@@ -2,7 +2,7 @@
 #
 # MIT License
 #
-# Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -116,6 +116,36 @@ set(CrossLaneOpsTestSources ${UnitCommonSources}
                            ${CMAKE_CURRENT_SOURCE_DIR}/test/blend_extract_word_even.cpp
                            ${CMAKE_CURRENT_SOURCE_DIR}/test/blend_extract_word_odd.cpp
 
+                           # Emulation Smoke
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-blend_extract_byte_even.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-blend_zip.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-dpp_bcast_2.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-permute_gather_scatter.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-swizzle_reverse_4.cpp
+
+                           # Emulation regression
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-blend_zip.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-dpp_bcast_2.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-dpp_reverse_2.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-dpp_rotate_l2.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-dpp_rotate_wave_l1.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-dpp_shift_l16.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-blend_unpack_byte_hi.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-dpp_shuffle_2.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-dpp_wfall_bcast_16.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-dpp_shift_wave_l1.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-permute_block_bcast_2.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-permute_gather_scatter.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-permute_rotate.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-swizzle_bcast_2.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-swizzle_reverse_2.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-swizzle_rotate_l2.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-swizzle_shuffle_2.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-swizzle_swap_2.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-blend_extract_byte_even.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-blend_extract_word_even.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-blend_unpack_byte_lo.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-blend_unpack_word_hi.cpp
 )
 
 add_rocwmma_unit_test(cross_lane_ops_test ${CrossLaneOpsTestSources})

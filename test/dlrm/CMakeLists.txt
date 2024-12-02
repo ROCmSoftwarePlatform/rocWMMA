@@ -2,7 +2,7 @@
  #
  # MIT License
  #
- # Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ # Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  #
  # Permission is hereby granted, free of charge, to any person obtaining a copy
  # of this software and associated documentation files (the "Software"), to deal
@@ -67,10 +67,16 @@ endif()
                        ${CMAKE_CURRENT_SOURCE_DIR}/dlrm_kernel_base.cpp)
 
  set(DlrmDotTestSources ${DlrmCommonSources}
-                        ${CMAKE_CURRENT_SOURCE_DIR}/test/dlrm_dot_test.cpp)
+                        ${CMAKE_CURRENT_SOURCE_DIR}/test/dlrm_dot_test.cpp
+                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-dlrm_dot_test.cpp
+                        ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-dlrm_dot_test.cpp
+                        )
 
   set(DlrmDotLdsTestSources ${DlrmCommonSources}
-                            ${CMAKE_CURRENT_SOURCE_DIR}/test/dlrm_dot_lds_test.cpp)
+                            ${CMAKE_CURRENT_SOURCE_DIR}/test/dlrm_dot_lds_test.cpp
+                            ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-dlrm_dot_lds_test.cpp
+                            ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-dlrm_dot_lds_test.cpp
+                            )
 
  # Benchmark DLRM tests
  if (ROCWMMA_BUILD_BENCHMARK_TESTS)

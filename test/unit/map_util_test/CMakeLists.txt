@@ -2,7 +2,7 @@
 #
 # MIT License
 #
-# Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -68,6 +68,21 @@ set(MapUtilTestSources ${UnitCommonSources}
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/map_wave_to_matrix_64.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/map_wave_to_matrix_128.cpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/test/map_wave_to_matrix_256.cpp
+
+                       # Emulation Smoke
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-map_block_to_matrix_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-map_thread_to_matrix_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-map_matrix_to_data_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-map_wave_to_matrix_16.cpp
+                       # Emulation regression
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_block_to_matrix_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_block_to_matrix_override_m_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_block_to_matrix_override_n_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_matrix_to_data_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_matrix_to_data_override_m_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_matrix_to_data_override_n_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_thread_to_matrix_16.cpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-map_wave_to_matrix_16.cpp
                        )
 
-add_rocwmma_unit_test(map_util_test ${MapUtilTestSources})
+                   add_rocwmma_unit_test(map_util_test ${MapUtilTestSources})

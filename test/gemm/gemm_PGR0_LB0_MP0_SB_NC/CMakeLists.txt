@@ -2,7 +2,7 @@
  #
  # MIT License
  #
- # Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ # Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  #
  # Permission is hereby granted, free of charge, to any person obtaining a copy
  # of this software and associated documentation files (the "Software"), to deal
@@ -44,6 +44,9 @@ set(${ROCWMMA_TARGET_SOURCES} ${GemmCommonSources}
                           ${CMAKE_CURRENT_SOURCE_DIR}/test/32x32_nt.cpp
                           ${CMAKE_CURRENT_SOURCE_DIR}/test/32x32_tn.cpp
                           ${CMAKE_CURRENT_SOURCE_DIR}/test/32x32_tt.cpp
+                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-16x16.cpp
+                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-16x16.cpp
+                          ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-32x32.cpp
                           )
 
 # Ad hoc test

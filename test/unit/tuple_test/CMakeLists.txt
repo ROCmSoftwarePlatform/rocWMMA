@@ -2,7 +2,7 @@
 #
 # MIT License
 #
-# Copyright 2021-2023 Advanced Micro Devices, Inc.
+# Copyright (C) 2021-2025 Advanced Micro Devices, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,8 @@ set(ROCWMMA_TEST_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${ROCWMMA_TEST_INCLUDE
 
 set(TupleTestSources ${UnitCommonSources}
                       ${CMAKE_CURRENT_SOURCE_DIR}/test/tuple.cpp
+                      ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/smoketest-tuple.cpp
+                      ${CMAKE_CURRENT_SOURCE_DIR}/test/emulation/regressiontest-tuple.cpp
                        )
 
 add_rocwmma_unit_test(tuple_test ${TupleTestSources})
