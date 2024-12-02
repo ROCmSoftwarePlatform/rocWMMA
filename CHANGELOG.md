@@ -3,7 +3,23 @@
 Documentation for rocWMMA is available at
 [https://rocm.docs.amd.com/projects/rocWMMA/en/latest](https://rocm.docs.amd.com/projects/rocWMMA/en/latest).
 
-## (Unreleased) rocWMMA 1.6.0 for ROCm 6.3.0
+## (Unreleased) rocWMMA 1.7.0 for ROCm 6.4.0
+
+### Added
+
+* Added interleaved layouts that enhance the performance of GEMM operations
+* Added emulation test suites. These suites are lightweight and well-suited for execution on emulator platforms
+
+### Changed
+
+* Used GPU_TARGETS instead of AMDGPU_TARGETS in cmakelists.txt
+* Used `--offload-compress` flag for supported compilers
+
+### Resolved issues
+
+* For CMake bug workaround, set `CMAKE_NO_BUILTIN_CHRPATH` when `BUILD_OFFLOAD_COMPRESS` is unset
+
+## rocWMMA 1.6.0 for ROCm 6.3.0
 
 ### Added
 
