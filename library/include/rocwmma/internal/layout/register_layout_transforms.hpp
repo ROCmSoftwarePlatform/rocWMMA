@@ -70,7 +70,13 @@ namespace rocwmma
                         && (!traits_lhs::is_register_layout || !traits_rhs::is_register_layout
                             || !is_layout_orthogonal_v<RegisterLayoutLhs, RegisterLayoutRhs>)>>
         {
-            static_assert(0, "Register layout transform is not supported");
+            template <typename VecT>
+            ROCWMMA_UNSUPPORTED_IMPL("Register layout transform is not supported")
+            ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
+            {
+                // No-op
+                return v;
+            }
         };
 
         // Apply paths between orthogonal transforms
