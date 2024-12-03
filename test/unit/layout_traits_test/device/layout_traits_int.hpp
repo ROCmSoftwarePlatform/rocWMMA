@@ -1333,7 +1333,7 @@ namespace rocwmma
         constexpr uint32_t kpt = kPerThread<BlockK, MmaDim, SplitK>();
 
         // Must satisfy layout requirement
-        if constexpr(dpt > 0u && kpt > 0u)
+        if constexpr(dpt > 0u && kpt > 0u && BlockK >= kpt)
         {
             // clang-format off
             result &= matrixLayoutTraitsTestInterleaved0<BlockDim, BlockK, DataT, DataLayoutT, MmaDim, SplitK>();
