@@ -12,12 +12,12 @@ Documentation for rocWMMA is available at
 
 ### Changed
 
-* Used GPU_TARGETS instead of AMDGPU_TARGETS in cmakelists.txt
+* Used GPU_TARGETS instead of AMDGPU_TARGETS in `cmakelists.txt`
 * Used `--offload-compress` flag for supported compilers
 
 ### Resolved issues
 
-* For CMake bug workaround, set `CMAKE_NO_BUILTIN_CHRPATH` when `BUILD_OFFLOAD_COMPRESS` is unset
+* For a CMake bug workaround, set `CMAKE_NO_BUILTIN_CHRPATH` when `BUILD_OFFLOAD_COMPRESS` is unset
 
 ## rocWMMA 1.6.0 for ROCm 6.3.0
 
