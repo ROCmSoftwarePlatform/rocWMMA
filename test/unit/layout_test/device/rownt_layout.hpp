@@ -57,41 +57,32 @@ namespace rocwmma
                 BlockWidth  = BlockN,
 
                 BlockDim = BlockN,
-                KDim     = BlockM,
+                BlockK     = BlockM,
 
-                MaxVectorWidth
-                = std::is_same_v<DataT, float64_t>
-                      ? 1
-                      : detail::MaxVWSelector<matrix_b, BlockM, BlockN, DataT, DataLayoutT>::Result,
-                VectorWidth = std::is_same_v<DataLayoutT, col_major> ? MaxVectorWidth : 1,
+                MaxVectorWidth = detail::MaxVWSelector<matrix_b, BlockDim, BlockK, DataT, DataLayoutT>::Result,
+                VectorWidth = std::is_same_v<DataLayoutT, col_major> ? MaxVectorWidth : 1u,
             };
 
-            using IOTraits = IOTraits<BlockDim, KDim, DataT, VectorWidth>;
+            using IOTraits = IOTraits<BlockDim, BlockK, DataT, VectorWidth>;
             using LayoutT  = conditional_t<
                 is_same_v<DataLayoutT, col_major>,
-                MatrixLayout::RowOrthoVW<BlockDim, KDim, DataT, VectorWidth, MaxVectorWidth>,
-                MatrixLayout::RowOrthoVW<BlockDim, KDim, DataT, VectorWidth, MaxVectorWidth>>;
+                MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>,
+                MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>>;
             using Mapping = MappingUtil<BlockHeight, BlockWidth, DataT, DataLayoutT>;
 
+            constexpr auto ioCount     = IOTraits::IOCount;
             auto baseOffset  = LayoutT::baseOffset();
-            auto iocount     = IOTraits::IOCount;
             auto matrixCoord = Mapping::matrixCoord();
 
-            enum : uint32_t
+            auto currentOffset = matrixCoord + baseOffset;
+            for(auto i = 0u; i < ioCount; ++i)
             {
-                MajorIndex = std::is_same_v<DataLayoutT, row_major> ? 0 : 1,
-                MinorIndex = std::is_same_v<DataLayoutT, row_major> ? 1 : 0
-            };
-
-            for(uint32_t i = 0; i < iocount; ++i)
-            {
-                for(uint32_t j = 0; j < VectorWidth; j++)
+                for(auto j = 0u; j < VectorWidth; ++j)
                 {
-                    auto index = (get<MajorIndex>(matrixCoord) * ld + get<MinorIndex>(matrixCoord))
-                                 + Mapping::dataOffset(baseOffset, ld) + j;
+                    auto index = Mapping::dataOffset(currentOffset, ld) + j;
                     out[index] = in[index];
                 }
-                baseOffset += LayoutT::incrementalOffset(i);
+                currentOffset += LayoutT::incrementalOffset(i);
             }
         }
     }
