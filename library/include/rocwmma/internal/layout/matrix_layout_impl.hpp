@@ -124,6 +124,8 @@ namespace rocwmma
                 static constexpr uint32_t ElementsPerThread
                     = DimPerThread * KPerThread * BlockDimSegs;
 
+                static_assert(MaxVectorWidth <= BlockK,
+                            "MaxVectorWidth cannot exceed BlockK");
                 static_assert(BlockDim >= BlockDimStride_X,
                               "BlockDim must be larger than BlockDimStride_X");
                 static_assert(BlockDim % BlockDimStride_X == 0,
@@ -388,6 +390,8 @@ namespace rocwmma
                     = DimPerThread * KPerThread * BlockDimSegs;
 
                 // Sanity checks for strides sizes
+                static_assert(MaxVectorWidth <= BlockDim,
+                            "MaxVectorWidth cannot exceed BlockDim");
                 static_assert(BlockDim >= BlockDimStride_X,
                               "BlockDim must be larger than BlockDimStride_X");
                 static_assert(BlockDim % BlockDimStride_X == 0,

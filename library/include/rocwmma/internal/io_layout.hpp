@@ -63,11 +63,27 @@ namespace rocwmma
             static constexpr bool ElementCountTest
                 = (ElementsPerIO <= ElementCount) && (ElementCount % ElementsPerIO == 0);
 
-            // Currently, all layouts are using ColOrthoVW. This means that VW must be less than BlockK
-            static constexpr bool LeadingDimTest = (TestWidth <= BlockK);
+            // Check the layout geometry. Avoids triggering static asserts for invalid layout.
+            // matrix_a (BlockDim <= 32): col_major, row_major -> ColOrtho req: BlockKStride <= BlockK
+            //          (BlockDim > 32):             col_major -> ColInline req: MaxVW <= BlockDim
+            //                                       row_major -> ColOrtho  req: BlockKStride <= BlockK
+            // matrix_b (BlockDim <= 32): col_major, row_major -> RowOrtho req: BlockKStride <= BlockK
+            //          (BlockDim > 32):             row_major -> ColInline req: MaxVW <= BlockDim
+            //                                       col_major -> ColOrtho  req: BlockKStride <= BlockK
+            //
+            // Note: BlockKStride is non-interleaved layout specific, and determines whether the gathered
+            // data at a specific MaxVW fits within BlockK dimension.
+            static constexpr bool BlockDimTest = TestWidth <= BlockDim;
+            static constexpr bool BlockKTest = (Constants::AMDGCN_WAVE_SIZE * TestWidth / min(BlockDim, Constants::AMDGCN_WAVE_SIZE)) <= BlockK;
+
+            // TODO: These could really be more layout specific.
+            // This is limiting for small BlockDim and large K.
+            static constexpr bool MatrixATest = is_same_v<DataLayoutT, col_major> ? (BlockDimTest && BlockKTest) : BlockKTest;
+            static constexpr bool MatrixBTest = is_same_v<DataLayoutT, row_major> ? (BlockDimTest && BlockKTest) : BlockKTest;
+            static constexpr bool VWFitnessTest = (is_same_v<MatrixT, matrix_a> && MatrixATest) || (is_same_v<MatrixT, matrix_b> && MatrixBTest);
 
             // Decide on final MaxVW
-            static constexpr uint32_t MaxVectorWidth = (ElementCountTest && LeadingDimTest)
+            static constexpr uint32_t MaxVectorWidth = (ElementCountTest && VWFitnessTest)
                                                            ? TestWidth
                                                            : MaxVWSelector<MatrixT,
                                                                            BlockDim,
