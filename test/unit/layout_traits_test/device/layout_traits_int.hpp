@@ -290,15 +290,32 @@ namespace rocwmma
         result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, true, false, debug_on_fail);
 
         // Storage <-> mma layouts
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput, ((is_row_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput,((is_col_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput, ((is_col_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput,((is_row_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+        // gfx11 have unique mma formats that must always be transformed from storage
+        if constexpr ((bool)ROCWMMA_ARCH_GFX11)
+        {
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput,  false, ((is_row_mjr || is_kpt_eq_1) && is_mma_dim), debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false, ((is_col_mjr || is_dpt_eq_1) && is_mma_dim), debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput,  false, ((is_col_mjr || is_kpt_eq_1) && is_mma_dim), debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false, ((is_row_mjr || is_dpt_eq_1) && is_mma_dim), debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho, ((is_row_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline,((is_col_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho, ((is_col_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline,((is_row_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho,  false, ((is_row_mjr || is_kpt_eq_1) && is_mma_dim), debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false, ((is_col_mjr || is_dpt_eq_1) && is_mma_dim), debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho,  false, ((is_col_mjr || is_kpt_eq_1) && is_mma_dim), debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false, ((is_row_mjr || is_dpt_eq_1) && is_mma_dim), debug_on_fail);
+        }
+        // other targets have mma formats that may overlap storage formats
+        else
+        {
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput, ((is_row_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput,((is_col_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput, ((is_col_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput,((is_row_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho, ((is_row_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline,((is_col_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho, ((is_col_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline,((is_row_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+        }
 
         result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaAcc, false, ((is_row_mjr || is_kpt_eq_1) && is_mma_dim), debug_on_fail);
         result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaAcc, false,((is_col_mjr || is_dpt_eq_1) && is_mma_dim), debug_on_fail);
@@ -383,15 +400,32 @@ namespace rocwmma
         result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, true, false, debug_on_fail);
 
         // Storage <-> mma layouts
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput, is_mma_row_mjr,  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false,  is_mma_col_mjr, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput, is_mma_col_mjr,  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false,  is_mma_row_mjr, debug_on_fail);
+        // gfx11 have unique mma formats that must always be transformed from storage
+        if constexpr ((bool)ROCWMMA_ARCH_GFX11)
+        {
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput,  false,  is_mma_row_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false,  is_mma_col_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput,  false,  is_mma_col_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false,  is_mma_row_mjr, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho, is_mma_row_mjr,  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false,  is_mma_col_mjr, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho, is_mma_col_mjr,  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false,  is_mma_row_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho,  false,  is_mma_row_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false,  is_mma_col_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho,  false,  is_mma_col_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false,  is_mma_row_mjr, debug_on_fail);
+        }
+        // other targets have mma formats that may overlap storage formats
+        else
+        {
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput, is_mma_row_mjr,  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false,  is_mma_col_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput, is_mma_col_mjr,  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false,  is_mma_row_mjr, debug_on_fail);
+
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho, is_mma_row_mjr,  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false,  is_mma_col_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho, is_mma_col_mjr,  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false,  is_mma_row_mjr, debug_on_fail);
+        }
 
         result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaAcc, false,  is_mma_row_mjr, debug_on_fail);
         result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaAcc, false,  is_mma_col_mjr, debug_on_fail);
@@ -486,15 +520,32 @@ namespace rocwmma
         result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, is_dpt_eq_1, false, debug_on_fail);
 
         // Storage <-> mma layouts
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput,  ((is_row_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, ((is_col_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput,  ((is_col_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, ((is_row_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+        // gfx11 have unique mma formats that must always be transformed from storage
+        if constexpr ((bool)ROCWMMA_ARCH_GFX11)
+        {
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput,  false, ((is_row_mjr || is_kpt_eq_1) && is_mma_dim), debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false, ((is_col_mjr || is_dpt_eq_1) && is_mma_dim), debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput,  false, ((is_col_mjr || is_kpt_eq_1) && is_mma_dim), debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false, ((is_row_mjr || is_dpt_eq_1) && is_mma_dim), debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho,  ((is_col_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, ((is_row_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho,  ((is_row_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, ((is_col_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho,  false, ((is_col_mjr || is_kpt_eq_1) && is_mma_dim), debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false, ((is_row_mjr || is_dpt_eq_1) && is_mma_dim), debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho,  false, ((is_row_mjr || is_kpt_eq_1) && is_mma_dim), debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false, ((is_col_mjr || is_dpt_eq_1) && is_mma_dim), debug_on_fail);
+        }
+        // other targets have mma formats that may overlap storage formats
+        else
+        {
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput,  ((is_row_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, ((is_col_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput,  ((is_col_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, ((is_row_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho,  ((is_col_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, ((is_row_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho,  ((is_row_mjr || is_kpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, ((is_col_mjr || is_dpt_eq_1) && is_mma_dim),  false, debug_on_fail);
+        }
 
         result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaAcc,  false, ((is_row_mjr || is_kpt_eq_1) && is_mma_dim), debug_on_fail);
         result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaAcc, false, ((is_col_mjr || is_dpt_eq_1) && is_mma_dim), debug_on_fail);
@@ -587,15 +638,32 @@ namespace rocwmma
         result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, false, false, debug_on_fail);
 
         // Storage <-> mma layouts
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput, is_mma_row_mjr,  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false,  is_mma_col_mjr, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput, is_mma_col_mjr,  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false,  is_mma_row_mjr, debug_on_fail);
+        // gfx11 have unique mma formats that must always be transformed from storage
+        if constexpr ((bool)ROCWMMA_ARCH_GFX11)
+        {
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput,  false,  is_mma_row_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false,  is_mma_col_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput,  false,  is_mma_col_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false,  is_mma_row_mjr, debug_on_fail);
 
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho, is_mma_col_mjr,  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false,  is_mma_row_mjr, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho, is_mma_row_mjr,  false, debug_on_fail);
-        result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false,  is_mma_col_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho,  false,  is_mma_col_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false,  is_mma_row_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho,  false,  is_mma_row_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false,  is_mma_col_mjr, debug_on_fail);
+        }
+        // other targets have mma formats that may overlap storage formats
+        else
+        {
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput, is_mma_row_mjr,  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false,  is_mma_col_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput, is_mma_col_mjr,  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false,  is_mma_row_mjr, debug_on_fail);
+
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho, is_mma_col_mjr,  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false,  is_mma_row_mjr, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho, is_mma_row_mjr,  false, debug_on_fail);
+            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false,  is_mma_col_mjr, debug_on_fail);
+        }
 
         result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaAcc, false,  is_mma_row_mjr, debug_on_fail);
         result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaAcc, false,  is_mma_col_mjr, debug_on_fail);
@@ -694,15 +762,32 @@ namespace rocwmma
 
             // Storage <-> mma layouts
             // Same MmaDim
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput, ((is_row_mjr || is_kpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput,((is_col_mjr || is_dpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput, ((is_col_mjr || is_kpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput,((is_row_mjr || is_dpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
+            // gfx11 have unique mma formats that must always be transformed from storage
+            if constexpr ((bool)ROCWMMA_ARCH_GFX11)
+            {
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput,  false, ((is_row_mjr || is_kpt0_eq_1) && is_mma_dim), debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false, ((is_col_mjr || is_dpt0_eq_1) && is_mma_dim), debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput,  false, ((is_col_mjr || is_kpt0_eq_1) && is_mma_dim), debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false, ((is_row_mjr || is_dpt0_eq_1) && is_mma_dim), debug_on_fail);
 
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho, ((is_row_mjr || is_kpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline,((is_col_mjr || is_dpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho, ((is_col_mjr || is_kpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline,((is_row_mjr || is_dpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho,  false, ((is_row_mjr || is_kpt1_eq_1) && is_mma_dim), debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false, ((is_col_mjr || is_dpt1_eq_1) && is_mma_dim), debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho,  false, ((is_col_mjr || is_kpt1_eq_1) && is_mma_dim), debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false, ((is_row_mjr || is_dpt1_eq_1) && is_mma_dim), debug_on_fail);
+            }
+            // other targets have mma formats that may overlap storage formats
+            else
+            {
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput, ((is_row_mjr || is_kpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput,((is_col_mjr || is_dpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput, ((is_col_mjr || is_kpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput,((is_row_mjr || is_dpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
+
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho, ((is_row_mjr || is_kpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline,((is_col_mjr || is_dpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho, ((is_col_mjr || is_kpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline,((is_row_mjr || is_dpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
+            }
 
             result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaAcc, false, ((is_row_mjr || is_kpt0_eq_1) && is_mma_dim), debug_on_fail);
             result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaAcc, false,((is_col_mjr || is_dpt0_eq_1) && is_mma_dim), debug_on_fail);
@@ -805,15 +890,32 @@ namespace rocwmma
 
             // Storage <-> mma layouts
             // Same MmaDim
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput, is_mma_row_mjr,  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false,  is_mma_col_mjr, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput, is_mma_col_mjr,  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false,  is_mma_row_mjr, debug_on_fail);
+            // gfx11 have unique mma formats that must always be transformed from storage
+            if constexpr ((bool)ROCWMMA_ARCH_GFX11)
+            {
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput,  false,  is_mma_row_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false,  is_mma_col_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput,  false,  is_mma_col_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false,  is_mma_row_mjr, debug_on_fail);
 
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho, is_mma_row_mjr,  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false,  is_mma_col_mjr, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho, is_mma_col_mjr,  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false,  is_mma_row_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho,  false,  is_mma_row_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false,  is_mma_col_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho,  false,  is_mma_col_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false,  is_mma_row_mjr, debug_on_fail);
+            }
+            // other targets have mma formats that may overlap storage formats
+            else
+            {
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput, is_mma_row_mjr,  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false,  is_mma_col_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput, is_mma_col_mjr,  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false,  is_mma_row_mjr, debug_on_fail);
+
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho, is_mma_row_mjr,  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false,  is_mma_col_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho, is_mma_col_mjr,  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false,  is_mma_row_mjr, debug_on_fail);
+            }
 
             result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaAcc, false,  is_mma_row_mjr, debug_on_fail);
             result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaAcc, false,  is_mma_col_mjr, debug_on_fail);
@@ -1186,15 +1288,32 @@ namespace rocwmma
             result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, false, false, debug_on_fail);
 
             // Storage <-> mma layouts
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput, ((is_row_mjr || is_kpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput,((is_col_mjr || is_dpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput, ((is_col_mjr || is_kpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput,((is_row_mjr || is_dpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
+            // gfx11 have unique mma formats that must always be transformed from storage
+            if constexpr ((bool)ROCWMMA_ARCH_GFX11)
+            {
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput,  false, ((is_row_mjr || is_kpt0_eq_1) && is_mma_dim), debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false, ((is_col_mjr || is_dpt0_eq_1) && is_mma_dim), debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput,  false, ((is_col_mjr || is_kpt0_eq_1) && is_mma_dim), debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false, ((is_row_mjr || is_dpt0_eq_1) && is_mma_dim), debug_on_fail);
 
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho, ((is_row_mjr || is_kpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline,((is_col_mjr || is_dpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho, ((is_col_mjr || is_kpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline,((is_row_mjr || is_dpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho,  false, ((is_row_mjr || is_kpt1_eq_1) && is_mma_dim), debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false, ((is_col_mjr || is_dpt1_eq_1) && is_mma_dim), debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho,  false, ((is_col_mjr || is_kpt1_eq_1) && is_mma_dim), debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false, ((is_row_mjr || is_dpt1_eq_1) && is_mma_dim), debug_on_fail);
+            }
+            // other targets have mma formats that may overlap storage formats
+            else
+            {
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput, ((is_row_mjr || is_kpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput,((is_col_mjr || is_dpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput, ((is_col_mjr || is_kpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput,((is_row_mjr || is_dpt0_eq_1) && is_mma_dim),  false, debug_on_fail);
+
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho, ((is_row_mjr || is_kpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline,((is_col_mjr || is_dpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho, ((is_col_mjr || is_kpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline,((is_row_mjr || is_dpt1_eq_1) && is_mma_dim),  false, debug_on_fail);
+            }
 
             result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaAcc, false, ((is_row_mjr || is_kpt0_eq_1) && is_mma_dim), debug_on_fail);
             result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaAcc, false,((is_col_mjr || is_dpt0_eq_1) && is_mma_dim), debug_on_fail);
@@ -1295,15 +1414,33 @@ namespace rocwmma
             result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::RowInline, false, false, debug_on_fail);
 
             // Storage <-> mma layouts
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput, is_mma_row_mjr,  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false,  is_mma_col_mjr, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput, is_mma_col_mjr,  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false,  is_mma_row_mjr, debug_on_fail);
+            // gfx11 have unique mma formats that must always be transformed from storage
+            if constexpr ((bool)ROCWMMA_ARCH_GFX11)
+            {
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput,  false,  is_mma_row_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false,  is_mma_col_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput,  false,  is_mma_col_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false,  is_mma_row_mjr, debug_on_fail);
 
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho, is_mma_row_mjr,  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false,  is_mma_col_mjr, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho, is_mma_col_mjr,  false, debug_on_fail);
-            result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false,  is_mma_row_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho,  false,  is_mma_row_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false,  is_mma_col_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho,  false,  is_mma_col_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false,  is_mma_row_mjr, debug_on_fail);
+            }
+            // other targets have mma formats that may overlap storage formats
+            else
+            {
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaInput, is_mma_row_mjr,  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaInput, false,  is_mma_col_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowOrtho, typename Set1::MmaInput, is_mma_col_mjr,  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::RowInline, typename Set1::MmaInput, false,  is_mma_row_mjr, debug_on_fail);
+
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColOrtho, is_mma_row_mjr,  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::ColInline, false,  is_mma_col_mjr, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowOrtho, is_mma_col_mjr,  false, debug_on_fail);
+                result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::MmaInput, typename Set1::RowInline, false,  is_mma_row_mjr, debug_on_fail);
+            }
+
 
             result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColOrtho, typename Set1::MmaAcc, false,  is_mma_row_mjr, debug_on_fail);
             result &= ROCWMMA_TEST_LAYOUT_TRAITS_PAIR(typename Set0::ColInline, typename Set1::MmaAcc, false,  is_mma_col_mjr, debug_on_fail);

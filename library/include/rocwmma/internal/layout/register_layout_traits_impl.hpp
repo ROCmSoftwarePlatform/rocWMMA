@@ -475,20 +475,29 @@ namespace rocwmma
             constexpr bool TestFormatMatch = (traits_lhs::Format == traits_rhs::Format);
 
             if constexpr((traits_lhs::is_interleaved && traits_rhs::is_interleaved)
-                         && ((traits_lhs::is_storage && traits_rhs::is_storage)
+                     && ((traits_lhs::is_storage && traits_rhs::is_storage)
                              || (traits_lhs::is_storage && traits_rhs::is_mma_input)
                              || (traits_lhs::is_mma_input && traits_rhs::is_storage)))
             {
                 using storage_traits
                     = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
 
-                // Special case: interleaved layouts
-                // Check matching thread dims and if either one is == 1u.
-                // Register contents will be identical, regardless of different formats.
-                constexpr bool TestIdentityQuirks
-                    = (storage_traits::DimPerThread == 1u) || (storage_traits::KPerThread == 1u);
+                // Gfx11 MmaInput requires some additional transforms
+                if constexpr((bool)ROCWMMA_ARCH_GFX11 
+                            && (traits_lhs::is_mma_input || traits_rhs::is_mma_input))
+                {
+                    return TestCompatibleParams && TestFormatMatch;
+                }
+                else
+                {
+                    // Special case: interleaved layouts
+                    // Check matching thread dims and if either one is == 1u.
+                    // Register contents will be identical, regardless of different formats.
+                    constexpr bool TestIdentityQuirks
+                        = (storage_traits::DimPerThread == 1u) || (storage_traits::KPerThread == 1u);
 
-                return TestCompatibleParams && (TestFormatMatch || TestIdentityQuirks);
+                    return TestCompatibleParams && (TestFormatMatch || TestIdentityQuirks);    
+                }
             }
             else
             {
