@@ -170,7 +170,7 @@ namespace rocwmma
         template <uint32_t MmaSize,
                   typename DataT,
                   bool   Interleaved,
-                  Format Fmt = Interleaved ? Format::SOA_INT : Format::SOA>
+                  Format Fmt>
         struct MmaInput
         {
         };
@@ -179,7 +179,7 @@ namespace rocwmma
         template <uint32_t MmaSize,
                   typename DataT,
                   bool   Interleaved,
-                  Format Fmt = Interleaved ? Format::ACC_INT_A_MAJOR : Format::SOA>
+                  Format Fmt>
         struct MmaAcc
         {
         };

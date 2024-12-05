@@ -129,8 +129,12 @@ namespace rocwmma
             MatrixLayout::RowOrthoInt<BlockDim, BlockK, DataT, MmaDim, SplitK>,
             DataLayoutT>;
 
-        using MmaInput = RegisterLayout::MmaInput<MmaDim, DataT, true>;
-        using MmaAcc   = RegisterLayout::MmaAcc<MmaDim, DataT, true>;
+        using MmaInput = RegisterLayout::MmaInput<MmaDim, DataT, true, (bool)ROCWMMA_ARCH_GFX11
+                                                       ? RegisterLayout::Format::WMMA_INPUT_GFX11
+                                                       : RegisterLayout::Format::SOA_INT>;
+        using MmaAcc   = RegisterLayout::MmaAcc<MmaDim, DataT, true, (bool)ROCWMMA_ARCH_GFX11
+                                         ? RegisterLayout::Format::WMMA_ACC_INT_A_MAJOR_GFX11
+                                         : RegisterLayout::Format::ACC_INT_A_MAJOR>;
     };
 
     template <typename StorageLayout>
