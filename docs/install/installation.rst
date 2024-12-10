@@ -187,7 +187,7 @@ Below are the project options available to build rocWMMA library with or without
     *   -   **Option**
         -   **Description**
         -   **Default Value**
-    *   -   AMDGPU_TARGETS
+    *   -   GPU_TARGETS
         -   Build code for specific GPU target(s)
         -   ``gfx908``; ``gfx90a``; ``gfx942``; ``gfx1100``; ``gfx1101``; ``gfx1102``; ``gfx1200``; ``gfx1201``
     *   -   ROCWMMA_BUILD_TESTS
@@ -239,7 +239,7 @@ Here are some other example project configurations:
 +===================================+================================================================================================================================================================+
 |               Basic               |                                      :code:`CC=/opt/rocm/bin/amdclang CXX=/opt/rocm/bin/amdclang++ cmake -B <build_dir>`                                       |
 +-----------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|         Targeting gfx908          |                      :code:`CC=/opt/rocm/bin/amdclang CXX=/opt/rocm/bin/amdclang++ cmake -B <build_dir> . -DAMDGPU_TARGETS=gfx908`                             |
+|         Targeting gfx908          |                      :code:`CC=/opt/rocm/bin/amdclang CXX=/opt/rocm/bin/amdclang++ cmake -B <build_dir> . -DGPU_TARGETS=gfx908:xnack-`                      |
 +-----------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------+
 |            Debug build            |                         :code:`CC=/opt/rocm/bin/amdclang CXX=/opt/rocm/bin/amdclang++ cmake -B <build_dir> . -DCMAKE_BUILD_TYPE=Debug`                         |
 +-----------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -485,7 +485,7 @@ Build performance
 
 Depending on the resources available to the build machine and the build configuration selected, rocWMMA build times can be on the order of an hour or more. Here are some things you can do to reduce build times:
 
-* Target a specific GPU (e.g., ``-D AMDGPU_TARGETS=gfx908``)
+* Target a specific GPU (e.g., ``-D GPU_TARGETS=gfx908:xnack-``)
 * Use lots of threads (e.g., ``-j32``)
 * Select ``ROCWMMA_BUILD_ASSEMBLY=OFF``
 * Select ``ROCWMMA_BUILD_DOCS=OFF``.

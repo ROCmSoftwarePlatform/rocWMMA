@@ -51,9 +51,9 @@ if( CMAKE_PROJECT_NAME STREQUAL "rocwmma" )
   option( ROCWMMA_BUILD_TESTS "Build rocWMMA tests" ON )
   option( ROCWMMA_BUILD_SAMPLES "Build rocWMMA samples" ON )
   option( ROCWMMA_BUILD_ASSEMBLY "Output assembly files" OFF )
+  option( BUILD_OFFLOAD_COMPRESS "Build rocWMMA with offload compression" ON )
 endif()
 
-# set( AMDGPU_TARGETS "gfx908:xnack-" ) # User variable
 if( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
   set( CMAKE_INSTALL_PREFIX "/opt/rocm" CACHE PATH "Install path prefix, prepended onto install directories" FORCE )
 endif()
@@ -96,28 +96,40 @@ endif()
 
 if (ADDRESS_SANITIZER_ENABLED)
     #TODO: Remove next line when rocm-cmake fix is available
-    set(CMAKE_NO_BUILTIN_CHRPATH ON)
-    rocm_check_target_ids(DEFAULT_AMDGPU_TARGETS
+    rocm_check_target_ids(DEFAULT_GPU_TARGETS
         TARGETS "gfx90a:xnack+;gfx942:xnack+" )
 else()
-    #TODO: Remove next line when rocm-cmake fix is available
-    set(CMAKE_NO_BUILTIN_CHRPATH ON)
-    rocm_check_target_ids(DEFAULT_AMDGPU_TARGETS
+    rocm_check_target_ids(DEFAULT_GPU_TARGETS
         TARGETS "gfx908;gfx90a;gfx942;gfx1100;gfx1101;gfx1102;gfx1200;gfx1201" )
 endif()
 
+# Check if offload compression is supported
+include(CheckCXXCompilerFlag)
+if (BUILD_OFFLOAD_COMPRESS)
+  check_cxx_compiler_flag("--offload-compress" CXX_COMPILER_SUPPORTS_OFFLOAD_COMPRESS)
+  if (NOT CXX_COMPILER_SUPPORTS_OFFLOAD_COMPRESS)
+    #TODO: Remove next line when rocm-cmake fix is available
+    set(CMAKE_NO_BUILTIN_CHRPATH ON)
+  elseif(CXX_COMPILER_SUPPORTS_OFFLOAD_COMPRESS)
+    set(CMAKE_NO_BUILTIN_CHRPATH OFF)
+  endif()
+endif()
 
-# Variable AMDGPU_TARGET must be a cached variable and must be specified before calling find_package(hip)
-# This is because hip-config.cmake sets --offload-arch via AMDGPU_TARGET cached variable __after__ setting
-# default cached variable AMDGPU_TARGET to DEFAULT_AMDGPU_TARGETS, where not all archs are compatible with MFMA instructions
+
+# Variable GPU_TARGET must be a cached variable and must be specified before calling find_package(hip)
+# This is because hip-config.cmake sets --offload-arch via GPU_TARGET cached variable __after__ setting
+# default cached variable GPU_TARGET to DEFAULT_GPU_TARGETS, where not all archs are compatible with MFMA instructions
 #
 # By rule, once cached variable is set, it cannot be overridden unless we use the FORCE option
-if(AMDGPU_TARGETS)
-  set(AMDGPU_TARGETS "${AMDGPU_TARGETS}" CACHE STRING "List of specific machine types for library to target")
+if(GPU_TARGETS)
+  set(GPU_TARGETS "${GPU_TARGETS}" CACHE STRING "List of specific machine types for library to target")
+elseif(AMDGPU_TARGETS)
+  set(GPU_TARGETS "${AMDGPU_TARGETS}" CACHE STRING "List of specific machine types for library to target")
+  message(STATUS "WARNING: AMDGPU_TARGETS use is deprecated. Use GPU_TARGETS.")
 else()
-  set(AMDGPU_TARGETS "${DEFAULT_AMDGPU_TARGETS}" CACHE STRING "List of specific machine types for library to target")
+  set(GPU_TARGETS "${DEFAULT_GPU_TARGETS}" CACHE STRING "List of specific machine types for library to target")
 endif()
-message( VERBOSE "AMDGPU_TARGETS=${AMDGPU_TARGETS}")
+message( VERBOSE "GPU_TARGETS=${GPU_TARGETS}")
 
 find_package( hip REQUIRED )
 find_package( hiprtc REQUIRED )

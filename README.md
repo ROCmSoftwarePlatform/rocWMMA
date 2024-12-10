@@ -19,7 +19,7 @@ The test suite includes validation and benchmarking projects that focus on unit 
 
 ## Requirements
 
-rocWMMA currently supports the following AMDGPU architectures:
+rocWMMA currently supports the following AMD GPU architectures:
 
 * CDNA class GPU featuring matrix core support: gfx908, gfx90a, gfx940, gfx941, gfx942 as 'gfx9'
 * RDNA3 class GPU featuring AI acceleration support: gfx1100, gfx1101, gfx1102 as 'gfx11'
@@ -47,7 +47,8 @@ For more detailed information, please refer to the [rocWMMA installation guide](
 
 |Option|Description|Default value|
 |---|---|---|
-|AMDGPU_TARGETS|Build code for specific GPU target(s)|gfx908;gfx90a;gfx942;gfx1100;gfx1101;gfx1102;gfx1200;gfx1201|
+|GPU_TARGETS|Build code for specific GPU target(s)|gfx908:xnack-;gfx90a:xnack-;gfx90a:xnack+;gfx942;gfx1100;gfx1101;gfx1102;gfx1200;gfx1201|
+|AMDGPU_TARGETS|(Deprecated) Build code for specific GPU target(s)|gfx908:xnack-;gfx90a:xnack-;gfx90a:xnack+;gfx942;gfx1100;gfx1101;gfx1102;gfx1200;gfx1201|
 |ROCWMMA_BUILD_TESTS|Build Tests|ON|
 |ROCWMMA_BUILD_SAMPLES|Build Samples|ON|
 |ROCWMMA_BUILD_DOCS|Build doxygen documentation from code|OFF|
@@ -67,7 +68,7 @@ results. Here are some configuration examples:
 |Configuration|Command|
 |---|---|
 |Basic|`CC=/opt/rocm/bin/amdclang CXX=/opt/rocm/bin/amdclang++ cmake -B<build_dir> .`|
-|Targeting gfx908|`CC=/opt/rocm/bin/amdclang CXX=/opt/rocm/bin/amdclang++ cmake -B<build_dir> . -DAMDGPU_TARGETS=gfx908` |
+|Targeting gfx908|`CC=/opt/rocm/bin/amdclang CXX=/opt/rocm/bin/amdclang++ cmake -B<build_dir> . -DGPU_TARGETS=gfx908:xnack-` |
 |Debug build|`CC=/opt/rocm/bin/amdclang CXX=/opt/rocm/bin/amdclang++ cmake -B<build_dir> . -DCMAKE_BUILD_TYPE=Debug` |
 |Build without rocBLAS (default on)|`CC=/opt/rocm/bin/amdclang CXX=/opt/rocm/bin/amdclang++ cmake -B<build_dir> . -DROCWMMA_VALIDATE_WITH_ROCBLAS=OFF -DROCWMMA_BENCHMARK_WITH_ROCBLAS=OFF` |
 
