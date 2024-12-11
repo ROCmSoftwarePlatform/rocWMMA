@@ -153,6 +153,7 @@ namespace rocwmma
         // Vector size properties
         constexpr static uint32_t MaxVW = detail::
             MaxVWSelector<matrix_a, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>::Result;
+
         constexpr static uint32_t VW
             = is_same_v<DataLayoutT, row_major> || BlockDim > 32u ? MaxVW : 1u;
 
@@ -162,9 +163,7 @@ namespace rocwmma
         // Matrix Layouts
         // Small dim mma friendly
         using SmallDimMatrixLayout
-            = conditional_t<is_same_v<DataLayoutT, col_major>,
-                            MatrixLayout::ColOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>,
-                            MatrixLayout::ColOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>>;
+            = MatrixLayout::ColOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>;
 
         // Large dim not mma friendly
         using LargeDimMatrixLayout
@@ -179,15 +178,14 @@ namespace rocwmma
         using StorageLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
 
         // Register layout required for mma. Expect non-interleaved SOA format.
+        // Quirk: gfx11 requires input duplication.
         using MmaLayout = RegisterLayout::MmaInput<BlockDim,
                                                    DataT,
                                                    false,
                                                    (bool)ROCWMMA_ARCH_GFX11
                                                        ? RegisterLayout::Format::WMMA_INPUT_GFX11
                                                        : RegisterLayout::Format::SOA>;
-        // Fragments will keep storage register layout.
-        // No post-load / pre-store xform
-        // May require pre-mma xform
+        // Fragments will keep storage layout
         using FragmentLayout = StorageLayout;
     };
 
@@ -201,6 +199,7 @@ namespace rocwmma
         // Vector size properties
         constexpr static uint32_t MaxVW = detail::
             MaxVWSelector<matrix_b, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>::Result;
+
         constexpr static uint32_t VW
             = is_same_v<DataLayoutT, col_major> || BlockDim > 32 ? MaxVW : 1u;
 
@@ -209,10 +208,8 @@ namespace rocwmma
 
         // Matrix Layouts
         // Small dim mma friendly
-        using SmallDimMatrixLayout
-            = conditional_t<is_same_v<DataLayoutT, col_major>,
-                            MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>,
-                            MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>>;
+        using SmallDimMatrixLayout =
+                            MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>;
 
         // Large dim not mma friendly
         using LargeDimMatrixLayout
@@ -227,6 +224,7 @@ namespace rocwmma
         using StorageLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
 
         // Register layout required for mma. Expect non-interleaved SOA format.
+        // Quirk: gfx11 requires input duplication.
         using MmaLayout = RegisterLayout::MmaInput<BlockDim,
                                                    DataT,
                                                    false,
@@ -235,8 +233,6 @@ namespace rocwmma
                                                        : RegisterLayout::Format::SOA>;
 
         // Fragments will keep storage register layout.
-        // No post-load / pre-store xform
-        // May require pre-mma xform
         using FragmentLayout = StorageLayout;
     };
 
@@ -250,6 +246,7 @@ namespace rocwmma
         // Vector size properties
         constexpr static uint32_t MaxVW = detail::
             MaxVWSelector<accumulator, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>::Result;
+
         constexpr static uint32_t VW = is_same_v<DataLayoutT, col_major> ? MaxVW : 1u;
 
         // DataLayout
@@ -257,14 +254,13 @@ namespace rocwmma
 
         // Always mma friendly
         using MatrixLayout
-            = conditional_t<is_same_v<DataLayoutT, row_major>,
-                            MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>,
-                            MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>>;
+            = MatrixLayout::RowOrthoVW<BlockDim, BlockK, DataT, VW, MaxVW>;
 
         // Register layout direct to memory storage (load / store)
         using StorageLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
 
         // Register layout required for mma. Expect non-interleaved SOA format.
+        // Quirk: gfx11 requires padded acc.
         using MmaLayout = RegisterLayout::MmaAcc<BlockDim,
                                                  DataT,
                                                  false,
@@ -273,11 +269,6 @@ namespace rocwmma
                                                      : RegisterLayout::Format::SOA>;
 
         // Fragments will keep storage register layout.
-        // No post-load / pre-store xform
-        // May require pre-mma xform.
-        // TODO: Ideally, should really be MmaLayout
-        // However, MmaAcc frags are restricted to 16/32 MmaDim.
-        // Once restriction is lifted, should be adjusted.
         using FragmentLayout = StorageLayout;
     };
 
@@ -288,6 +279,7 @@ namespace rocwmma
         using StorageLayout = void;
 
         // Register layout required for mma. Expect non-interleaved SOA format.
+        // Quirk: gfx11 requires padded acc.
         using MmaLayout = RegisterLayout::MmaAcc<BlockDim,
                                                  DataT,
                                                  false,
@@ -295,9 +287,11 @@ namespace rocwmma
                                                      ? RegisterLayout::Format::WMMA_ACC_GFX11
                                                      : RegisterLayout::Format::SOA>;
 
-        // Fragments will keep mma register layout.
-        // No pre-mma xform
-        using FragmentLayout = MmaLayout;
+        // Fragments will assume default mma register layout.
+        using FragmentLayout = RegisterLayout::MmaAcc<BlockDim,
+                                                 DataT,
+                                                 false,
+                                                 RegisterLayout::Format::SOA>;
     };
 
     namespace detail
@@ -361,6 +355,7 @@ namespace rocwmma
         using StorageLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
 
         // Register layout required for mma. Expect interleaved SOA format.
+        // Quirk: gfx11 requires input duplication.
         using MmaLayout = RegisterLayout::MmaInput<MmaDim,
                                                    DataT,
                                                    true,
@@ -369,8 +364,6 @@ namespace rocwmma
                                                        : RegisterLayout::Format::SOA_INT>;
 
         // Fragments will keep storage register layout.
-        // No post-load / pre-store xform
-        // May require pre-mma xform
         using FragmentLayout = StorageLayout;
 
         // Vector size properties derived from the matrix layout
@@ -401,6 +394,7 @@ namespace rocwmma
         using StorageLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
 
         // Register layout required for mma. Expect interleaved SOA format.
+        // Quirk: gfx11 requires input duplication.
         using MmaLayout = RegisterLayout::MmaInput<MmaDim,
                                                    DataT,
                                                    true,
@@ -408,8 +402,6 @@ namespace rocwmma
                                                        ? RegisterLayout::Format::WMMA_INPUT_GFX11
                                                        : RegisterLayout::Format::SOA_INT>;
         // Fragments will keep storage register layout.
-        // No post-load / pre-store xform
-        // May require pre-mma xform
         using FragmentLayout = StorageLayout;
 
         // Vector size properties derived from the matrix layout
@@ -440,6 +432,7 @@ namespace rocwmma
         using StorageLayout = RegisterLayout::Storage<MatrixLayout, DataLayout>;
 
         // Register layout required for mma. Expect interleaved accum format for multiple blocks.
+        // Quirk: gfx11 requires padded mma acc
         using MmaLayout
             = RegisterLayout::MmaAcc<MmaDim,
                                      DataT,
@@ -449,9 +442,11 @@ namespace rocwmma
                                          : RegisterLayout::Format::ACC_INT_A_MAJOR>;
 
         // Fragments will keep mma register layout.
-        // May require post-load / pre-store xform
-        // No pre-mma xform
-        using FragmentLayout = MmaLayout;
+        using FragmentLayout
+            = RegisterLayout::MmaAcc<MmaDim,
+                                     DataT,
+                                     true,
+                                     RegisterLayout::Format::ACC_INT_A_MAJOR>;
 
         // Vector size properties derived from the matrix layout
         constexpr static uint32_t MaxVW = layout_traits<MatrixLayout>::MaxVectorWidth;
@@ -468,6 +463,7 @@ namespace rocwmma
         using StorageLayout = void;
 
         // Register layout required for mma. Expect interleaved accum format for multiple blocks.
+        // Quirk: gfx11 requires padded mma acc
         using MmaLayout
             = RegisterLayout::MmaAcc<MmaDim,
                                      DataT,
@@ -476,9 +472,11 @@ namespace rocwmma
                                          ? RegisterLayout::Format::WMMA_ACC_INT_A_MAJOR_GFX11
                                          : RegisterLayout::Format::ACC_INT_A_MAJOR>;
 
-        // Fragments will keep mma register layout.
-        // No pre-mma xform
-        using FragmentLayout = MmaLayout;
+        // Fragments will keep mma interleaved layout.
+        using FragmentLayout = RegisterLayout::MmaAcc<MmaDim,
+                                     DataT,
+                                     true,
+                                     RegisterLayout::Format::ACC_INT_A_MAJOR>;
     };
 
 } // namespace rocwmma

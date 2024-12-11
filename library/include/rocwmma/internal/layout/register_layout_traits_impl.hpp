@@ -202,13 +202,15 @@ namespace rocwmma
                     }
                     else
                     {
-                        return (traits::Format == Format::WMMA_ACC_GFX11);
+                        // Acc with void datalayout will take SOA format
+                        return (traits::Format == Format::WMMA_ACC_GFX11)
+                            || (traits::Format == Format::SOA);
                     }
                 }
                 else
                 {
                     return traits::is_storage
-                        && ((traits::Format == Format::SOA) 
+                        && ((traits::Format == Format::SOA)
                             || (traits::Format == Format::AOS)
                             || (traits::Format == Format::SOA_INT)
                             || (traits::Format == Format::AOS_INT));
@@ -483,7 +485,7 @@ namespace rocwmma
                     = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
 
                 // Gfx11 MmaInput requires some additional transforms
-                if constexpr((bool)ROCWMMA_ARCH_GFX11 
+                if constexpr((bool)ROCWMMA_ARCH_GFX11
                             && (traits_lhs::is_mma_input || traits_rhs::is_mma_input))
                 {
                     return TestCompatibleParams && TestFormatMatch;
@@ -496,7 +498,7 @@ namespace rocwmma
                     constexpr bool TestIdentityQuirks
                         = (storage_traits::DimPerThread == 1u) || (storage_traits::KPerThread == 1u);
 
-                    return TestCompatibleParams && (TestFormatMatch || TestIdentityQuirks);    
+                    return TestCompatibleParams && (TestFormatMatch || TestIdentityQuirks);
                 }
             }
             else

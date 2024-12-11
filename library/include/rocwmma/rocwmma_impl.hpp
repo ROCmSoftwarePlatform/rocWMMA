@@ -344,6 +344,7 @@ namespace rocwmma
         using PreMmaA   = typename IOConfigA::PreMmaXForm;
         using PreMmaB   = typename IOConfigB::PreMmaXForm;
         using PreMmaAcc = typename IOConfigAcc::PreMmaXForm;
+        using PostMmaAcc = typename IOConfigAcc::PostMmaXForm;
 
         using PackA   = typename IOConfigA::PackUtil;
         using PackB   = typename IOConfigB::PackUtil;
@@ -364,15 +365,18 @@ namespace rocwmma
                       "Input fragment register layouts do not match");
 
         // Gfx9 uses MFMA, gfx11 uses WMMA
-        using MMA = conditional_t<(bool)ROCWMMA_ARCH_GFX9,
+        using Mma = conditional_t<(bool)ROCWMMA_ARCH_GFX9,
                                   Mfma<InputT, ComputeT, BlockM, BlockN, BlockK>,
                                   Wmma<InputT, ComputeT, BlockM, BlockN, BlockK>>;
 
-        // Operate pre-ops on unpacked vectors
-        // the pack for mma inputs
-        (*d) = MMA::exec(PackA::pack(PreMmaA::exec(a.mAccess)),
-                         PackB::pack(PreMmaB::exec(b.mAccess)),
-                         PackAcc::pack(PreMmaAcc::exec(c.mAccess)));
+        // 1. Perform input pre-ops on A, B, Acc (unpacked)
+        // 2. Mma (packed)
+        // 3. Perform acc post-op on Acc
+        // 4. Pack back to register
+        d.mAccess = PostMmaAcc::exec(
+                    PackAcc::unpack(Mma::exec(PackA::pack(PreMmaA::exec(a.mAccess)),
+                                              PackB::pack(PreMmaB::exec(b.mAccess)),
+                                              PackAcc::pack(PreMmaAcc::exec(c.mAccess)))));
     }
 
     ROCWMMA_DEVICE void synchronize_workgroup()

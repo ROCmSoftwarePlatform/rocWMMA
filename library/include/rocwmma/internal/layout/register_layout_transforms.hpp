@@ -153,8 +153,8 @@ namespace rocwmma
                         = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
                     return interleave<1u, storage_traits::KPerThread>(forward<VecT>(v));
                 }
-                else if constexpr((traits_lhs::Format == Format::SOA || traits_lhs::Format == Format::AOS) 
-                               && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
+                else if constexpr((traits_lhs::Format == Format::SOA)
+                               && (traits_rhs::Format == Format::WMMA_INPUT_GFX11))
                 {
                     // Input is unpacked
                     using VecTraits = VecTraits<decay_t<VecT>>;
@@ -167,6 +167,43 @@ namespace rocwmma
                     auto swapped = Swizzle::Swap16::exec(packed);
                     auto result = PackUtil::unpack(concat(packed, swapped));
                     return result; // Return by copy
+                }
+                else if constexpr((traits_lhs::Format == Format::AOS)
+                               && (traits_rhs::Format == Format::WMMA_INPUT_GFX11))
+                {
+
+                    //auto toSOA =
+                    // Input is unpacked
+                    using VecTraits = VecTraits<decay_t<VecT>>;
+                    using PackUtil = PackUtil<typename VecTraits::DataT>;
+
+                    // Swap upper / lower 16's and then concatenate them
+                    // to make sure we have each K value in each half.
+                    // GFX11 wmma layout quirk needs the duplication.
+                    auto packed = PackUtil::pack(v);
+                    auto swapped = Swizzle::Swap16::exec(packed);
+                    auto result = PackUtil::unpack(concat(packed, swapped));
+                    return result; // Return by copy
+
+                }
+                else if constexpr((traits_lhs::Format == Format::SOA)
+                               && (traits_rhs::Format == Format::WMMA_ACC_GFX11))
+                {
+                    // SOA format to wmma acc padded accumulator (gfx11).
+                    // f16 -> padded to f32 in lower 16
+                    // f32 -> nop
+                    using PackUtil = PackUtil<typename traits_lhs::DataT>;
+                    auto accum = PackUtil::unpack(PackUtil::template pad<>(v));
+                    return accum; // Return by copy
+                }
+                else if constexpr((traits_lhs::Format == Format::WMMA_ACC_GFX11)
+                               && (traits_rhs::Format == Format::SOA))
+                {
+                    // Padded wmma acc (gfx11) back to SOA format.
+                    // f16 -> padded to f32 in lower 16
+                    // f32 -> nop
+                    using PackUtil = PackUtil<typename traits_lhs::DataT>;
+                    return PackUtil::template unpad<>(PackUtil::pack(v));
                 }
                 else
                 {
@@ -189,6 +226,8 @@ namespace rocwmma
     template <typename RegisterLayoutLhs, typename RegisterLayoutRhs>
     using register_layout_transform
         = RegisterTransform_impl::register_layout_transform<RegisterLayoutLhs, RegisterLayoutRhs>;
+
+    using register_layout_transform_nop = register_layout_transform<void, void>;
 
 } // namespace rocWMMA
 

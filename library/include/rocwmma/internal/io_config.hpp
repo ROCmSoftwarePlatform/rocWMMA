@@ -38,7 +38,6 @@
 
 namespace rocwmma
 {
-
     /**
      * \defgroup Rocwmma_ioconf ROCWMMA IOConfig
      * @brief ROCWMMA fragment input and output configurations
@@ -95,6 +94,12 @@ namespace rocwmma
         using PreMmaXForm = register_layout_transform<typename IOLayout::FragmentLayout,
                                                       typename IOLayout::MmaLayout>;
 
+        // Currently, only makes sense to have a post-mma transform on acc layouts
+        using PostMmaXForm = conditional_t<is_same_v<MatrixT, accumulator>,
+                                        register_layout_transform<typename IOLayout::MmaLayout,
+                                                                  typename IOLayout::FragmentLayout>,
+                                        register_layout_transform_nop>;
+
         using PreStoreXForm = register_layout_transform<typename IOLayout::FragmentLayout,
                                                         typename IOLayout::StorageLayout>;
 
@@ -124,6 +129,9 @@ namespace rocwmma
 
         using PreMmaXForm = register_layout_transform<typename IOLayout::FragmentLayout,
                                                       typename IOLayout::MmaLayout>;
+
+        using PostMmaXForm = register_layout_transform<typename IOLayout::MmaLayout,
+                                                       typename IOLayout::FragmentLayout>;
     };
     /** @}*/
 
