@@ -110,8 +110,6 @@ if (BUILD_OFFLOAD_COMPRESS)
   if (NOT CXX_COMPILER_SUPPORTS_OFFLOAD_COMPRESS)
     #TODO: Remove next line when rocm-cmake fix is available
     set(CMAKE_NO_BUILTIN_CHRPATH ON)
-  elseif(CXX_COMPILER_SUPPORTS_OFFLOAD_COMPRESS)
-    set(CMAKE_NO_BUILTIN_CHRPATH OFF)
   endif()
 endif()
 
