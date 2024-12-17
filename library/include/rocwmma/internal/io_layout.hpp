@@ -305,7 +305,7 @@ namespace rocwmma
             // Smallest valid mma dim for mfma/wmma.
             // Test MmaDim must not exceed BlockDim for valid layout.
             static constexpr uint32_t MinMmaDim = 16u;
-            static constexpr uint32_t TestMmaDim = std::min(BlockDim, MmaDim);
+            static constexpr uint32_t TestMmaDim = min(BlockDim, MmaDim);
 
             // For valid mma sizes, (BlockDim >= 16)
             // Find minimum 16 byte load with MmaDim of 32 or 16
