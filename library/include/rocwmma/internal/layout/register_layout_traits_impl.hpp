@@ -186,70 +186,52 @@ namespace rocwmma
         {
             using traits = register_layout_traits<RegisterLayout>;
             using rocwmma::RegisterLayout::Format;
-            if constexpr((bool)ROCWMMA_ARCH_GFX11)
+
+            if constexpr(traits::is_mma_input)
             {
-                if constexpr(traits::is_mma_input)
+                if constexpr((bool)ROCWMMA_ARCH_GFX11)
                 {
                     return traits::Format == Format::WMMA_INPUT_GFX11;
                 }
-                else if constexpr(traits::is_mma_acc)
+                else if constexpr(traits::is_interleaved)
                 {
-                    if constexpr(traits::is_interleaved)
-                    {
-                        // Intermediate accumulation format for interleaved layout
-                        return (traits::Format == Format::WMMA_ACC_INT_A_MAJOR_GFX11)
-                            || (traits::Format == Format::WMMA_ACC_INT_B_MAJOR_GFX11);
-                    }
-                    else
-                    {
-                        // Acc with void datalayout will take SOA format
-                        return (traits::Format == Format::WMMA_ACC_GFX11)
-                            || (traits::Format == Format::SOA);
-                    }
+                    return (traits::Format == Format::SOA_INT)
+                        || (traits::Format == Format::AOS_INT);
                 }
                 else
                 {
-                    return traits::is_storage
-                        && ((traits::Format == Format::SOA)
-                            || (traits::Format == Format::AOS)
-                            || (traits::Format == Format::SOA_INT)
-                            || (traits::Format == Format::AOS_INT));
+                    return (traits::Format == Format::SOA)
+                        || (traits::Format == Format::AOS);
                 }
             }
-            else // Other archs
+            else if constexpr(traits::is_mma_acc)
             {
-                if constexpr(traits::is_mma_input)
+                if constexpr((bool)ROCWMMA_ARCH_GFX11)
                 {
-                    if constexpr(traits::is_interleaved)
-                    {
-                        return (traits::Format == Format::SOA_INT)
-                            || (traits::Format == Format::AOS_INT);
-                    }
-                    else
-                    {
-                        return (traits::Format == Format::SOA) || (traits::Format == Format::AOS);
-                    }
+                    return (traits::Format == Format::WMMA_ACC_GFX11)
+                        || (!traits::is_interleaved && (traits::Format == Format::SOA || traits::Format == Format::AOS))
+                        || (traits::is_interleaved && (traits::Format == Format::ACC_INT_A_MAJOR || traits::Format == Format::ACC_INT_B_MAJOR));
                 }
-                else if constexpr(traits::is_mma_acc)
+                else if constexpr(traits::is_interleaved)
                 {
-                    if constexpr(traits::is_interleaved)
-                    {
-                        // Intermediate accumulation format for interleaved layout
-                        return (traits::Format == Format::ACC_INT_A_MAJOR)
-                            || (traits::Format == Format::ACC_INT_B_MAJOR);
-                    }
-                    else
-                    {
-                        return (traits::Format == Format::SOA) || (traits::Format == Format::AOS);
-                    }
+                    // Intermediate accumulation format for interleaved layout
+                    return (traits::Format == Format::ACC_INT_A_MAJOR)
+                        || (traits::Format == Format::ACC_INT_B_MAJOR);
                 }
                 else
                 {
-                    return traits::is_storage
-                        && ((traits::Format == Format::SOA) || (traits::Format == Format::AOS)
-                            || (traits::Format == Format::SOA_INT)
-                            || (traits::Format == Format::AOS_INT));
+                    // Acc with void datalayout will take SOA format
+                    return (traits::Format == Format::SOA)
+                        || (traits::Format == Format::AOS);
                 }
+            }
+            else
+            {
+                return traits::is_storage
+                    && ((traits::Format == Format::SOA)
+                        || (traits::Format == Format::AOS)
+                        || (traits::Format == Format::SOA_INT)
+                        || (traits::Format == Format::AOS_INT));
             }
         }
 
@@ -526,39 +508,53 @@ namespace rocwmma
             // clang-format off
             using RegisterLayout::Format;
             constexpr bool TestOpposingFormat
-                = (   (traits_lhs::Format == Format::SOA && traits_rhs::Format == Format::AOS)
-                   || (traits_lhs::Format == Format::AOS && traits_rhs::Format == Format::SOA)
-                   || (traits_lhs::Format == Format::SOA_INT && traits_rhs::Format == Format::AOS_INT)
-                   || (traits_lhs::Format == Format::AOS_INT && traits_rhs::Format == Format::SOA_INT)
-                   || (traits_lhs::Format == Format::ACC_INT_A_MAJOR && traits_rhs::Format == Format::SOA_INT)
-                   || (traits_lhs::Format == Format::ACC_INT_A_MAJOR && traits_rhs::Format == Format::AOS_INT)
-                   || (traits_lhs::Format == Format::SOA_INT && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
-                   || (traits_lhs::Format == Format::AOS_INT && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
-                   || (traits_lhs::Format == Format::ACC_INT_B_MAJOR && traits_rhs::Format == Format::SOA_INT)
-                   || (traits_lhs::Format == Format::ACC_INT_B_MAJOR && traits_rhs::Format == Format::AOS_INT)
-                   || (traits_lhs::Format == Format::SOA_INT && traits_rhs::Format == Format::ACC_INT_B_MAJOR)
-                   || (traits_lhs::Format == Format::AOS_INT && traits_rhs::Format == Format::ACC_INT_B_MAJOR)
-                   // gfx11 transforms
-                   || (traits_lhs::Format == Format::SOA && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
-                   || (traits_lhs::Format == Format::AOS && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
-                   || (traits_lhs::Format == Format::SOA_INT && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
-                   || (traits_lhs::Format == Format::AOS_INT && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
-                   || (traits_lhs::Format == Format::WMMA_INPUT_GFX11 && traits_rhs::Format == Format::SOA)
-                   || (traits_lhs::Format == Format::WMMA_INPUT_GFX11 && traits_rhs::Format == Format::AOS)
-                   || (traits_lhs::Format == Format::WMMA_INPUT_GFX11 && traits_rhs::Format == Format::SOA_INT)
-                   || (traits_lhs::Format == Format::WMMA_INPUT_GFX11 && traits_rhs::Format == Format::AOS_INT)
-                   || (traits_lhs::Format == Format::SOA && traits_rhs::Format == Format::WMMA_ACC_GFX11)
-                   || (traits_lhs::Format == Format::AOS && traits_rhs::Format == Format::WMMA_ACC_GFX11)
-                   || (traits_lhs::Format == Format::WMMA_ACC_GFX11 && traits_rhs::Format == Format::SOA)
-                   || (traits_lhs::Format == Format::WMMA_ACC_GFX11 && traits_rhs::Format == Format::AOS)
-                   || (traits_lhs::Format == Format::SOA_INT && traits_rhs::Format == Format::WMMA_ACC_INT_A_MAJOR_GFX11)
-                   || (traits_lhs::Format == Format::AOS_INT && traits_rhs::Format == Format::WMMA_ACC_INT_A_MAJOR_GFX11)
-                   || (traits_lhs::Format == Format::WMMA_ACC_INT_A_MAJOR_GFX11 && traits_rhs::Format == Format::SOA_INT)
-                   || (traits_lhs::Format == Format::WMMA_ACC_INT_A_MAJOR_GFX11 && traits_rhs::Format == Format::AOS_INT)
-                   || (traits_lhs::Format == Format::SOA_INT && traits_rhs::Format == Format::WMMA_ACC_INT_B_MAJOR_GFX11)
-                   || (traits_lhs::Format == Format::AOS_INT && traits_rhs::Format == Format::WMMA_ACC_INT_B_MAJOR_GFX11)
-                   || (traits_lhs::Format == Format::WMMA_ACC_INT_B_MAJOR_GFX11 && traits_rhs::Format == Format::SOA_INT)
-                   || (traits_lhs::Format == Format::WMMA_ACC_INT_B_MAJOR_GFX11 && traits_rhs::Format == Format::AOS_INT)
+                = (
+                    // Non-interleaved formats
+                    // SOA <-> AOS
+                       (traits_lhs::Format == Format::SOA && traits_rhs::Format == Format::AOS)
+                    || (traits_lhs::Format == Format::AOS && traits_rhs::Format == Format::SOA)
+                    // Non-interleaved gfx11 formats
+                    // SOA, AOS <-> WMMA input
+                    // SOA, AOS <-> WMMA acc
+                    || (traits_lhs::Format == Format::SOA && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
+                    || (traits_lhs::Format == Format::AOS && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
+                    || (traits_lhs::Format == Format::WMMA_INPUT_GFX11 && traits_rhs::Format == Format::SOA)
+                    || (traits_lhs::Format == Format::WMMA_INPUT_GFX11 && traits_rhs::Format == Format::AOS)
+                    || (traits_lhs::Format == Format::SOA && traits_rhs::Format == Format::WMMA_ACC_GFX11)
+                    || (traits_lhs::Format == Format::AOS && traits_rhs::Format == Format::WMMA_ACC_GFX11)
+                    || (traits_lhs::Format == Format::WMMA_ACC_GFX11 && traits_rhs::Format == Format::SOA)
+                    || (traits_lhs::Format == Format::WMMA_ACC_GFX11 && traits_rhs::Format == Format::AOS)
+                    // Interleaved formats
+                    // SOA_INT <-> AOS_INT
+                    // SOA_INT, AOS_INT <-> A-major acc fmt
+                    // SOA_INT, AOS_INT <-> B-major acc fmt
+                    || (traits_lhs::Format == Format::SOA_INT && traits_rhs::Format == Format::AOS_INT)
+                    || (traits_lhs::Format == Format::AOS_INT && traits_rhs::Format == Format::SOA_INT)
+                    || (traits_lhs::Format == Format::SOA_INT && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
+                    || (traits_lhs::Format == Format::AOS_INT && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
+                    || (traits_lhs::Format == Format::ACC_INT_A_MAJOR && traits_rhs::Format == Format::SOA_INT)
+                    || (traits_lhs::Format == Format::ACC_INT_A_MAJOR && traits_rhs::Format == Format::AOS_INT)
+                    || (traits_lhs::Format == Format::SOA_INT && traits_rhs::Format == Format::ACC_INT_B_MAJOR)
+                    || (traits_lhs::Format == Format::AOS_INT && traits_rhs::Format == Format::ACC_INT_B_MAJOR)
+                    || (traits_lhs::Format == Format::ACC_INT_B_MAJOR && traits_rhs::Format == Format::SOA_INT)
+                    || (traits_lhs::Format == Format::ACC_INT_B_MAJOR && traits_rhs::Format == Format::AOS_INT)
+                    // Interleaved gfx11 formats
+                    // SOA_INT, AOS_INT <-> WMMA input
+                    // SOA_INT, AOS_INT <-> WMMA acc
+                    // A-major acc fmt <-> WMMA acc
+                    // B-major acc fmt <-> WMMA acc
+                    || (traits_lhs::Format == Format::SOA_INT && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
+                    || (traits_lhs::Format == Format::AOS_INT && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
+                    || (traits_lhs::Format == Format::WMMA_INPUT_GFX11 && traits_rhs::Format == Format::SOA_INT)
+                    || (traits_lhs::Format == Format::WMMA_INPUT_GFX11 && traits_rhs::Format == Format::AOS_INT)
+                    || (traits_lhs::Format == Format::SOA_INT && traits_rhs::Format == Format::WMMA_ACC_GFX11)
+                    || (traits_lhs::Format == Format::AOS_INT && traits_rhs::Format == Format::WMMA_ACC_GFX11)
+                    || (traits_lhs::Format == Format::WMMA_ACC_GFX11 && traits_rhs::Format == Format::SOA_INT)
+                    || (traits_lhs::Format == Format::WMMA_ACC_GFX11 && traits_rhs::Format == Format::AOS_INT)
+                    || (traits_lhs::Format == Format::ACC_INT_A_MAJOR && traits_rhs::Format == Format::WMMA_ACC_GFX11)
+                    || (traits_lhs::Format == Format::ACC_INT_B_MAJOR && traits_rhs::Format == Format::WMMA_ACC_GFX11)
+                    || (traits_lhs::Format == Format::WMMA_ACC_GFX11 && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
+                    || (traits_lhs::Format == Format::WMMA_ACC_GFX11 && traits_rhs::Format == Format::ACC_INT_B_MAJOR)
                    )
                   && (traits_lhs::is_valid && traits_rhs::is_valid);
             // clang-format on

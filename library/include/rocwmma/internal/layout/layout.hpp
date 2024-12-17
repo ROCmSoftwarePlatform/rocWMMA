@@ -155,8 +155,6 @@ namespace rocwmma
             ACC_INT_B_MAJOR            = 5u, // Interleaved MmaAcc 'B' major order
             WMMA_INPUT_GFX11           = 6u, // Gfx11 input format
             WMMA_ACC_GFX11             = 7u, // Gfx11 acc format
-            WMMA_ACC_INT_A_MAJOR_GFX11 = 8u, // Gfx11 interleaved MmaAcc 'A' major order
-            WMMA_ACC_INT_B_MAJOR_GFX11 = 9u, // Gfx11 interleaved MmaAcc 'B' major order
             Invalid, // Invalid register format
         };
 

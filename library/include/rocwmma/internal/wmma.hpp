@@ -155,7 +155,7 @@ namespace rocwmma
         }
     };
 
-#endif // ROCWMMA_ARCH_GFX11
+#endif // ROCWMMA_ARCH_GFX11 || ROCWMMA_ARCH_GFX12
 
 } // namespace rocwmma
 

@@ -458,7 +458,7 @@ namespace rocwmma
                                      DataT,
                                      true,
                                      (bool)ROCWMMA_ARCH_GFX11
-                                         ? RegisterLayout::Format::WMMA_ACC_INT_A_MAJOR_GFX11
+                                         ? RegisterLayout::Format::WMMA_ACC_GFX11
                                          : RegisterLayout::Format::ACC_INT_A_MAJOR>;
 
         // Fragments will keep mma register layout.
@@ -489,7 +489,7 @@ namespace rocwmma
                                      DataT,
                                      true,
                                      (bool)ROCWMMA_ARCH_GFX11
-                                         ? RegisterLayout::Format::WMMA_ACC_INT_A_MAJOR_GFX11
+                                         ? RegisterLayout::Format::WMMA_ACC_GFX11
                                          : RegisterLayout::Format::ACC_INT_A_MAJOR>;
 
         // Fragments will keep mma interleaved layout.

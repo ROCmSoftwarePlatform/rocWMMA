@@ -32,6 +32,113 @@
 
 namespace rocwmma
 {
+    template<uint32_t DimPerThread, uint32_t KPerThread>
+    struct soa_int_to_aos_int
+    {
+        template<typename VecT>
+        ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
+        {
+            return interleave<1u, KPerThread>(forward<VecT>(v));
+        }
+    };
+
+    template<uint32_t DimPerThread, uint32_t KPerThread>
+    struct aos_int_to_soa_int
+    {
+        template<typename VecT>
+        ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
+        {
+            return interleave<1u, DimPerThread>(forward<VecT>(v));
+        }
+    };
+
+    struct to_wmma_input_gfx11
+    {
+        template<typename VecT>
+        ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
+        {
+            // v is unpacked
+            using VecTraits = VecTraits<decay_t<VecT>>;
+            using PackUtil = PackUtil<typename VecTraits::DataT>;
+
+            // Swap upper / lower 16's and then concatenate them
+            // to make sure we have each K value in each half.
+            // GFX11 wmma layout quirk needs the duplication.
+            auto packed = PackUtil::pack(v);
+            auto swapped = Swizzle::Swap16::exec(packed);
+            auto result = PackUtil::unpack(concat(packed, swapped));
+            return result; // Return by copy
+        }
+    };
+
+    struct from_wmma_input_gfx11
+    {
+        template<typename VecT>
+        ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
+        {
+            return extractLo(v);
+        }
+    };
+
+    struct to_wmma_acc_gfx11
+    {
+        template<typename VecT>
+        ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
+        {
+            using VecTraits = VecTraits<decay_t<VecT>>;
+
+            // SOA format to wmma acc padded accumulator (gfx11).
+            // f16 -> padded to f32 in lower 16
+            // f32 -> nop
+            using PackUtil = PackUtil<typename VecTraits::DataT>;
+            auto accum = PackUtil::unpack(PackUtil::template pad<>(v));
+            return accum; // Return by copy
+        }
+    };
+
+    struct from_wmma_acc_gfx11
+    {
+        template<typename VecT>
+        ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
+        {
+            using VecTraits = VecTraits<decay_t<VecT>>;
+
+            // Padded wmma acc (gfx11) back to SOA format.
+            // f16 -> padded to f32 in lower 16
+            // f32 -> nop
+            using PackUtil = PackUtil<typename VecTraits::DataT>;
+            return PackUtil::template unpad<>(PackUtil::pack(v));
+        }
+    };
+
+    template<uint32_t DimPerThread, uint32_t KPerThread>
+    struct soa_int_to_mma_acc_int_a_major
+    {
+        template<typename VecT>
+        ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
+        {
+            if constexpr((bool)ROCWMMA_ARCH_GFX11)
+            {
+
+            }
+            else
+            {
+
+            }
+            return interleave<1u, DimPerThread>(forward<VecT>(v));
+        }
+    };
+
+    template<uint32_t DimPerThread, uint32_t KPerThread>
+    struct aos_int_to_mma_acc_int_a_major
+    {
+        template<typename VecT>
+        ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
+        {
+            return interleave<1u, DimPerThread>(forward<VecT>(v));
+        }
+    };
+
     namespace RegisterTransform_impl
     {
         using LayoutTraits_impl::matrix_layout_traits;
@@ -91,113 +198,93 @@ namespace rocwmma
             ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
             {
                 using RegisterLayout::Format;
-
-                // Non-interleaved AOS to SOA
-                if constexpr(traits_lhs::Format == Format::AOS && traits_rhs::Format == Format::SOA)
-                {
-                    using storage_traits
+                using storage_traits
                         = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
+
+                // Non-interleaved
+                if constexpr(traits_lhs::Format == Format::AOS
+                          && traits_rhs::Format == Format::SOA)
+                {
                     return Transforms::
                         AosToSoa<storage_traits::BlockDim, storage_traits::MaxVectorWidth>::exec(
                             forward<VecT>(v));
                 }
                 else if constexpr(traits_lhs::Format == Format::SOA
-                                  && traits_rhs::Format == Format::AOS)
+                               && traits_rhs::Format == Format::AOS)
                 {
-                    using storage_traits
-                        = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
                     return Transforms::
                         SoaToAos<storage_traits::BlockDim, storage_traits::MaxVectorWidth>::exec(
                             forward<VecT>(v));
                 }
-                else if constexpr(traits_lhs::Format == Format::AOS_INT
-                                  && traits_rhs::Format == Format::SOA_INT)
+                else if constexpr(traits_lhs::Format == Format::AOS
+                               && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
                 {
-                    using storage_traits
-                        = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
-                    return interleave<1u, storage_traits::DimPerThread>(forward<VecT>(v));
+                    return to_wmma_input_gfx11::exec(Transforms::AosToSoa<storage_traits::BlockDim, storage_traits::MaxVectorWidth>::exec(forward<VecT>(v)));
+                }
+                else if constexpr(traits_lhs::Format == Format::SOA
+                               && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
+                {
+                    return to_wmma_input_gfx11::exec(forward<VecT>(v));
+                }
+                // Interleaved
+                else if constexpr(traits_lhs::Format == Format::AOS_INT
+                               && traits_rhs::Format == Format::SOA_INT)
+                {
+                    return aos_int_to_soa_int<storage_traits::DimPerThread, storage_traits::KPerThread>::exec(forward<VecT>(v));
                 }
                 else if constexpr(traits_lhs::Format == Format::SOA_INT
-                                  && traits_rhs::Format == Format::AOS_INT)
+                               && traits_rhs::Format == Format::AOS_INT)
                 {
-                    using storage_traits
-                        = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
-                    return interleave<1u, storage_traits::KPerThread>(forward<VecT>(v));
-                }
-                else if constexpr(traits_lhs::Format == Format::AOS_INT
-                                  && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
-                {
-                    using storage_traits
-                        = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
-                    return interleave<1u, storage_traits::KPerThread>(forward<VecT>(v));
+                    return soa_int_to_aos_int<storage_traits::DimPerThread, storage_traits::KPerThread>::exec(forward<VecT>(v));
                 }
                 else if constexpr(traits_lhs::Format == Format::SOA_INT
-                                  && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
+                               && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
                 {
-                    using storage_traits
-                        = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
-
-                    return interleave<1u, 4u>(forward<VecT>(v));
+                    return to_wmma_input_gfx11::exec(forward<VecT>(v));
+                }
+                else if constexpr(traits_lhs::Format == Format::AOS_INT
+                               && traits_rhs::Format == Format::WMMA_INPUT_GFX11)
+                {
+                    return to_wmma_input_gfx11::exec(aos_int_to_soa_int<storage_traits::DimPerThread, storage_traits::KPerThread>::exec(forward<VecT>(v)));
                 }
                 else if constexpr(traits_lhs::Format == Format::ACC_INT_A_MAJOR
                                   && traits_rhs::Format == Format::AOS_INT)
                 {
-                    using storage_traits
-                        = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
                     return interleave<1u, 4u>(forward<VecT>(v));
                 }
+                else if constexpr(traits_lhs::Format == Format::AOS_INT
+                               && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
+                {
+                    return interleave<1u, storage_traits::KPerThread>(forward<VecT>(v));
+                }
+                else if constexpr(traits_lhs::Format == Format::SOA_INT
+                                  && traits_rhs::Format == Format::ACC_INT_A_MAJOR)
+                {
+                    return interleave<1u, 4u>(forward<VecT>(v));
+                }
+
                 else if constexpr(traits_lhs::Format == Format::ACC_INT_A_MAJOR
                                   && traits_rhs::Format == Format::SOA_INT)
                 {
-                    using storage_traits
-                        = conditional_t<traits_lhs::is_storage, traits_lhs, traits_rhs>;
                     return interleave<1u, storage_traits::KPerThread>(forward<VecT>(v));
                 }
-                else if constexpr((traits_lhs::Format == Format::SOA)
-                               && (traits_rhs::Format == Format::WMMA_INPUT_GFX11))
-                {
-                    // Input is unpacked
-                    using VecTraits = VecTraits<decay_t<VecT>>;
-                    using PackUtil = PackUtil<typename VecTraits::DataT>;
 
-                    // Swap upper / lower 16's and then concatenate them
-                    // to make sure we have each K value in each half.
-                    // GFX11 wmma layout quirk needs the duplication.
-                    auto packed = PackUtil::pack(v);
-                    auto swapped = Swizzle::Swap16::exec(packed);
-                    auto result = PackUtil::unpack(concat(packed, swapped));
-                    return result; // Return by copy
-                }
-                else if constexpr((traits_lhs::Format == Format::AOS)
-                               && (traits_rhs::Format == Format::WMMA_INPUT_GFX11))
-                {
-
-                    //auto toSOA =
-                    // Input is unpacked
-                    using VecTraits = VecTraits<decay_t<VecT>>;
-                    using PackUtil = PackUtil<typename VecTraits::DataT>;
-
-                    // Swap upper / lower 16's and then concatenate them
-                    // to make sure we have each K value in each half.
-                    // GFX11 wmma layout quirk needs the duplication.
-                    auto packed = PackUtil::pack(v);
-                    auto swapped = Swizzle::Swap16::exec(packed);
-                    auto result = PackUtil::unpack(concat(packed, swapped));
-                    return result; // Return by copy
-
-                }
-                else if constexpr((traits_lhs::Format == Format::SOA)
+                else if constexpr((traits_lhs::Format == Format::SOA
+                                || traits_lhs::Format == Format::ACC_INT_A_MAJOR
+                                || traits_lhs::Format == Format::ACC_INT_B_MAJOR)
                                && (traits_rhs::Format == Format::WMMA_ACC_GFX11))
                 {
-                    // SOA format to wmma acc padded accumulator (gfx11).
-                    // f16 -> padded to f32 in lower 16
-                    // f32 -> nop
-                    using PackUtil = PackUtil<typename traits_lhs::DataT>;
-                    auto accum = PackUtil::unpack(PackUtil::template pad<>(v));
-                    return accum; // Return by copy
+                    return to_wmma_acc_gfx11::exec(forward<VecT>(v));
+                }
+                else if constexpr(traits_lhs::Format == Format::AOS
+                               && traits_rhs::Format == Format::WMMA_ACC_GFX11)
+                {
+                    return to_wmma_acc_gfx11::exec(forward<VecT>(v));
                 }
                 else if constexpr((traits_lhs::Format == Format::WMMA_ACC_GFX11)
-                               && (traits_rhs::Format == Format::SOA))
+                               && (traits_rhs::Format == Format::SOA
+                                  || traits_rhs::Format == Format::ACC_INT_A_MAJOR
+                                  || traits_rhs::Format == Format::ACC_INT_B_MAJOR))
                 {
                     // Padded wmma acc (gfx11) back to SOA format.
                     // f16 -> padded to f32 in lower 16

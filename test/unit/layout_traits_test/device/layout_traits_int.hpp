@@ -75,6 +75,21 @@ namespace rocwmma
                && (blockIdx.y == 0) && (blockIdx.z == 0);
     }
 
+    template<typename LayoutLhs, typename LayoutRhs>
+    ROCWMMA_DEVICE constexpr void debugRegisterFormats()
+    {
+        if(isFirstThread())
+        {
+            using traits_lhs = layout_traits<LayoutLhs>;
+            using traits_rhs = layout_traits<LayoutRhs>;
+            printf("testCompatibleRegisterParams: %d\n", LayoutTraits_impl::testCompatibleRegisterParams<LayoutLhs, LayoutRhs>());
+            printf("MmaDim: %d, MmaDim: %d\n", traits_lhs::MmaDim, traits_rhs::MmaDim);
+            printf("DataFormat: %d, DataFormat: %d\n", (int)traits_lhs::Format, (int)traits_rhs::Format);
+            printf("is_valid: %d, is_valid: %d\n", traits_lhs::is_valid, traits_rhs::is_valid);
+            printf("is_same_dataT: %d\n", is_same_v<typename traits_lhs::DataT, typename traits_rhs::DataT>);
+        }
+    }
+
     template <typename LayoutLhs,
               typename LayoutRhs,
               bool ExpectSame,
@@ -133,7 +148,7 @@ namespace rocwmma
                                                        ? RegisterLayout::Format::WMMA_INPUT_GFX11
                                                        : RegisterLayout::Format::SOA_INT>;
         using MmaAcc   = RegisterLayout::MmaAcc<MmaDim, DataT, true, (bool)ROCWMMA_ARCH_GFX11
-                                         ? RegisterLayout::Format::WMMA_ACC_INT_A_MAJOR_GFX11
+                                         ? RegisterLayout::Format::WMMA_ACC_GFX11
                                          : RegisterLayout::Format::ACC_INT_A_MAJOR>;
     };
 
