@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -129,56 +129,33 @@ namespace rocwmma
             exec(InputARegsT const& regsA, InputBRegsT const& regsB, InputCRegsT const& regsC)
         {
             // Inputs from outside will come in as fully packed
-            static_assert(VecTraits<InputARegsT>::size() == IOTraitsA::PackedSize,
-                          "WMMA input size mismatch");
-            static_assert(VecTraits<InputBRegsT>::size() == IOTraitsB::PackedSize,
-                          "WMMA input size mismatch");
-            static_assert(VecTraits<InputCRegsT>::size() == IOTraitsAcc::PackedSize,
-                          "WMMA input size mismatch");
+            static_assert(VecTraits<InputARegsT>::size() == VecTraitsA::size() * Traits::WmmaCount,
+                          "WMMA A input size mismatch");
+            static_assert(VecTraits<InputBRegsT>::size() == VecTraitsB::size() * Traits::WmmaCount,
+                          "WMMA B input size mismatch");
+            static_assert(VecTraits<InputCRegsT>::size() == VecTraitsC::size(),
+                          "WMMA Acc input size mismatch");
 
-            // WMMA accumulator operates on unpacked, padded data in separate 32b elements.
-            // In the case of f16, what needs to happen is extend each unpacked element to 32b wide
-            // and shift the 16b data to the correct spot (determined by the WMMA backend).
-            // The nasty bit is that due of the extended 32b element size, the final accumulation vector
-            // is masqueraded as a 'packed' type, but with the same vector size as unpacked.
-            auto accum = PackUtil::template pad<WMMA::Traits::AccumBits>(PackUtil::unpack(regsC));
+            auto accum = regsC;
 
             // Iterate over packed WMMA inputs
-            auto const aIt
-                = makeVectorIterator<VecTraitsA::size() / Traits::InputSizeModifier>(regsA).begin();
-            auto const bIt
-                = makeVectorIterator<VecTraitsB::size() / Traits::InputSizeModifier>(regsB).begin();
+            auto const aIt = makeVectorIterator<VecTraitsA::size()>(regsA).begin();
+            auto const bIt = makeVectorIterator<VecTraitsB::size()>(regsB).begin();
 
             // Accumulate over WMMA count
 #pragma unroll
             for(uint32_t i = 0; i < Traits::WmmaCount; i++)
             {
-#if ROCWMMA_ARCH_GFX11
-                // Swap upper / lower 16 elements
-                auto swappedA = Swizzle::Swap16::exec(*aIt);
-                auto swappedB = Swizzle::Swap16::exec(*bIt);
-
-                // Combine duplicated data for mult/accum.
-                // Evens: non-swapped
-                // Odds: swapped
-                accum = WMMA::exec(concat(unpackLo(*aIt, swappedA), unpackHi(*aIt, swappedA)),
-                                   concat(unpackLo(*bIt, swappedB), unpackHi(*bIt, swappedB)),
-                                   accum);
-#else
-
                 accum = WMMA::exec(*aIt, *bIt, accum);
-
-#endif
-
                 aIt++;
                 bIt++;
             }
 
-            return PackUtil::pack(PackUtil::template unpad<WMMA::Traits::AccumBits>(accum));
+            return accum;
         }
     };
 
-#endif // ROCWMMA_ARCH_GFX11
+#endif // ROCWMMA_ARCH_GFX11 || ROCWMMA_ARCH_GFX12
 
 } // namespace rocwmma
 

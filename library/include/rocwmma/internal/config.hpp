@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -146,6 +146,11 @@ static_assert(0, "Unsupported architecture");
 #define ROCWMMA_ARCH_GFX94X 1
 #endif
 
+#if ROCWMMA_ARCH_HOST
+#define ROCWMMA_BLOCK_DIM_16_SUPPORTED 1
+#define ROCWMMA_BLOCK_DIM_32_SUPPORTED 1
+#endif
+
 #if !defined(ROCWMMA_ARCH_GFX9)
 #define ROCWMMA_ARCH_GFX9 0
 #endif
@@ -201,10 +206,10 @@ static_assert((bool)(ROCWMMA_BLOCK_DIM_16_SUPPORTED) && !(bool)(ROCWMMA_BLOCK_DI
 #endif
 
 #if ROCWMMA_ARCH_GFX12
-    static_assert((bool)(ROCWMMA_WAVE32_MODE) && !(bool)(ROCWMMA_WAVE64_MODE),
-                  "rocWMMA supports only wave32 for gfx12 arch");
-    static_assert((bool)(ROCWMMA_BLOCK_DIM_16_SUPPORTED) && !(bool)(ROCWMMA_BLOCK_DIM_32_SUPPORTED),
-                  "rocWMMA supports only block size of 16 for gfx12 arch");
+static_assert((bool)(ROCWMMA_WAVE32_MODE) && !(bool)(ROCWMMA_WAVE64_MODE),
+              "rocWMMA supports only wave32 for gfx12 arch");
+static_assert((bool)(ROCWMMA_BLOCK_DIM_16_SUPPORTED) && !(bool)(ROCWMMA_BLOCK_DIM_32_SUPPORTED),
+              "rocWMMA supports only block size of 16 for gfx12 arch");
 #endif
 
 ///

@@ -70,7 +70,7 @@ namespace rocwmma
     // TODO: override namespace not detail
     using __hip_internal::is_standard_layout;
     using __hip_internal::is_trivial;
-    
+
     using detail::is_void;
     using detail::is_void_v;
     using detail::remove_const;
@@ -85,8 +85,17 @@ namespace rocwmma
     using detail::remove_volatile_t;
     using detail::true_type;
 
+    // TODO: goes into algorithm
     using detail::max;
     using detail::min;
+
+    // TODO: goes into functional
+    using detail::logical_or;
+    //using detail::logical_or_v;
+    using detail::logical_and;
+    //using detail::logical_and_v;
+    using detail::logical_not;
+    //using detail::logical_not_v;
 
 } // namespace rocwmma
 
@@ -95,6 +104,10 @@ namespace rocwmma
 #else
 
 #include <type_traits>
+
+// TODO: move to own files
+#include <algorithm>
+#include <functional>
 namespace rocwmma
 {
     // std implementations
@@ -147,8 +160,17 @@ namespace rocwmma
     using std::remove_volatile_t;
     using std::true_type;
 
+    // TODO: goes into algorithm
     using std::max;
     using std::min;
+
+    // TODO: goes into functional
+    using std::logical_or;
+    //using std::logical_or_v;
+    using std::logical_and;
+    //using std::logical_and_v;
+    using std::logical_not;
+    //using std::logical_not_v;
 
 } // namespace rocwmma
 
@@ -159,13 +181,13 @@ namespace rocwmma
 // Define some convenience traits
 namespace rocwmma
 {
-    template<typename T>
+    template <typename T>
     using enable_if_integral_t = enable_if_t<is_integral<T>{}>;
-    
-    template<typename T>
+
+    template <typename T>
     using enable_if_signed_t = enable_if_t<is_signed<T>{}>;
 
-    template<typename T>
+    template <typename T>
     using enable_if_arithmetic_t = enable_if_t<is_arithmetic<T>{}>;
 }
 

@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,7 +39,7 @@
 #include "internal/io_layout.hpp"
 #include "internal/io_shape.hpp"
 #include "internal/io_traits.hpp"
-#include "internal/layout.hpp"
+#include "internal/layout/layout.hpp"
 #include "internal/mapping_util.hpp"
 #include "internal/mfma.hpp"
 #include "internal/opaque_load.hpp"
@@ -227,8 +227,10 @@ namespace rocwmma
                          const DataT*                                                   data,
                          uint32_t                                                       ldm)
     {
-        using FragT  = decay_t<decltype(frag)>;
-        using Loader = typename GetIOConfig_t<FragT>::Loader;
+        using FragT    = decay_t<decltype(frag)>;
+        using IOConfig = GetIOConfig_t<FragT>;
+        using Loader   = typename IOConfig::Loader;
+        using PostLoad = typename IOConfig::PostLoadXForm;
 
         // Sanity checks
         static_assert(!is_same<DataLayoutT, void>::value,
@@ -241,6 +243,9 @@ namespace rocwmma
 
         // Load then implicit pack
         Loader::exec(frag.mAccess, data, ldm);
+
+        // Post-load transformation
+        frag.mAccess = PostLoad::exec(frag.mAccess);
     }
 
     template <typename MatrixT, uint32_t BlockM, uint32_t BlockN, uint32_t BlockK, typename DataT>
@@ -274,8 +279,10 @@ namespace rocwmma
                           fragment<MatrixT, BlockM, BlockN, BlockK, DataT, DataLayoutT> const& frag,
                           uint32_t                                                             ldm)
     {
-        using FragT  = decay_t<decltype(frag)>;
-        using Storer = typename GetIOConfig_t<FragT>::Storer;
+        using FragT    = decay_t<decltype(frag)>;
+        using IOConfig = GetIOConfig_t<FragT>;
+        using PreStore = typename IOConfig::PreStoreXForm;
+        using Storer   = typename IOConfig::Storer;
 
         // Sanity check
         static_assert(!is_same<DataLayoutT, void>::value,
@@ -287,7 +294,7 @@ namespace rocwmma
             "Fragment access and store input types do not match");
 
         // Implicit unpack and then store
-        Storer::exec(data, frag.mAccess, ldm);
+        Storer::exec(data, PreStore::exec(frag.mAccess), ldm);
     }
 
     template <typename MatrixT, uint32_t BlockM, uint32_t BlockN, uint32_t BlockK, typename DataT>
@@ -326,11 +333,22 @@ namespace rocwmma
                  fragment<matrix_b, BlockM, BlockN, BlockK, InputT, LayoutB> const&      b,
                  fragment<accumulator, BlockM, BlockN, BlockK, ComputeT, LayoutC> const& c)
     {
-        using FragA = decay_t<decltype(a)>;
-        using FragB = decay_t<decltype(b)>;
+        using FragA   = decay_t<decltype(a)>;
+        using FragB   = decay_t<decltype(b)>;
+        using FragAcc = decay_t<decltype(c)>;
 
-        using IOConfigA = GetIOConfig_t<FragA>;
-        using IOConfigB = GetIOConfig_t<FragB>;
+        using IOConfigA   = GetIOConfig_t<FragA>;
+        using IOConfigB   = GetIOConfig_t<FragB>;
+        using IOConfigAcc = GetIOConfig_t<FragAcc>;
+
+        using PreMmaA   = typename IOConfigA::PreMmaXForm;
+        using PreMmaB   = typename IOConfigB::PreMmaXForm;
+        using PreMmaAcc = typename IOConfigAcc::PreMmaXForm;
+        using PostMmaAcc = typename IOConfigAcc::PostMmaXForm;
+
+        using PackA   = typename IOConfigA::PackUtil;
+        using PackB   = typename IOConfigB::PackUtil;
+        using PackAcc = typename IOConfigAcc::PackUtil;
 
         // Sanity checks
         static_assert((IOConfigA::IOShape::BlockDim >= 16) && (IOConfigB::IOShape::BlockDim >= 16)
@@ -338,29 +356,27 @@ namespace rocwmma
                           && (IOConfigB::IOShape::BlockDim <= 32),
                       "Input fragment BlockDim is not mfma friendly");
 
-        static_assert(IOConfigA::IOShape::KDim == IOConfigB::IOShape::KDim,
-                      "KDim of input fragments must match");
+        static_assert((IOConfigA::IOShape::BlockDim == IOConfigB::IOShape::BlockDim)
+                          && (IOConfigA::IOShape::KDim == IOConfigB::IOShape::KDim),
+                      "BlockDim and KDim of input fragments must match");
 
-        static_assert(is_orthogonal_v<typename IOConfigA::IOLayout::MatrixLayout,
-                                      typename IOConfigB::IOLayout::MatrixLayout>,
-                      "Input fragment matrix layouts are not orthogonal");
-
-        static_assert(is_same_v<typename IOConfigA::IOLayout::RegisterLayout,
-                                typename IOConfigB::IOLayout::RegisterLayout>,
+        static_assert(is_layout_same_v<typename IOConfigA::IOLayout::MmaLayout,
+                                       typename IOConfigB::IOLayout::MmaLayout>,
                       "Input fragment register layouts do not match");
 
-        static_assert(is_same_v<typename IOConfigA::IOLayout::RegisterLayout,
-                                RegisterLayout::template Soa<IOConfigA::IOShape::BlockDim,
-                                                             IOConfigA::IOLayout::MaxVW>>,
-                      "Input fragment register layouts are not mfma friendly");
-
         // Gfx9 uses MFMA, gfx11 uses WMMA
-        using MMA = conditional_t<ROCWMMA_ARCH_GFX9,
+        using Mma = conditional_t<(bool)ROCWMMA_ARCH_GFX9,
                                   Mfma<InputT, ComputeT, BlockM, BlockN, BlockK>,
                                   Wmma<InputT, ComputeT, BlockM, BlockN, BlockK>>;
 
-        // mma functions operate on packed vectors
-        (*d) = MMA::exec(*a, *b, *c);
+        // 1. Perform input pre-ops on A, B, Acc (unpacked)
+        // 2. Mma (packed)
+        // 3. Perform acc post-op on Acc
+        // 4. Pack back to register
+        d.mAccess = PostMmaAcc::exec(
+                    PackAcc::unpack(Mma::exec(PackA::pack(PreMmaA::exec(a.mAccess)),
+                                              PackB::pack(PreMmaB::exec(b.mAccess)),
+                                              PackAcc::pack(PreMmaAcc::exec(c.mAccess)))));
     }
 
     ROCWMMA_DEVICE void synchronize_workgroup()

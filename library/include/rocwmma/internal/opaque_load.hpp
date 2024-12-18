@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,6 @@
 #define ROCWMMA_OPAQUE_LOAD_HPP
 
 #include "io_traits.hpp"
-#include "layout.hpp"
 #include "tuple.hpp"
 #include "types.hpp"
 #include "vector_iterator.hpp"
@@ -61,7 +60,8 @@ namespace rocwmma
               typename DataT,
               class DataLayout,
               class MatrixLayout,
-              uint32_t VectorWidth>
+              uint32_t VectorWidth,
+              bool     Debug = false>
     struct OpaqueLoad
     {
         using IOTraits = IOTraits<BlockDim, BlockK, DataT, VectorWidth>;
@@ -78,10 +78,7 @@ namespace rocwmma
 
         // Outer loop = index 0,
         // Inner loop = index N-1
-        template <size_t Depth = 0,
-                  typename Iterator,
-                  typename StrideCounts,
-                  typename Strides2d>
+        template <size_t Depth = 0, typename Iterator, typename StrideCounts, typename Strides2d>
         ROCWMMA_DEVICE static inline auto unroll_right(Iterator&      out,
                                                        DataT const*   dataPtr,
                                                        uint32_t       ldm,
@@ -94,6 +91,14 @@ namespace rocwmma
             // Last depth layer will invoke the load
             if constexpr(Depth == (VecTraits<decay_t<StrideCounts>>::size() - 1u))
             {
+                if constexpr(Debug)
+                {
+                    printf("Depth: %d, StrideCount: %d\n", Depth, get<Depth>(strideCounts));
+                    printf("StrideX: %d, StrideY: %d\n",
+                           get<0>(get<Depth>(strides2d)),
+                           get<1>(get<Depth>(strides2d)));
+                    printf("Executing!\n");
+                }
 #pragma unroll
                 for(int i = 0; i < strideCount; i++)
                 {
@@ -105,6 +110,14 @@ namespace rocwmma
             // Recurse to the next nested layer
             else
             {
+                if constexpr(Debug)
+                {
+                    printf("Depth: %d, StrideCount: %d\n", Depth, get<Depth>(strideCounts));
+                    printf("StrideX: %d, StrideY: %d\n",
+                           get<0>(get<Depth>(strides2d)),
+                           get<1>(get<Depth>(strides2d)));
+                    printf("Recursing!\n");
+                }
 #pragma unroll
                 for(int i = 0; i < strideCount; i++)
                 {
@@ -117,6 +130,7 @@ namespace rocwmma
         ROCWMMA_DEVICE static void
             exec(typename Traits::OutputT& data, DataT const* dataPtr, uint32_t ldm)
         {
+            //MatrixLayout::debug();
             // Arrange wave threads to starting matrix layout offsets.
             auto baseOffset2d = MatrixLayout::baseOffset();
             auto it           = makeVectorIterator<LoadVecTraits::size()>(data).begin();
@@ -130,12 +144,17 @@ namespace rocwmma
                                        MatrixLayout::strideCounts()),
                           "IOCount inconsistent with total strides");
 
+            // Initialize the stride details as constexpr
+            // so that the compiler can optimize them as args.
+            constexpr auto strideCounts = MatrixLayout::strideCounts();
+            constexpr auto strides      = MatrixLayout::strides();
+
             // Unroll loading in each strided dimension
             unroll_right(it,
                          dataPtr + DataLayout::fromMatrixCoord(baseOffset2d, ldm),
                          ldm,
-                         MatrixLayout::strideCounts(),
-                         MatrixLayout::strides());
+                         strideCounts,
+                         strides);
         }
     };
 
