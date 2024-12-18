@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -66,8 +66,10 @@ namespace rocwmma
                               uint32_t waveCount)
     {
 
-        using FragT  = decay_t<decltype(frag)>;
-        using Loader = typename GetCoopIOConfig_t<FragT>::Loader;
+        using FragT    = decay_t<decltype(frag)>;
+        using IOConfig = GetCoopIOConfig_t<FragT>;
+        using Loader   = typename IOConfig::Loader;
+        using PostLoad = typename IOConfig::PostLoadXForm;
 
         // Sanity checks
         static_assert(!is_same<DataLayoutT, void>::value,
@@ -82,6 +84,9 @@ namespace rocwmma
         // Note: the frag will only be partially filled with useful data.
         // Layout and thread locality is not guaranteed.
         Loader::exec(frag.mAccess, data, ldm, waveIndex, waveCount);
+
+        // Post-load transformation
+        frag.mAccess = PostLoad::exec(frag.mAccess);
     }
 
     template <typename MatrixT,
@@ -140,8 +145,10 @@ namespace rocwmma
                               uint32_t                                                       ldm,
                               uint32_t waveIndex)
     {
-        using FragT  = decay_t<decltype(frag)>;
-        using Loader = typename GetCoopIOConfig_t<FragT, WaveCount>::Loader;
+        using FragT    = decay_t<decltype(frag)>;
+        using IOConfig = GetCoopIOConfig_t<FragT, WaveCount>;
+        using Loader   = typename IOConfig::Loader;
+        using PostLoad = typename IOConfig::PostLoadXForm;
 
         // Sanity checks
         static_assert(!is_same<DataLayoutT, void>::value,
@@ -156,6 +163,9 @@ namespace rocwmma
         // Note: the frag will only be partially filled with useful data.
         // Layout and thread locality is not guaranteed.
         Loader::template exec<WaveCount>(frag.mAccess, data, ldm, waveIndex);
+
+        // Post-load transformation
+        frag.mAccess = PostLoad::exec(frag.mAccess);
     }
 
     template <typename MatrixT,
@@ -189,8 +199,10 @@ namespace rocwmma
         uint32_t                                                             waveIndex,
         uint32_t                                                             waveCount)
     {
-        using FragT  = decay_t<decltype(frag)>;
-        using Storer = typename GetCoopIOConfig_t<FragT>::Storer;
+        using FragT    = decay_t<decltype(frag)>;
+        using IOConfig = GetCoopIOConfig_t<FragT>;
+        using PreStore = typename IOConfig::PreStoreXForm;
+        using Storer   = typename IOConfig::Storer;
 
         // Sanity checks
         static_assert(!is_same<DataLayoutT, void>::value,
@@ -204,7 +216,7 @@ namespace rocwmma
         // Implicit unpack and store
         // Note: the frag is only be partially filled with useful data.
         // Layout and thread locality is not guaranteed.
-        Storer::exec(data, frag.mAccess, ldm, waveIndex, waveCount);
+        Storer::exec(data, PreStore::exec(frag.mAccess), ldm, waveIndex, waveCount);
     }
 
     template <typename MatrixT,
@@ -265,9 +277,10 @@ namespace rocwmma
         uint32_t                                                             ldm,
         uint32_t                                                             waveIndex)
     {
-
-        using FragT  = decay_t<decltype(frag)>;
-        using Storer = typename GetCoopIOConfig_t<FragT, WaveCount>::Storer;
+        using FragT    = decay_t<decltype(frag)>;
+        using IOConfig = GetCoopIOConfig_t<FragT, WaveCount>;
+        using PreStore = typename IOConfig::PreStoreXForm;
+        using Storer   = typename IOConfig::Storer;
 
         // Sanity checks
         static_assert(!is_same<DataLayoutT, void>::value,
@@ -281,7 +294,7 @@ namespace rocwmma
         // Implicit unpack and store
         // Note: the frag is only be partially filled with useful data.
         // Layout and thread locality is not guaranteed.
-        Storer::template exec<WaveCount>(data, frag.mAccess, ldm, waveIndex);
+        Storer::template exec<WaveCount>(data, PreStore::exec(frag.mAccess), ldm, waveIndex);
     }
 
 } // namespace rocwmma

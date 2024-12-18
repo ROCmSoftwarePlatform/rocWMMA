@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -58,49 +58,43 @@ namespace rocwmma
         template <uint32_t WaveCount>
         bool waveTest()
         {
-            bool           err      = false;
-            constexpr auto BlockDim = std::is_same_v<MatrixT, matrix_a> ? BlockM : BlockN;
-            constexpr auto KDim     = std::is_same_v<MatrixT, accumulator> ? BlockM : BlockK;
+            bool err = false;
 
-            constexpr auto MaxVW
-                = std::is_same_v<MatrixT, matrix_a> ? detail::
-                          MaxVWSelector<matrix_a, BlockDim, KDim, DataT, DataLayoutT, WaveCount>::
-                              Result
-                  : std::is_same_v<MatrixT, matrix_b>
-                      ? detail::
-                          MaxVWSelector<matrix_b, BlockDim, KDim, DataT, DataLayoutT, WaveCount>::
-                              Result
-                      : (std::is_same<DataT, float64_t>::value || ROCWMMA_ARCH_GFX11 ? 1u : 4u);
-            constexpr auto VW
-                = std::is_same_v<MatrixT, matrix_a>
-                      ? std::is_same<DataLayoutT, row_major>::value || BlockDim > 32 ? MaxVW : 1u
-                  : std::is_same_v<MatrixT, matrix_b>
-                      ? (std::is_same<DataLayoutT, col_major>::value || BlockDim > 32 ? MaxVW : 1u)
-                      : (std::is_same<DataLayoutT, col_major>::value ? MaxVW : 1u);
+            // Accum requires WaveCount > 1
+            if constexpr(!std::is_same_v<MatrixT, accumulator> || WaveCount == 1)
+            {
+                constexpr auto BlockDim = std::is_same_v<MatrixT, matrix_a> ? BlockM : BlockN;
+                constexpr auto KDim     = std::is_same_v<MatrixT, accumulator> ? BlockM : BlockK;
 
-            using RowNT
-                = LayoutProfile::template RowNT<BlockDim, KDim, DataT, DataLayoutT, VW, MaxVW>;
-            using ColNT
-                = LayoutProfile::template ColNT<BlockDim, KDim, DataT, DataLayoutT, VW, MaxVW>;
+                using detail::MaxVWSelector;
+                using detail::MmaDimSelector;
 
-            using Row = LayoutProfile::template Row<BlockDim, KDim, DataT, DataLayoutT, VW, MaxVW>;
-            using Col = LayoutProfile::template Col<BlockDim, KDim, DataT, DataLayoutT, VW, MaxVW>;
+                constexpr auto ExpectMaxVW
+                    = MaxVWSelector<MatrixT, BlockDim, KDim, DataT, DataLayoutT, WaveCount>::Result;
 
-            using Profile = typename std::conditional_t<
-                std::is_same_v<MatrixT, matrix_a>,
-                std::conditional_t<BlockDim <= 32, ColNT, Col>,
-                std::conditional_t<std::is_same_v<MatrixT, matrix_b>,
-                                   std::conditional_t<BlockDim <= 32, RowNT, Row>,
-                                   RowNT>>;
+                constexpr auto ExpectVW
+                    = std::is_same_v<MatrixT, matrix_a>
+                          ? std::is_same<DataLayoutT, row_major>::value || BlockDim > 32
+                                ? ExpectMaxVW
+                                : 1u
+                      : std::is_same_v<MatrixT, matrix_b>
+                          ? (std::is_same<DataLayoutT, col_major>::value || BlockDim > 32
+                                 ? ExpectMaxVW
+                                 : 1u)
+                          : (std::is_same<DataLayoutT, col_major>::value ? ExpectMaxVW : 1u);
 
-            using DataLayout = DataLayout::template Array1d<DataLayoutT>;
+                constexpr auto ExpectMmaDim = MmaDimSelector<BlockDim, DataT>::Result;
 
-            using IOLayout = IOLayout<MatrixT, BlockDim, KDim, DataT, DataLayoutT, WaveCount>;
+                using IOLayout = IOLayout<MatrixT, BlockDim, KDim, DataT, DataLayoutT, WaveCount>;
+                using IOLayoutInt
+                    = IOLayoutInt<MatrixT, BlockDim, KDim, DataT, DataLayoutT, WaveCount>;
+                using ExpectDataLayout = DataLayout::template Array1d<DataLayoutT>;
 
-            err |= (IOLayout::MaxVW != MaxVW);
-            err |= (IOLayout::VW != VW);
-            err |= (!std::is_same<typename IOLayout::Profile, Profile>::value);
-            err |= (!std::is_same<typename IOLayout::DataLayout, DataLayout>::value);
+                err |= (IOLayout::MaxVW != ExpectMaxVW);
+                err |= (IOLayout::VW != ExpectVW);
+                err |= (IOLayoutInt::MmaDim != ExpectMmaDim);
+                err |= (!std::is_same_v<typename IOLayout::DataLayout, ExpectDataLayout>);
+            }
 
             return err;
         }

@@ -2,7 +2,7 @@
  #
  # MIT License
  #
- # Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ # Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  #
  # Permission is hereby granted, free of charge, to any person obtaining a copy
  # of this software and associated documentation files (the "Software"), to deal
@@ -88,6 +88,10 @@ function(add_rocwmma_test TEST_TARGET TEST_SOURCE)
   target_include_directories(${TEST_TARGET} PRIVATE
                              ${CMAKE_CURRENT_SOURCE_DIR}
                              ${ROCWMMA_TEST_INCLUDE_DIRS})
+  # Use offload compress flag if it is supported
+  if(BUILD_OFFLOAD_COMPRESS AND CXX_COMPILER_SUPPORTS_OFFLOAD_COMPRESS)
+    target_compile_options(${TEST_TARGET} PRIVATE "--offload-compress" )
+  endif()
 
   # Add support to include extended test coverage
   if(ROCWMMA_BUILD_EXTENDED_TESTS)

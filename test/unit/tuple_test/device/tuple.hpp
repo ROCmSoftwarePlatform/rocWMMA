@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,6 @@
 #define ROCWMMA_DEVICE_TUPLE_TEST_HPP
 
 #include <rocwmma/internal/io_traits.hpp>
-#include <rocwmma/internal/layout.hpp>
 #include <rocwmma/internal/tuple.hpp>
 #include <rocwmma/internal/vector.hpp>
 #include <rocwmma/rocwmma.hpp>

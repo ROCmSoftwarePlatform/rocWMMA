@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@
 
 #include "transforms_impl.hpp"
 #include "vector.hpp"
+#include "vector_iterator.hpp"
 
 namespace rocwmma
 {
@@ -59,10 +60,10 @@ namespace rocwmma
 
         template <uint32_t BlockDim, uint32_t MaxVW>
         using AosToSoa = Driver<TransformsImpl::Ops::AosToSoa<BlockDim, MaxVW>>;
-      
+
         template <uint32_t BlockDim, uint32_t MaxVW>
         using SoaToAos = Driver<TransformsImpl::Ops::SoaToAos<BlockDim, MaxVW>>;
-      
+
     } // namespace Transforms
 
 } // namespace rocwmma

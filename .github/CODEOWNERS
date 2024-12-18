@@ -1,4 +1,4 @@
-* @cgmillette @congma13 @bragadeesh @mkarunan @dlangbe
+* @cgmillette @congma13 @bragadeesh @dlangbe
 # Documentation files
 docs/* @ROCm/rocm-documentation
 *.md @ROCm/rocm-documentation
