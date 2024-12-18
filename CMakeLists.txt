@@ -107,14 +107,11 @@ endif()
 include(CheckCXXCompilerFlag)
 if (BUILD_OFFLOAD_COMPRESS)
   check_cxx_compiler_flag("--offload-compress" CXX_COMPILER_SUPPORTS_OFFLOAD_COMPRESS)
-  if (NOT CXX_COMPILER_SUPPORTS_OFFLOAD_COMPRESS)
-    #TODO: Remove next line when rocm-cmake fix is available
-    set(CMAKE_NO_BUILTIN_CHRPATH ON)
-  elseif(CXX_COMPILER_SUPPORTS_OFFLOAD_COMPRESS)
-    set(CMAKE_NO_BUILTIN_CHRPATH OFF)
-  endif()
 endif()
 
+# TODO: Remove next line when rocm-cmake fix is available
+# Currently fixes linking issues with large executables
+set(CMAKE_NO_BUILTIN_CHRPATH ON)
 
 # Variable GPU_TARGET must be a cached variable and must be specified before calling find_package(hip)
 # This is because hip-config.cmake sets --offload-arch via GPU_TARGET cached variable __after__ setting
