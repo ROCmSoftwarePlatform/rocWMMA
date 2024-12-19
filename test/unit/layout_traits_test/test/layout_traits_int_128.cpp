@@ -34,10 +34,22 @@ namespace rocwmma
 
     struct TestParams : public UnitTestParams
     {
-        using Base        = UnitTestParams;
-        using Types       = typename Base::TestAllSizeTypes;
-        using MmaDims     = std::tuple<I<16>, I<32>, I<64>>;
-        using SplitKs     = std::tuple<I<1>, I<2>, I<4>>;
+        using Base    = UnitTestParams;
+        using Types   = typename Base::TestAllSizeTypes;
+        using MmaDims = std::tuple<I<16>,
+                                   I<32>
+#if ROCWMMA_EXTENDED_TESTS
+                                   ,
+                                   I<64>
+#endif // ROCWMMA_EXTENDED_TESTS
+                                   >;
+        using SplitKs = std::tuple<I<1>,
+                                   I<4>
+#if ROCWMMA_EXTENDED_TESTS
+                                   ,
+                                   I<2>
+#endif // ROCWMMA_EXTENDED_TESTS
+                                   >;
         using BlockSizes  = typename Base::TestBlockSizes128;
         using DataLayouts = typename Base::TestLayoutsAll;
 
