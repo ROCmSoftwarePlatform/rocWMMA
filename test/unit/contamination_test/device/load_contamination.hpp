@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,10 +35,7 @@
 namespace rocwmma
 {
 
-    template <uint32_t BlockM,
-              uint32_t BlockN,
-              typename DataT,
-              typename DataLayout>
+    template <uint32_t BlockM, uint32_t BlockN, typename DataT, typename DataLayout>
     __global__ void loadContaminationA(uint32_t     m,
                                        uint32_t     n,
                                        DataT const* in,
@@ -47,12 +44,12 @@ namespace rocwmma
                                        DataT        param1,
                                        DataT        param2)
     {
-        if constexpr (FragSize_guard<BlockM,
-                                 BlockN,
-                                 DataT,
-                                 DataLayout,
-                                 Constants::AMDGCN_WAVE_SIZE,
-                                 Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
+        if constexpr(FragSize_guard<BlockM,
+                                    BlockN,
+                                    DataT,
+                                    DataLayout,
+                                    Constants::AMDGCN_WAVE_SIZE,
+                                    Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
         {
             using Mapping = MappingUtil<BlockM, BlockN, DataT, DataLayout>;
             // Mapping:
@@ -64,14 +61,15 @@ namespace rocwmma
 
             // Input is padded.
             // Make sure to offset read coords and extend reading ld.
-            uint32_t paddedLd = ld
-                                + 2
-                                    * static_cast<uint32_t>(
-                                        std::is_same<DataLayout, row_major>::value ? param2 : param1);
+            uint32_t paddedLd
+                = ld
+                  + 2
+                        * static_cast<uint32_t>(
+                            std::is_same<DataLayout, row_major>::value ? param2 : param1);
             auto readMatCoord = Mapping::matrixCoord();
             auto readMatCoordPadded
                 = make_coord2d(get<0>(readMatCoord) + static_cast<uint32_t>(param1),
-                            get<1>(readMatCoord) + static_cast<uint32_t>(param2));
+                               get<1>(readMatCoord) + static_cast<uint32_t>(param2));
             // Map, load and store.
             auto* read  = Mapping::dataCoord(in, readMatCoordPadded, paddedLd);
             auto* write = Mapping::dataCoord(out, ld);
@@ -80,10 +78,7 @@ namespace rocwmma
         }
     }
 
-    template <uint32_t BlockM,
-              uint32_t BlockN,
-              typename DataT,
-              typename DataLayout>
+    template <uint32_t BlockM, uint32_t BlockN, typename DataT, typename DataLayout>
     __global__ void loadContaminationB(uint32_t     m,
                                        uint32_t     n,
                                        DataT const* in,
@@ -93,11 +88,11 @@ namespace rocwmma
                                        DataT        param2)
     {
         if constexpr(FragSize_guard<BlockM,
-                                 BlockN,
-                                 DataT,
-                                 DataLayout,
-                                 Constants::AMDGCN_WAVE_SIZE,
-                                 Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
+                                    BlockN,
+                                    DataT,
+                                    DataLayout,
+                                    Constants::AMDGCN_WAVE_SIZE,
+                                    Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
         {
             using Mapping = MappingUtil<BlockM, BlockN, DataT, DataLayout>;
 
@@ -110,14 +105,15 @@ namespace rocwmma
 
             // Input is padded.
             // Make sure to offset read coords and extend reading ld.
-            uint32_t paddedLd = ld
-                                + 2
-                                    * static_cast<uint32_t>(
-                                        std::is_same<DataLayout, row_major>::value ? param2 : param1);
+            uint32_t paddedLd
+                = ld
+                  + 2
+                        * static_cast<uint32_t>(
+                            std::is_same<DataLayout, row_major>::value ? param2 : param1);
             auto readMatCoord = Mapping::matrixCoord();
             auto readMatCoordPadded
                 = make_coord2d(get<0>(readMatCoord) + static_cast<uint32_t>(param1),
-                            get<1>(readMatCoord) + static_cast<uint32_t>(param2));
+                               get<1>(readMatCoord) + static_cast<uint32_t>(param2));
             // Map, load and store.
             auto* read  = Mapping::dataCoord(in, readMatCoordPadded, paddedLd);
             auto* write = Mapping::dataCoord(out, ld);
@@ -126,10 +122,7 @@ namespace rocwmma
         }
     }
 
-    template <uint32_t BlockM,
-              uint32_t BlockN,
-              typename DataT,
-              typename DataLayout>
+    template <uint32_t BlockM, uint32_t BlockN, typename DataT, typename DataLayout>
     __global__ void loadContaminationAcc(uint32_t     m,
                                          uint32_t     n,
                                          DataT const* in,
@@ -138,12 +131,12 @@ namespace rocwmma
                                          DataT        param1,
                                          DataT        param2)
     {
-        if constexpr (FragSize_guard<BlockM,
-                                 BlockN,
-                                 DataT,
-                                 DataLayout,
-                                 Constants::AMDGCN_WAVE_SIZE,
-                                 Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
+        if constexpr(FragSize_guard<BlockM,
+                                    BlockN,
+                                    DataT,
+                                    DataLayout,
+                                    Constants::AMDGCN_WAVE_SIZE,
+                                    Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
         {
             using Mapping = MappingUtil<BlockM, BlockN, DataT, DataLayout>;
 
@@ -156,14 +149,15 @@ namespace rocwmma
 
             // Input is padded.
             // Make sure to offset read coords and extend reading ld.
-            uint32_t paddedLd = ld
-                                + 2
-                                    * static_cast<uint32_t>(
-                                        std::is_same<DataLayout, row_major>::value ? param2 : param1);
+            uint32_t paddedLd
+                = ld
+                  + 2
+                        * static_cast<uint32_t>(
+                            std::is_same<DataLayout, row_major>::value ? param2 : param1);
             auto readMatCoord = Mapping::matrixCoord();
             auto readMatCoordPadded
                 = make_coord2d(get<0>(readMatCoord) + static_cast<uint32_t>(param1),
-                            get<1>(readMatCoord) + static_cast<uint32_t>(param2));
+                               get<1>(readMatCoord) + static_cast<uint32_t>(param2));
             // Map, load and store.
             auto* read  = Mapping::dataCoord(in, readMatCoordPadded, paddedLd);
             auto* write = Mapping::dataCoord(out, ld);

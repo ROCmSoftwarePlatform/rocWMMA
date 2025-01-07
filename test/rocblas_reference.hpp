@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -461,8 +461,10 @@ namespace rocwmma
         int32_t  solution_index = 0;
         uint32_t flags          = 0;
 
-        if((std::is_same<InputT, float8_t>::value) || (std::is_same<InputT, bfloat8_t>::value
-           || (std::is_same<InputT, float8_fnuz_t>::value) || (std::is_same<InputT, bfloat8_fnuz_t>::value)))
+        if((std::is_same<InputT, float8_t>::value)
+           || (std::is_same<InputT, bfloat8_t>::value
+               || (std::is_same<InputT, float8_fnuz_t>::value)
+               || (std::is_same<InputT, bfloat8_fnuz_t>::value)))
         {
 #if !defined(ROCBLAS_DATA_TYPE_FLOAT8)
             std::cerr

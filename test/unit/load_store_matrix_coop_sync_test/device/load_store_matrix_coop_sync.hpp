@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,10 +36,7 @@
 namespace rocwmma
 {
 
-    template <uint32_t BlockM,
-              uint32_t BlockN,
-              typename DataT,
-              typename DataLayout>
+    template <uint32_t BlockM, uint32_t BlockN, typename DataT, typename DataLayout>
     __global__ void LoadStoreMatrixCoopSyncA(uint32_t     m,
                                              uint32_t     n,
                                              DataT const* in,
@@ -48,12 +45,12 @@ namespace rocwmma
                                              DataT        param1,
                                              DataT        param2)
     {
-        if constexpr (FragSize_guard<BlockM,
-                                 BlockN,
-                                 DataT,
-                                 DataLayout,
-                                 Constants::AMDGCN_WAVE_SIZE,
-                                 Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
+        if constexpr(FragSize_guard<BlockM,
+                                    BlockN,
+                                    DataT,
+                                    DataLayout,
+                                    Constants::AMDGCN_WAVE_SIZE,
+                                    Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
         {
             // Mapping:
             // Incoming -> Matrix A (ColNT)
@@ -76,8 +73,9 @@ namespace rocwmma
             // 0 = row/col 0 waves will cooperate
             // 1 = row/col 1 waves will cooperate
             // ...
-            auto getFirst  = [](typename Mapping::WaveCoordT const& coord) { return get<0>(coord); };
-            auto getSecond = [](typename Mapping::WaveCoordT const& coord) { return get<1>(coord); };
+            auto getFirst = [](typename Mapping::WaveCoordT const& coord) { return get<0>(coord); };
+            auto getSecond
+                = [](typename Mapping::WaveCoordT const& coord) { return get<1>(coord); };
 
             auto sharingDim   = (uint32_t)param1;
             auto shareElement = (sharingDim == 0 ? getFirst : getSecond);
@@ -100,7 +98,7 @@ namespace rocwmma
                     {
                         // Map, load and store.
                         auto  blockCoord = startBlockCoord + make_coord2d(i, j);
-                        auto* read       = Mapping::dataCoord(in, Mapping::matrixCoord(blockCoord), ld);
+                        auto* read  = Mapping::dataCoord(in, Mapping::matrixCoord(blockCoord), ld);
                         auto* write = Mapping::dataCoord(out, Mapping::matrixCoord(blockCoord), ld);
                         load_matrix_coop_sync(frag, read, ld, workIndex, workCount);
                         store_matrix_coop_sync(write, frag, ld, workIndex, workCount);
@@ -110,10 +108,7 @@ namespace rocwmma
         }
     }
 
-    template <uint32_t BlockM,
-              uint32_t BlockN,
-              typename DataT,
-              typename DataLayout>
+    template <uint32_t BlockM, uint32_t BlockN, typename DataT, typename DataLayout>
     __global__ void LoadStoreMatrixCoopSyncB(uint32_t     m,
                                              uint32_t     n,
                                              DataT const* in,
@@ -122,12 +117,12 @@ namespace rocwmma
                                              DataT        param1,
                                              DataT        param2)
     {
-        if constexpr (FragSize_guard<BlockM,
-                                 BlockN,
-                                 DataT,
-                                 DataLayout,
-                                 Constants::AMDGCN_WAVE_SIZE,
-                                 Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
+        if constexpr(FragSize_guard<BlockM,
+                                    BlockN,
+                                    DataT,
+                                    DataLayout,
+                                    Constants::AMDGCN_WAVE_SIZE,
+                                    Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
         {
             // Mapping:
             // Incoming -> Matrix B (RowNT)
@@ -150,8 +145,9 @@ namespace rocwmma
             // 0 = row/col 0 waves will cooperate
             // 1 = row/col 1 waves will cooperate
             // ...
-            auto getFirst  = [](typename Mapping::WaveCoordT const& coord) { return get<0>(coord); };
-            auto getSecond = [](typename Mapping::WaveCoordT const& coord) { return get<1>(coord); };
+            auto getFirst = [](typename Mapping::WaveCoordT const& coord) { return get<0>(coord); };
+            auto getSecond
+                = [](typename Mapping::WaveCoordT const& coord) { return get<1>(coord); };
 
             auto sharingDim   = (uint32_t)param1;
             auto shareElement = (sharingDim == 0 ? getFirst : getSecond);
@@ -174,7 +170,7 @@ namespace rocwmma
                     {
                         // Map, load and store.
                         auto  blockCoord = startBlockCoord + make_coord2d(i, j);
-                        auto* read       = Mapping::dataCoord(in, Mapping::matrixCoord(blockCoord), ld);
+                        auto* read  = Mapping::dataCoord(in, Mapping::matrixCoord(blockCoord), ld);
                         auto* write = Mapping::dataCoord(out, Mapping::matrixCoord(blockCoord), ld);
                         load_matrix_coop_sync(frag, read, ld, workIndex, workCount);
                         store_matrix_coop_sync(write, frag, ld, workIndex, workCount);
@@ -184,10 +180,7 @@ namespace rocwmma
         }
     }
 
-    template <uint32_t BlockM,
-              uint32_t BlockN,
-              typename DataT,
-              typename DataLayout>
+    template <uint32_t BlockM, uint32_t BlockN, typename DataT, typename DataLayout>
     __global__ void LoadStoreMatrixCoopSyncAcc(uint32_t     m,
                                                uint32_t     n,
                                                DataT const* in,
@@ -196,12 +189,12 @@ namespace rocwmma
                                                DataT        param1,
                                                DataT        param2)
     {
-        if constexpr (FragSize_guard<BlockM,
-                                 BlockN,
-                                 DataT,
-                                 DataLayout,
-                                 Constants::AMDGCN_WAVE_SIZE,
-                                 Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
+        if constexpr(FragSize_guard<BlockM,
+                                    BlockN,
+                                    DataT,
+                                    DataLayout,
+                                    Constants::AMDGCN_WAVE_SIZE,
+                                    Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
         {
             // Mapping:
             // Incoming -> Matrix C (Row4T)
@@ -224,8 +217,9 @@ namespace rocwmma
             // 0 = row/col 0 waves will cooperate
             // 1 = row/col 1 waves will cooperate
             // ...
-            auto getFirst  = [](typename Mapping::WaveCoordT const& coord) { return get<0>(coord); };
-            auto getSecond = [](typename Mapping::WaveCoordT const& coord) { return get<1>(coord); };
+            auto getFirst = [](typename Mapping::WaveCoordT const& coord) { return get<0>(coord); };
+            auto getSecond
+                = [](typename Mapping::WaveCoordT const& coord) { return get<1>(coord); };
 
             auto sharingDim   = (uint32_t)param1;
             auto shareElement = (sharingDim == 0 ? getFirst : getSecond);
@@ -248,7 +242,7 @@ namespace rocwmma
                     {
                         // Map, load and store.
                         auto  blockCoord = startBlockCoord + make_coord2d(i, j);
-                        auto* read       = Mapping::dataCoord(in, Mapping::matrixCoord(blockCoord), ld);
+                        auto* read  = Mapping::dataCoord(in, Mapping::matrixCoord(blockCoord), ld);
                         auto* write = Mapping::dataCoord(out, Mapping::matrixCoord(blockCoord), ld);
                         load_matrix_coop_sync(frag, read, ld, workIndex, workCount);
                         store_matrix_coop_sync(write, frag, ld, workIndex, workCount);

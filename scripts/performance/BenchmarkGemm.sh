@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (C) 2022-2024 Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (C) 2022-2025 Advanced Micro Devices, Inc. All rights reserved.
 
 set -eux
 
