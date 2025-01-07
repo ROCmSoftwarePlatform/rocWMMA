@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +27,8 @@
 #ifndef ROCWMMA_UTILITY_APPLY_IMPL_HPP
 #define ROCWMMA_UTILITY_APPLY_IMPL_HPP
 
-#include "get.hpp"
 #include "../vector.hpp"
+#include "get.hpp"
 
 namespace rocwmma
 {
@@ -49,7 +49,8 @@ namespace rocwmma
         }
 
         template <typename F, typename DataT, uint32_t Rank>
-        ROCWMMA_HOST_DEVICE constexpr decltype(auto) apply(F fn, HIP_vector_type<DataT, Rank> const& v)
+        ROCWMMA_HOST_DEVICE constexpr decltype(auto) apply(F                                   fn,
+                                                           HIP_vector_type<DataT, Rank> const& v)
         {
             constexpr size_t size = VecTraits<decay_t<decltype(v)>>::size();
             return detail::apply_impl(fn, v, detail::make_index_sequence<size>());
@@ -63,21 +64,24 @@ namespace rocwmma
         }
 
         template <typename F, typename DataT, uint32_t Rank>
-        ROCWMMA_HOST_DEVICE constexpr decltype(auto) apply(F fn, non_native_vector_base<DataT, Rank>& v)
+        ROCWMMA_HOST_DEVICE constexpr decltype(auto) apply(F                                    fn,
+                                                           non_native_vector_base<DataT, Rank>& v)
         {
             constexpr size_t size = VecTraits<decay_t<decltype(v)>>::size();
             return detail::apply_impl(fn, v, detail::make_index_sequence<size>());
         }
 
         template <typename F, typename DataT, uint32_t Rank>
-        ROCWMMA_HOST_DEVICE constexpr decltype(auto) apply(F fn, non_native_vector_base<DataT, Rank> const& v)
+        ROCWMMA_HOST_DEVICE constexpr decltype(auto)
+            apply(F fn, non_native_vector_base<DataT, Rank> const& v)
         {
             constexpr size_t size = VecTraits<decay_t<decltype(v)>>::size();
             return detail::apply_impl(fn, v, detail::make_index_sequence<size>());
         }
 
         template <typename F, typename DataT, uint32_t Rank>
-        ROCWMMA_HOST_DEVICE constexpr decltype(auto) apply(F fn, non_native_vector_base<DataT, Rank>&& v)
+        ROCWMMA_HOST_DEVICE constexpr decltype(auto) apply(F                                     fn,
+                                                           non_native_vector_base<DataT, Rank>&& v)
         {
             constexpr size_t size = VecTraits<decay_t<decltype(v)>>::size();
             return detail::apply_impl(fn, v, detail::make_index_sequence<size>());

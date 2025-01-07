@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -495,10 +495,12 @@ namespace rocwmma
             {
                 // Built-in expects vector of int.
                 using TypeIn = VecT<int, 2>;
-                
+
                 typename Traits::DRegsT result;
                 result.data = {__builtin_amdgcn_wmma_f32_16x16x16_bf8_bf8_w32_gfx12(
-                    reinterpret_cast<TypeIn const&>(regsA).data, reinterpret_cast<TypeIn const&>(regsB).data, regsC.data)};
+                    reinterpret_cast<TypeIn const&>(regsA).data,
+                    reinterpret_cast<TypeIn const&>(regsB).data,
+                    regsC.data)};
                 return result;
             }
         };

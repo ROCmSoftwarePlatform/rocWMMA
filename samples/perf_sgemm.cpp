@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -304,7 +304,10 @@ ROCWMMA_DEVICE static inline void
 {
     // Transpose B and then apply lds data layout
     store_matrix_coop_sync<WaveCountB>(
-        ldsAddr, applyDataLayout<DataLayoutLds, WaveCountB>(applyTranspose(grBuffB)), ldsld, waveIndexB);
+        ldsAddr,
+        applyDataLayout<DataLayoutLds, WaveCountB>(applyTranspose(grBuffB)),
+        ldsld,
+        waveIndexB);
 }
 
 // Local A reads for warp tile gemm, non-cooperative
@@ -556,7 +559,7 @@ ROCWMMA_KERNEL void __launch_bounds__(256) gemm_rocwmma_d(uint32_t       m,
         constexpr uint32_t ldsWidth  = ROCWMMA_K;
         constexpr uint32_t ldsHeight = LWBuffAShape::BlockHeight + LWBuffBShape::BlockHeight;
         constexpr uint32_t sizeLds   = ldsHeight * ldsWidth;
-        constexpr uint32_t ldsld     = std::is_same_v<DataLayoutLds, row_major> ? ldsWidth : ldsHeight;
+        constexpr uint32_t ldsld = std::is_same_v<DataLayoutLds, row_major> ? ldsWidth : ldsHeight;
 
         auto* ldsPtrLo = reinterpret_cast<InputT*>(localMemPtr);
         auto* ldsPtrHi = ldsPtrLo + sizeLds;
@@ -569,10 +572,10 @@ ROCWMMA_KERNEL void __launch_bounds__(256) gemm_rocwmma_d(uint32_t       m,
         // Local read offsets for mfma frags
         auto ldsReadOffsetA
             = ldsWriteOffsetA
-            + LWBuffAMap1d::fromMatrixCoord(make_coord2d(get<0>(localWarpOffset), 0u), ldsld);
+              + LWBuffAMap1d::fromMatrixCoord(make_coord2d(get<0>(localWarpOffset), 0u), ldsld);
         auto ldsReadOffsetB
             = ldsWriteOffsetB
-            + LWBuffBMap1d::fromMatrixCoord(make_coord2d(get<1>(localWarpOffset), 0u), ldsld);
+              + LWBuffBMap1d::fromMatrixCoord(make_coord2d(get<1>(localWarpOffset), 0u), ldsld);
 
         ///
         /// Write prefetch to local

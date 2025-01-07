@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,10 +34,7 @@
 namespace rocwmma
 {
 
-    template <uint32_t BlockM,
-              uint32_t BlockN,
-              typename DataT,
-              typename DataLayout>
+    template <uint32_t BlockM, uint32_t BlockN, typename DataT, typename DataLayout>
     __global__ void fillFragmentA(uint32_t     m,
                                   uint32_t     n,
                                   DataT const* in,
@@ -46,12 +43,12 @@ namespace rocwmma
                                   DataT        param1,
                                   DataT        param2)
     {
-        if constexpr (FragSize_guard<BlockM,
-                                 BlockN,
-                                 DataT,
-                                 DataLayout,
-                                 Constants::AMDGCN_WAVE_SIZE,
-                                 Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
+        if constexpr(FragSize_guard<BlockM,
+                                    BlockN,
+                                    DataT,
+                                    DataLayout,
+                                    Constants::AMDGCN_WAVE_SIZE,
+                                    Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
         {
             using Mapping = MappingUtil<BlockM, BlockN, DataT, DataLayout>;
 
@@ -66,10 +63,7 @@ namespace rocwmma
         }
     }
 
-    template <uint32_t BlockM,
-              uint32_t BlockN,
-              typename DataT,
-              typename DataLayout>
+    template <uint32_t BlockM, uint32_t BlockN, typename DataT, typename DataLayout>
     __global__ void fillFragmentB(uint32_t     m,
                                   uint32_t     n,
                                   DataT const* in,
@@ -79,11 +73,11 @@ namespace rocwmma
                                   DataT        param2)
     {
         if constexpr(FragSize_guard<BlockM,
-                                 BlockN,
-                                 DataT,
-                                 DataLayout,
-                                 Constants::AMDGCN_WAVE_SIZE,
-                                 Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
+                                    BlockN,
+                                    DataT,
+                                    DataLayout,
+                                    Constants::AMDGCN_WAVE_SIZE,
+                                    Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
         {
             using Mapping = MappingUtil<BlockM, BlockN, DataT, DataLayout>;
 
@@ -98,10 +92,7 @@ namespace rocwmma
         }
     }
 
-    template <uint32_t BlockM,
-              uint32_t BlockN,
-              typename DataT,
-              typename DataLayout>
+    template <uint32_t BlockM, uint32_t BlockN, typename DataT, typename DataLayout>
     __global__ void fillFragmentAcc(uint32_t     m,
                                     uint32_t     n,
                                     DataT const* in,
@@ -110,12 +101,12 @@ namespace rocwmma
                                     DataT        param1,
                                     DataT        param2)
     {
-        if constexpr (FragSize_guard<BlockM,
-                                 BlockN,
-                                 DataT,
-                                 DataLayout,
-                                 Constants::AMDGCN_WAVE_SIZE,
-                                 Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
+        if constexpr(FragSize_guard<BlockM,
+                                    BlockN,
+                                    DataT,
+                                    DataLayout,
+                                    Constants::AMDGCN_WAVE_SIZE,
+                                    Constants::AMDGCN_CURRENT_ARCH_ID>::enable())
         {
             using Mapping = MappingUtil<BlockM, BlockN, DataT, DataLayout>;
 

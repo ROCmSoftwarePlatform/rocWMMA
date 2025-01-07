@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,8 +30,8 @@
 #include <tuple>
 #include <vector>
 
-#include <rocwmma/internal/types.hpp>
 #include "hip_device.hpp"
+#include <rocwmma/internal/types.hpp>
 
 namespace rocwmma
 {
@@ -220,9 +220,12 @@ namespace rocwmma
     struct contains_type;
 
     template <typename DataT, typename... TupleTs>
-    struct contains_type<DataT, std::tuple<TupleTs...>> : std::disjunction<std::is_same<DataT, TupleTs>...> {};
+    struct contains_type<DataT, std::tuple<TupleTs...>>
+        : std::disjunction<std::is_same<DataT, TupleTs>...>
+    {
+    };
 
-    template<typename DataT, typename TupleT>
+    template <typename DataT, typename TupleT>
     inline constexpr bool contains_type_v = contains_type<DataT, TupleT>::value;
 
     /// Kernel Generator
@@ -259,21 +262,18 @@ namespace rocwmma
         ROCWMMA_HOST static void generate(ResultT& kernels)
         {
             // Generates the kernel for the current set of KernelParams
-            auto gen_kernel = [](ResultT& k)
-            {
-                k.push_back(GeneratorImpl::generate(KernelParams()));
-            };
+            auto gen_kernel
+                = [](ResultT& k) { k.push_back(GeneratorImpl::generate(KernelParams())); };
 
             // Advances to the next set of KernelParams
-            auto next_kernel = [](ResultT& k)
-            {
+            auto next_kernel = [](ResultT& k) {
                 KernelGenerator<std::tuple<Next...>, GeneratorImpl>::generate(k);
             };
 
-            if constexpr (contains_type_v<float8_t, KernelParams>
-                            || contains_type_v<bfloat8_t, KernelParams>)
+            if constexpr(contains_type_v<float8_t, KernelParams>
+                         || contains_type_v<bfloat8_t, KernelParams>)
             {
-                if constexpr (!(bool)ROCWMMA_FP8)
+                if constexpr(!(bool)ROCWMMA_FP8)
                 {
                     // Current KernelParams have f8: skip kernel on unsupported arch.
                     next_kernel(kernels);
@@ -287,9 +287,9 @@ namespace rocwmma
                 {
                     // Only gfx12 devices support f8
                     using DeviceInfo = HipDevice;
-                    auto arch = DeviceInfo::instance()->getGcnArch();
+                    auto arch        = DeviceInfo::instance()->getGcnArch();
                     if(arch != DeviceInfo::hipGcnArch_t::GFX1200
-                        && arch != DeviceInfo::hipGcnArch_t::GFX1201)
+                       && arch != DeviceInfo::hipGcnArch_t::GFX1201)
                     {
                         // Current KernelParams have f8: skip kernel on host.
                         next_kernel(kernels);
@@ -301,10 +301,10 @@ namespace rocwmma
                 gen_kernel(kernels);
                 next_kernel(kernels);
             }
-            else if constexpr (contains_type_v<float8_fnuz_t, KernelParams>
-                                || contains_type_v<bfloat8_fnuz_t, KernelParams>)
+            else if constexpr(contains_type_v<float8_fnuz_t, KernelParams>
+                              || contains_type_v<bfloat8_fnuz_t, KernelParams>)
             {
-                if constexpr (!(bool)ROCWMMA_FP8_FNUZ)
+                if constexpr(!(bool)ROCWMMA_FP8_FNUZ)
                 {
                     // Current KernelParams have f8_fnuz: skip kernel on unsupported arch.
                     next_kernel(kernels);
@@ -318,10 +318,10 @@ namespace rocwmma
                 {
                     // Only gfx94* devices support f8_fnuz
                     using DeviceInfo = HipDevice;
-                    auto arch = DeviceInfo::instance()->getGcnArch();
+                    auto arch        = DeviceInfo::instance()->getGcnArch();
                     if(arch != DeviceInfo::hipGcnArch_t::GFX940
-                        && arch != DeviceInfo::hipGcnArch_t::GFX941
-                        && arch != DeviceInfo::hipGcnArch_t::GFX942)
+                       && arch != DeviceInfo::hipGcnArch_t::GFX941
+                       && arch != DeviceInfo::hipGcnArch_t::GFX942)
                     {
                         // Current KernelParams have f8_fnuz: skip kernel on host.
                         next_kernel(kernels);

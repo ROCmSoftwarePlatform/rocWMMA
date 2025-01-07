@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -358,7 +358,10 @@ ROCWMMA_DEVICE static inline void
 {
     // Transpose B and then apply lds data layout
     store_matrix_coop_sync<WaveCountB>(
-        ldsAddr, applyDataLayout<DataLayoutLds, WaveCountB>(applyTranspose(grBuffB)), ldsld, waveIndexB);
+        ldsAddr,
+        applyDataLayout<DataLayoutLds, WaveCountB>(applyTranspose(grBuffB)),
+        ldsld,
+        waveIndexB);
 }
 
 // Local A reads for warp tile gemm, non-cooperative
@@ -945,4 +948,3 @@ int main()
     gemm_test(7168, 7168, 7168, 2, 2);
     return 0;
 }
-        

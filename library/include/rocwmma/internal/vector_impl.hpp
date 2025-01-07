@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2022-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2022-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -276,7 +276,7 @@ namespace rocwmma
         }
 
     } // namespace detail
-    
+
     // NOTE: The single-valued 'broadcast' constructor can only be used with Rank > 1.
     // Why? The bCast function constructs the vector with <Rank> copies of the input val.
     // When Rank == 1, this would create an endless ctor->bcast->ctor->bcast... loop.

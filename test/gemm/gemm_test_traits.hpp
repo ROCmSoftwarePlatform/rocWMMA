@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -115,12 +115,12 @@ namespace rocwmma
 
         enum struct InputType : bool
         {
-            IsInt8    = std::is_same_v<InputT, int8_t>,
+            IsInt8 = std::is_same_v<InputT, int8_t>,
 
             // Make sure to include fnuz f8 types
-            IsFloat8  = std::is_same_v<InputT, float8_t>,
-            IsFloat8Fnuz = std::is_same_v<InputT, float8_fnuz_t>,
-            IsBFloat8  = std::is_same_v<InputT, bfloat8_t>,
+            IsFloat8      = std::is_same_v<InputT, float8_t>,
+            IsFloat8Fnuz  = std::is_same_v<InputT, float8_fnuz_t>,
+            IsBFloat8     = std::is_same_v<InputT, bfloat8_t>,
             IsBFloat8Fnuz = std::is_same_v<InputT, bfloat8_fnuz_t>,
 
 #if !ROCWMMA_TESTS_NO_HALF
@@ -139,10 +139,10 @@ namespace rocwmma
 
         enum struct OutputType : bool
         {
-            IsInt8    = std::is_same_v<OutputT, int8_t>,
-            IsFloat8  = std::is_same_v<InputT, float8_t>,
-            IsFloat8Fnuz = std::is_same_v<InputT, float8_fnuz_t>,
-            IsBFloat8  = std::is_same_v<InputT, bfloat8_t>,
+            IsInt8        = std::is_same_v<OutputT, int8_t>,
+            IsFloat8      = std::is_same_v<InputT, float8_t>,
+            IsFloat8Fnuz  = std::is_same_v<InputT, float8_fnuz_t>,
+            IsBFloat8     = std::is_same_v<InputT, bfloat8_t>,
             IsBFloat8Fnuz = std::is_same_v<InputT, bfloat8_fnuz_t>,
 
 #if !ROCWMMA_TESTS_NO_HALF
@@ -162,10 +162,10 @@ namespace rocwmma
 
         enum struct ComputeType : bool
         {
-            IsInt8    = std::is_same_v<ComputeT, int8_t>,
-            IsFloat8  = std::is_same_v<InputT, float8_t>,
-            IsFloat8Fnuz = std::is_same_v<InputT, float8_fnuz_t>,
-            IsBFloat8  = std::is_same_v<InputT, bfloat8_t>,
+            IsInt8        = std::is_same_v<ComputeT, int8_t>,
+            IsFloat8      = std::is_same_v<InputT, float8_t>,
+            IsFloat8Fnuz  = std::is_same_v<InputT, float8_fnuz_t>,
+            IsBFloat8     = std::is_same_v<InputT, bfloat8_t>,
             IsBFloat8Fnuz = std::is_same_v<InputT, bfloat8_fnuz_t>,
 
 #if !ROCWMMA_TESTS_NO_HALF
