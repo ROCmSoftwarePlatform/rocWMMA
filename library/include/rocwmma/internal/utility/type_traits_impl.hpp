@@ -553,18 +553,48 @@ namespace rocwmma
         template <typename T>
         inline constexpr bool is_signed_v = is_signed<T>::value;
 
+        // first_type
+        template <typename... Ts>
+        struct first_type;
+
+        template <typename T, typename... Ts>
+        struct first_type<T, Ts...>
+        {
+            using type = T;
+        };
+
+        template <typename... Ts>
+        using first_type_t = typename first_type<Ts...>::type;
+
         // is_same
-        template <typename T, typename U>
+        template <typename... Ts>
         struct is_same : public false_type
         {
         };
+
+        template <typename T>
+        struct is_same<T> : public true_type
+        {
+        };
+
+        template <typename T, typename U>
+        struct is_same<T, U> : public false_type
+        {
+        };
+
         template <typename T>
         struct is_same<T, T> : public true_type
         {
         };
 
-        template <class T, class U>
-        inline constexpr bool is_same_v = is_same<T, U>::value;
+        template <typename T, typename U, typename... Ts>
+        struct is_same<T, U, Ts...>
+            : conditional_t<is_same<T, U>{}, is_same<U, Ts...>, false_type>
+        {
+        };
+
+        template <typename... Ts>
+        constexpr bool is_same_v = is_same<Ts...>::value;
 
         // is_convertible
         template <class T1, class T2>

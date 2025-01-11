@@ -38,7 +38,9 @@ namespace rocwmma
         template<typename VecT>
         ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
         {
-            return interleave<1u, KPerThread>(forward<VecT>(v));
+            // interleave<1, KPT, VecSize>
+            constexpr uint32_t GatherSize = 1u;
+            return interleave<GatherSize, KPerThread>(forward<VecT>(v));
         }
     };
 
@@ -48,15 +50,18 @@ namespace rocwmma
         template<typename VecT>
         ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
         {
-            return interleave<1u, DimPerThread>(forward<VecT>(v));
+            // interleave<1, DPT, VecSize>
+            constexpr uint32_t GatherSize = 1u;
+            return interleave<GatherSize, DimPerThread>(forward<VecT>(v));
         }
     };
 
     struct to_wmma_input_gfx11
     {
         template<typename VecT>
-        ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
+        ROCWMMA_DEVICE constexpr static inline auto exec(VecT&& v)
         {
+            // Swap + concat
             // v is unpacked
             using VecTraits = VecTraits<decay_t<VecT>>;
             using PackUtil = PackUtil<typename VecTraits::DataT>;
@@ -76,6 +81,7 @@ namespace rocwmma
         template<typename VecT>
         ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
         {
+            // Discard the swapped dups
             return extractLo(v);
         }
     };
@@ -87,8 +93,8 @@ namespace rocwmma
         {
             using VecTraits = VecTraits<decay_t<VecT>>;
 
-            // SOA format to wmma acc padded accumulator (gfx11).
-            // f16 -> padded to f32 in lower 16
+            // pad to wmma accumulator on gfx11.
+            // f16 -> padded to f32, with data in lower 16
             // f32 -> nop
             using PackUtil = PackUtil<typename VecTraits::DataT>;
             auto accum = PackUtil::unpack(PackUtil::template pad<>(v));
@@ -103,7 +109,7 @@ namespace rocwmma
         {
             using VecTraits = VecTraits<decay_t<VecT>>;
 
-            // Padded wmma acc (gfx11) back to SOA format.
+            // unpad from wmma accumulator on gfx11.
             // f16 -> padded to f32 in lower 16
             // f32 -> nop
             using PackUtil = PackUtil<typename VecTraits::DataT>;
@@ -111,21 +117,75 @@ namespace rocwmma
         }
     };
 
-    template<uint32_t DimPerThread, uint32_t KPerThread>
+    template<uint32_t BlockDim, uint32_t BlockK, uint32_t MaxVW, uint32_t MmaDim, uint32_t DimPerThread, uint32_t KPerThread>
     struct soa_int_to_mma_acc_int_a_major
     {
         template<typename VecT>
         ROCWMMA_DEVICE constexpr static inline decltype(auto) exec(VecT&& v)
         {
-            if constexpr((bool)ROCWMMA_ARCH_GFX11)
+            using VecTraits = VecTraits<decay_t<VecT>>;
+
+            // Vector size per acc block
+            constexpr uint32_t AccVecSize = MmaDim * MmaDim / Constants::AMDGCN_WAVE_SIZE;
+            constexpr uint32_t MmaBlocksA = BlockK / MmaDim;
+            constexpr uint32_t MmaBlocksB = BlockDim / MmaDim;
+
+            if constexpr((bool)ROCWMMA_ARCH_GFX9)
+            {
+                if constexpr (MaxVW == 1u)
+                {
+                    // First, interleave full vector
+                    // interleave<1, MmaBlocksA, VecSize>
+                    auto result = interleave<1u, MmaBlocksA>(v);
+
+                    // For each subvector of AccVecSize:
+                    // unpackLoHi16 + unpackLoHi32
+                    return vector_for_each<AccVecSize>(
+                        result,
+                        [](auto&& v, uint32_t idx)
+                        {
+                            return unpackLoHi32(unpackLoHi16(v));
+                        });
+                }
+                else if constexpr (MaxVW == 4u)
+                {
+                    // Interleave full vector
+                    return interleave<1u, DimPerThread>(forward<VecT>(v));
+                }
+                else
+                {
+                    static_assert(0, "Shouldn't get here");
+                    return forward<VecT>(v);
+                }
+            }
+            else if constexpr((bool)ROCWMMA_ARCH_GFX11)
+            {
+                using interleave_idx0 = interleave_idx<1u, MmaBlocksA, VecTraits::size()>;
+                using interleave_idx1 = interleave_idx<1u, 2u, AccVecSize>;
+
+                // First perform combined interleave on full vector
+                // interleave<1, MmaBlocksA, VecSize> + interleave<1, 2, AccVecSize>
+                auto result = interleave_combine<interleave_idx0, interleave_idx1>(forward<VecT>(v));
+
+                // For each subvector of AccVecSize:
+                // unpackLoHi16
+                return vector_for_each<AccVecSize>(
+                    result,
+                    [](auto&& v, uint32_t idx)
+                    {
+                        return unpackLoHi16(extractLo(v), extractHi(v));
+                    });
+            }
+            else if constexpr((bool)ROCWMMA_ARCH_GFX12)
             {
 
             }
             else
             {
-
+                static_assert(0, "Shouldn't get here");
+                return forward<VecT>(v);
             }
-            return interleave<1u, DimPerThread>(forward<VecT>(v));
+
         }
     };
 

@@ -27,9 +27,10 @@
 #ifndef ROCWMMA_UTILITY_TYPE_TRAITS_HPP
 #define ROCWMMA_UTILITY_TYPE_TRAITS_HPP
 
+#include "type_traits_impl.hpp"
+
 #if defined(__HIPCC_RTC__)
 
-#include "type_traits_impl.hpp"
 namespace rocwmma
 {
     // Use drop-in replacement
@@ -189,6 +190,15 @@ namespace rocwmma
 
     template <typename T>
     using enable_if_arithmetic_t = enable_if_t<is_arithmetic<T>{}>;
-}
+
+    // Variadic type traits
+    using detail::first_type;
+    using detail::first_type_t;
+
+    // Short-form integral constant
+    template <uint32_t N>
+    using I = integral_constant<int32_t, N>;
+
+} // namespace rocwmma
 
 #endif // ROCWMMA_UTILITY_TYPE_TRAITS_HPP

@@ -32,26 +32,78 @@
 
 namespace rocwmma
 {
+    //! Returns the element count, or size of the input vector
+    //! @param v Input vector
+    //! @tparam Input vector type
     template <typename VecT>
-    ROCWMMA_HOST_DEVICE constexpr inline auto vector_size(VecT const& v);
+    ROCWMMA_HOST_DEVICE constexpr static inline auto vector_size(VecT&& v);
 
+    //! Creates a vector with the given input values
+    //! @param ts Variadic list of inputs values
+    //! @tparam Types of incoming input values
     template <typename... Ts>
-    ROCWMMA_HOST_DEVICE constexpr decltype(auto) make_vector(Ts&&... ts);
+    ROCWMMA_HOST_DEVICE constexpr static inline auto make_vector(Ts&&... ts);
 
+    /*! \class vector_generator
+    *  \brief A flexible vector generator class that calls a functor to generate vector element.
+    * Functor signature: F(Number<Idx>, args...), where Idx is the vector element number. The functor
+    * may accept any number of arguments and generates a single value to be used as element Idx in the
+    * result.
+    *
+    * @tparam Data type of the vector
+    * @tparam The number of vector elements
+    * @tparam BoundCtrl - OOB thread indices write 0 to output element
+    */
     template <typename DataT, uint32_t VecSize>
     struct vector_generator : public detail::vector_generator<VecT, DataT, VecSize>
     {
     };
 
+    //! Returns a concatenated vector of (lhs, rhs)
+    //! @param lhs Input vector, lower elements
+    //! @param rhs Input vector, upper elements
+    //! @tparam Input vector type of lhs
+    //! @tparam Input vector type of rhs
     template <typename Lhs, typename Rhs>
-    ROCWMMA_HOST_DEVICE constexpr decltype(auto) vector_cat(Lhs&& lhs, Rhs&& rhs);
+    ROCWMMA_HOST_DEVICE constexpr static inline auto vector_cat(Lhs&& lhs, Rhs&& rhs);
 
+    //! Returns the reduction result of bit-wise and between all elements in the input vector
+    //! @param v Input vector
+    //! @tparam Input vector type
     template <typename VecT>
-    ROCWMMA_HOST_DEVICE constexpr static inline decltype(auto)
-        vector_reduce_and(VecT&& lhs) noexcept;
+    ROCWMMA_HOST_DEVICE constexpr static inline auto vector_reduce_and(VecT&& v) noexcept;
 
-    template <typename DataT>
-    ROCWMMA_HOST_DEVICE constexpr inline auto swap(HIP_vector_type<DataT, 2> const& v);
+    //! Swaps elements in vector size of 2
+    //! @param v Input vector
+    //! @tparam Input vector type
+    template <template<typename, uint32_t> class VecT,
+    typename DataT>
+    ROCWMMA_HOST_DEVICE constexpr static inline auto swap(VecT<DataT, 2> const& v);
+
+    //! Splits input vector into sub-vectors. Func is applied to each sub-vector, which are then
+    //! concatenated and returned as a result. Does not change input vector v.
+    //! @param v Input vector
+    //! @param func Functor with signature Func(VecT<DataT, SubVecSize>, Number<I> idx, args...)
+    //! @param args Arguments that are forwarded to the functor
+    //! @tparam Sub-vector size (defaults to 1)
+    //! @tparam Type of input vector
+    //! @tparam Type of functor
+    //! @tparam Type of forwarded arguments to functor
+    template<uint32_t SubVecSize = 1u, typename VecT, class Func, typename... ArgsT>
+    ROCWMMA_HOST_DEVICE constexpr static inline auto vector_for_each(VecT&& v, Func&& func, ArgsT&&... args);
+
+    //! Splits input vector into sub-vectors. Func is applied to each sub-vector in-place. Returns
+    //! a reference to modified input vector.
+    //! @param v Input vector
+    //! @param func Functor with signature Func(VecT<DataT, SubVecSize>, Number<I> idx, args...)
+    //! @param args Arguments that are forwarded to the functor
+    //! @tparam Sub-vector size (defaults to 1)
+    //! @tparam Type of input vector
+    //! @tparam Type of functor
+    //! @tparam Type of forwarded arguments to functor
+    template<uint32_t SubVecSize = 1u, typename VecT, class Func, typename... ArgsT>
+    ROCWMMA_HOST_DEVICE constexpr static inline decltype(auto) vector_mutate_for_each(VecT&& v, Func&& func,  ArgsT&&... args);
+
 } // namespace rocwmma
 
 #endif // ROCWMMA_UTILITY_VECTOR_HPP
