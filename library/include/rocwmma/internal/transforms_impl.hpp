@@ -132,7 +132,6 @@ namespace rocwmma
     template <typename DataT, uint32_t VecSize>
     ROCWMMA_DEVICE static inline auto unpackLoHi2(VecT<DataT, VecSize> const& v0, VecT<DataT, VecSize> const& v1)
     {
-        static_assert(VecSize % 2 == 0, "VecSize must be a multiple of 2");
         using PackUtil = PackUtil<DataT>;
 
         auto evens = PackUtil::paddedPack(v0);
