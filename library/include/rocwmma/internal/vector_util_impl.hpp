@@ -29,6 +29,7 @@
 
 #include "blend.hpp"
 #include "types.hpp"
+#include "utility/algorithm.hpp"
 #include "utility/vector.hpp"
 
 namespace rocwmma
