@@ -130,6 +130,12 @@ namespace rocwmma
                   uint32_t SplitK = 1> // # of splits
         struct RowOrthoInt;
 
+        template<typename MatrixLayout, typename Coord1d>
+        ROCWMMA_DEVICE constexpr static inline decltype(auto) cumulative_offset(Coord1d&& flatCoord);
+
+        template<typename MatrixLayout, typename Coord1d>
+        ROCWMMA_DEVICE constexpr static inline decltype(auto) incrementalOffset(Coord1d&& flatCoord);
+
     } // namespace MatrixLayout
 
     // Register layouts describe in-register layout and serve as transform states, or endpoints.
