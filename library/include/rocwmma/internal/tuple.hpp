@@ -218,17 +218,25 @@ namespace rocwmma
         constexpr static inline decltype(auto)
             inflate_coord_right_impl(Coord1d&& flatCoord, VecT&& dims, index_sequence<Indices...>)
         {
-            auto inflate = [](auto&& c, auto&& d, auto& div, bool last) {
-                auto result = (last ? (c / div) : (c / div % d));
-                div *= d;
-                return result;
+            auto inflate = [](auto&& c, auto&& d, auto& div, auto&& is_last) {
+
+                if constexpr ((bool)decay_t<decltype(is_last)>::value == true)
+                {
+                    div *= d;
+                    return c / div;
+                }
+                else
+                {
+                    div *= d;
+                    return c / div % d;
+                }
             };
 
             auto div = decay_t<Coord1d>{1};
             return make_vector(inflate(forward<Coord1d>(flatCoord),
                                        get<Indices>(forward<VecT>(dims)),
                                        forward<decltype(div)&>(div),
-                                       Indices == sizeof...(Indices) - 1)...);
+                                       Number<Indices == sizeof...(Indices) - 1>{})...);
         }
     }
 
@@ -247,10 +255,18 @@ namespace rocwmma
         constexpr static inline decltype(auto)
             inflate_coord_left_impl(Coord1d&& flatCoord, VecT&& dims, index_sequence<Indices...>)
         {
-            auto inflate = [](auto&& c, auto&& d, auto& div, bool last) {
-                auto result = (last ? (c / div) : (c / div % d));
-                div *= d;
-                return result;
+            auto inflate = [](auto&& c, auto&& d, auto& div, auto&& is_last) {
+
+                if constexpr ((bool)decay_t<decltype(is_last)>::value == true)
+                {
+                    div *= d;
+                    return c / div;
+                }
+                else
+                {
+                    div *= d;
+                    return c / div % d;
+                }
             };
 
             auto div = decay_t<Coord1d>{1};
@@ -258,7 +274,7 @@ namespace rocwmma
                 inflate(forward<Coord1d>(flatCoord),
                         get<VecTraits<decay_t<VecT>>::size() - 1 - Indices>(forward<VecT>(dims)),
                         forward<decltype(div)&>(div),
-                        Indices == sizeof...(Indices) - 1)...));
+                        Number<Indices == sizeof...(Indices) - 1>{})...));
         }
     }
 

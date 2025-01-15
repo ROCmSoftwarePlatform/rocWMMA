@@ -636,23 +636,23 @@ namespace rocwmma
             {
             };
 
-            ROCWMMA_DEVICE constexpr static inline auto strideCounts()
+            ROCWMMA_DEVICE constexpr static inline decltype(auto) strideCounts()
             {
                 return MatrixLayout::strideCounts();
             }
 
-            ROCWMMA_DEVICE constexpr static inline auto strides()
+            ROCWMMA_DEVICE constexpr static inline decltype(auto) strides()
             {
                 constexpr auto t = MatrixLayout::strides();
                 constexpr auto swap_strides = [](auto&&... args)
                 {
-                    return make_vector(swap(args)...);
+                    return make_vector(swap(forward<decay_t<decltype(args)>>(args))...);
                 };
 
                 return apply(swap_strides, t);
             }
 
-            ROCWMMA_DEVICE static inline auto baseOffset()
+            ROCWMMA_DEVICE static inline decltype(auto) baseOffset()
             {
                 return swap(MatrixLayout::baseOffset());
             }
