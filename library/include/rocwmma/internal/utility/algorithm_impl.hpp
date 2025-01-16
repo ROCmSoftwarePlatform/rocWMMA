@@ -31,7 +31,7 @@ namespace rocwmma
 {
     namespace detail
     {
-        // TODO: Separate file?
+
         template <typename T>
         ROCWMMA_HOST_DEVICE constexpr decltype(auto) max(T&& a, T&& b)
         {
