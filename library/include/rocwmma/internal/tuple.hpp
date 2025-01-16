@@ -267,7 +267,7 @@ namespace rocwmma
                 }
                 else
                 {
-                    auto result = c / div % d
+                    auto result = c / div % d;
                     div *= d;
                     return result;
                 }
