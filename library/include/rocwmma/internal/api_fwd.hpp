@@ -26,6 +26,10 @@
 #ifndef ROCWMMA_INTERNAL_API_FWD_HPP
 #define ROCWMMA_INTERNAL_API_FWD_HPP
 
+#if !defined(__align__)
+#define __align__(x) __attribute__((aligned(x)))
+#endif
+
 namespace rocwmma
 {
     // Fwd declare API tags
