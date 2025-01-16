@@ -222,13 +222,15 @@ namespace rocwmma
 
                 if constexpr ((bool)decay_t<decltype(is_last)>::value == true)
                 {
+                    auto result = c / div;
                     div *= d;
-                    return c / div;
+                    return result;
                 }
                 else
                 {
+                    auto result = c / div % d;
                     div *= d;
-                    return c / div % d;
+                    return result;
                 }
             };
 
@@ -259,13 +261,15 @@ namespace rocwmma
 
                 if constexpr ((bool)decay_t<decltype(is_last)>::value == true)
                 {
+                    auto result = c / div;
                     div *= d;
-                    return c / div;
+                    return result;
                 }
                 else
                 {
+                    auto result = c / div % d
                     div *= d;
-                    return c / div % d;
+                    return result;
                 }
             };
 
