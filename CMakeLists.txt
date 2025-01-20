@@ -76,14 +76,14 @@ include(ROCMInstallTargets)
 include(ROCMCheckTargetIds)
 include(ROCMClients)
 
+# Versioning via rocm-cmake
+set ( VERSION_STRING "1.7.0" )
+rocm_setup_version( VERSION ${VERSION_STRING} )
+
 set(MINIMUM_REQUIRED_ROCM_VERSION 6.3.0)
 if(NOT DEFINED ROCM_PLATFORM_VERSION OR ${ROCM_PLATFORM_VERSION} VERSION_LESS ${MINIMUM_REQUIRED_ROCM_VERSION})
   message(FATAL_ERROR "${PROJECT_NAME} ${VERSION_STRING} and later versions require at least ROCm version ${MINIMUM_REQUIRED_ROCM_VERSION} for support.\nThe detected ROCm version is ${ROCM_PLATFORM_VERSION}.")
 endif()
-
-# Versioning via rocm-cmake
-set ( VERSION_STRING "1.7.0" )
-rocm_setup_version( VERSION ${VERSION_STRING} )
 
 # configure a header file to pass the CMake version settings to the source
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/library/include/rocwmma/internal/rocwmma-version.hpp.in"
