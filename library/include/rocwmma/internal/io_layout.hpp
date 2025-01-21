@@ -30,6 +30,7 @@
 #include "constants.hpp"
 #include "layout/layout.hpp"
 #include "types.hpp"
+#include "utility/algorithm.hpp"
 
 namespace rocwmma
 {
