@@ -27,23 +27,13 @@
 #ifndef ROCWMMA_UTILITY_TYPE_TRAITS_IMPL_HPP
 #define ROCWMMA_UTILITY_TYPE_TRAITS_IMPL_HPP
 
+#include "algorithm.hpp"
+#include "functional.hpp"
+
 namespace rocwmma
 {
     namespace detail
     {
-        // TODO: Separate file?
-        template <typename T>
-        ROCWMMA_HOST_DEVICE constexpr const T& max(const T& a, const T& b)
-        {
-            return (a < b) ? b : a;
-        }
-
-        template <typename T>
-        ROCWMMA_HOST_DEVICE constexpr const T& min(const T& a, const T& b)
-        {
-            return (a < b) ? a : b;
-        }
-
         using ::size_t;
 
         template <class T, T Val>
@@ -103,69 +93,6 @@ namespace rocwmma
 
         template <bool B, class T, class F>
         using conditional_t = typename conditional<B, T, F>::type;
-
-        // Logical ops
-        template <typename... Bs>
-        struct logical_or;
-
-        template <>
-        struct logical_or<> : public false_type
-        {
-        };
-
-        template <typename T>
-        struct logical_or<T> : public T
-        {
-        };
-
-        template <typename B1, typename B2>
-        struct logical_or<B1, B2> : public conditional_t<B1::value, B1, B2>
-        {
-        };
-
-        template <typename B1, typename B2, typename B3, typename... Bs>
-        struct logical_or<B1, B2, B3, Bs...>
-            : public conditional_t<B1::value, B1, logical_or<B2, B3, Bs...>>
-        {
-        };
-
-        template <typename... Bs>
-        using logical_or_t = typename logical_or<Bs...>::type;
-
-        template <typename...>
-        struct logical_and;
-
-        template <>
-        struct logical_and<> : public true_type
-        {
-        };
-
-        template <typename B1>
-        struct logical_and<B1> : public B1
-        {
-        };
-
-        template <typename B1, typename B2>
-        struct logical_and<B1, B2> : public conditional_t<B1::value, B2, B1>
-        {
-        };
-
-        template <typename B1, typename B2, typename B3, typename... Bs>
-        struct logical_and<B1, B2, B3, Bs...>
-            : public conditional_t<B1::value, logical_and<B2, B3, Bs...>, B1>
-        {
-        };
-
-        template <typename... Bs>
-        using logical_and_t = typename logical_and<Bs...>::type;
-
-        template <typename B>
-        struct logical_not : public bool_constant<!bool(B::value)>
-        {
-        };
-
-        template <typename B>
-        using logical_not_t = typename logical_not<B>::type;
 
         // remove_reference
         template <typename T>
@@ -565,6 +492,18 @@ namespace rocwmma
 
         template <typename... Ts>
         using first_type_t = typename first_type<Ts...>::type;
+      
+        // is_standard_layout
+        template<typename T>
+        struct is_standard_layout
+        : public integral_constant<bool, __is_standard_layout(T)>
+        { };
+
+        // is_trivial
+        template<typename T>
+        struct is_trivial
+        : public integral_constant<bool, __is_trivial(T)>
+        { };
 
         // is_same
         template <typename... Ts>

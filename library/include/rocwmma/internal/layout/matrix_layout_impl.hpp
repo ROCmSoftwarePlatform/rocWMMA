@@ -29,6 +29,7 @@
 #include "layout.hpp"
 #include "layout_traits.hpp"
 #include "../utility/vector.hpp"
+#include "../utility/algorithm.hpp"
 
 namespace rocwmma
 {
