@@ -74,6 +74,13 @@ namespace rocwmma
             return v[Idx];
         }
 
+        // Wrapper for Number<I>
+        template<typename Idx, typename VecT>
+        ROCWMMA_HOST_DEVICE constexpr inline decltype(auto) get(VecT&& v)
+        {
+            return get<Idx::value>(forward<VecT>(v));
+        }
+
     } // namespace detail
 
 } // namespace rocwmma

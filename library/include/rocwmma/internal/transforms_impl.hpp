@@ -109,105 +109,141 @@ namespace rocwmma
     }
 
     template <typename DataT, uint32_t VecSize>
-    ROCWMMA_DEVICE static inline auto unpackLoHi1(VecT<DataT, VecSize> const& v)
+    ROCWMMA_DEVICE static inline auto unpackLoHi1(VecT<DataT, VecSize> const& v0, VecT<DataT, VecSize> const& v1)
     {
-        static_assert(VecSize % 2 == 0, "VecSize must be a multiple of 2");
         using PackUtil = PackUtil<DataT>;
 
-        auto evens = PackUtil::paddedPack(extractEven(v));
-        auto odds  = PackUtil::paddedPack(extractOdd(v));
+        auto evens = PackUtil::paddedPack(v0);
+        auto odds  = PackUtil::paddedPack(v1);
         auto lo    = Blend::Zip1::exec(evens, Dpp::RotateR16<1>::exec(odds));
         auto hi    = Blend::Zip1::exec(Dpp::RotateR16<15>::exec(evens), odds);
 
-        return concat(PackUtil::template paddedUnpack<VecSize / 2u>(lo),
-                      PackUtil::template paddedUnpack<VecSize / 2u>(hi));
+        return concat(PackUtil::template paddedUnpack<VecSize>(lo),
+                      PackUtil::template paddedUnpack<VecSize>(hi));
+    }
+
+    template <typename DataT, uint32_t VecSize>
+    ROCWMMA_DEVICE static inline auto unpackLoHi1(VecT<DataT, VecSize> const& v)
+    {
+        static_assert(VecSize % 2 == 0, "VecSize must be a multiple of 2");
+        return unpackLoHi1(extractEven(v), extractOdd(v));
+    }
+
+    template <typename DataT, uint32_t VecSize>
+    ROCWMMA_DEVICE static inline auto unpackLoHi2(VecT<DataT, VecSize> const& v0, VecT<DataT, VecSize> const& v1)
+    {
+        using PackUtil = PackUtil<DataT>;
+
+        auto evens = PackUtil::paddedPack(v0);
+        auto odds  = PackUtil::paddedPack(v1);
+        auto lo    = Blend::Zip2::exec(evens, Dpp::RotateR16<2>::exec(odds));
+        auto hi    = Blend::Zip2::exec(Dpp::RotateR16<14>::exec(evens), odds);
+
+        return concat(PackUtil::template paddedUnpack<VecSize>(lo),
+                      PackUtil::template paddedUnpack<VecSize>(hi));
     }
 
     template <typename DataT, uint32_t VecSize>
     ROCWMMA_DEVICE static inline auto unpackLoHi2(VecT<DataT, VecSize> const& v)
     {
         static_assert(VecSize % 2 == 0, "VecSize must be a multiple of 2");
+        return unpackLoHi2(extractEven(v), extractOdd(v));
+    }
+
+    template <typename DataT, uint32_t VecSize>
+    ROCWMMA_DEVICE static inline auto unpackLoHi4(VecT<DataT, VecSize> const& v0, VecT<DataT, VecSize> const& v1)
+    {
         using PackUtil = PackUtil<DataT>;
 
-        auto evens = PackUtil::paddedPack(extractEven(v));
-        auto odds  = PackUtil::paddedPack(extractOdd(v));
-        auto lo    = Blend::Zip2::exec(evens, Dpp::RotateR16<2>::exec(odds));
-        auto hi    = Blend::Zip2::exec(Dpp::RotateR16<14>::exec(evens), odds);
+        auto evens = PackUtil::paddedPack(v0);
+        auto odds  = PackUtil::paddedPack(v1);
+        auto lo    = Dpp::template RotateR16<4, 0xF, 0xA>::exec(odds, evens);
+        auto hi    = Dpp::template RotateR16<12, 0xF, 0x5>::exec(evens, odds);
 
-        return concat(PackUtil::template paddedUnpack<VecSize / 2u>(lo),
-                      PackUtil::template paddedUnpack<VecSize / 2u>(hi));
+        return concat(PackUtil::template paddedUnpack<VecSize>(lo),
+                      PackUtil::template paddedUnpack<VecSize>(hi));
     }
 
     template <typename DataT, uint32_t VecSize>
     ROCWMMA_DEVICE static inline auto unpackLoHi4(VecT<DataT, VecSize> const& v)
     {
         static_assert(VecSize % 2 == 0, "VecSize must be a multiple of 2");
+        return unpackLoHi4(extractEven(v), extractOdd(v));
+    }
+
+    template <typename DataT, uint32_t VecSize>
+    ROCWMMA_DEVICE static inline auto unpackLoHi8(VecT<DataT, VecSize> const& v0, VecT<DataT, VecSize> const& v1)
+    {
         using PackUtil = PackUtil<DataT>;
 
-        auto evens = PackUtil::paddedPack(extractEven(v));
-        auto odds  = PackUtil::paddedPack(extractOdd(v));
-        auto lo    = Dpp::template RotateR16<4, 0xF, 0xA>::exec(odds, evens);
-        auto hi    = Dpp::template RotateR16<12, 0xF, 0x5>::exec(evens, odds);
+        auto evens = PackUtil::paddedPack(v0);
+        auto odds  = PackUtil::paddedPack(v1);
+        auto lo    = Dpp::template RotateR16<8, 0xF, 0xC>::exec(odds, evens);
+        auto hi    = Dpp::template RotateR16<8, 0xF, 0x3>::exec(evens, odds);
 
-        return concat(PackUtil::template paddedUnpack<VecSize / 2u>(lo),
-                      PackUtil::template paddedUnpack<VecSize / 2u>(hi));
+        return concat(PackUtil::template paddedUnpack<VecSize>(lo),
+                      PackUtil::template paddedUnpack<VecSize>(hi));
     }
 
     template <typename DataT, uint32_t VecSize>
     ROCWMMA_DEVICE static inline auto unpackLoHi8(VecT<DataT, VecSize> const& v)
     {
         static_assert(VecSize % 2 == 0, "VecSize must be a multiple of 2");
+        return unpackLoHi8(extractEven(v), extractOdd(v));
+    }
+
+    template <typename DataT, uint32_t VecSize>
+    ROCWMMA_DEVICE static inline auto unpackLoHi16(VecT<DataT, VecSize> const& v0, VecT<DataT, VecSize> const& v1)
+    {
         using PackUtil = PackUtil<DataT>;
 
-        auto evens = PackUtil::paddedPack(extractEven(v));
-        auto odds  = PackUtil::paddedPack(extractOdd(v));
-        auto lo    = Dpp::template RotateR16<8, 0xF, 0xC>::exec(odds, evens);
-        auto hi    = Dpp::template RotateR16<8, 0xF, 0x3>::exec(evens, odds);
+        auto lo     = PackUtil::paddedPack(v0);
+        auto hi     = PackUtil::paddedPack(v1);
+        auto rot_lo = Swizzle::RotateR32<16>::exec(lo);
+        auto rot_hi = Swizzle::RotateR32<16>::exec(hi);
+        lo          = Dpp::Zip16::exec(lo, rot_hi);
+        hi          = Dpp::Zip16::exec(rot_lo, hi);
 
-        return concat(PackUtil::template paddedUnpack<VecSize / 2u>(lo),
-                      PackUtil::template paddedUnpack<VecSize / 2u>(hi));
+        return concat(PackUtil::template paddedUnpack<VecSize>(lo),
+                      PackUtil::template paddedUnpack<VecSize>(hi));
     }
 
     template <typename DataT, uint32_t VecSize>
     ROCWMMA_DEVICE static inline auto unpackLoHi16(VecT<DataT, VecSize> const& v)
     {
         static_assert(VecSize % 2 == 0, "VecSize must be a multiple of 2");
-        using PackUtil = PackUtil<DataT>;
-
-        auto lo     = PackUtil::paddedPack(extractEven(v));
-        auto hi     = PackUtil::paddedPack(extractOdd(v));
-        auto rot_lo = Swizzle::RotateR32<16>::exec(lo);
-        auto rot_hi = Swizzle::RotateR32<16>::exec(hi);
-        lo          = Dpp::Zip16::exec(lo, rot_hi);
-        hi          = Dpp::Zip16::exec(rot_lo, hi);
-
-        return concat(PackUtil::template paddedUnpack<VecSize / 2u>(lo),
-                      PackUtil::template paddedUnpack<VecSize / 2u>(hi));
+        return unpackLoHi16(extractEven(v), extractOdd(v));
     }
 
     template <typename DataT, uint32_t VecSize>
-    ROCWMMA_DEVICE static inline auto unpackLoHi32(VecT<DataT, VecSize> const& v)
+    ROCWMMA_DEVICE static inline auto unpackLoHi32(VecT<DataT, VecSize> const& v0, VecT<DataT, VecSize> const& v1)
     {
         if constexpr(ROCWMMA_WAVE64_MODE)
         {
-            static_assert(VecSize % 2 == 0, "VecSize must be a multiple of 2");
             using PackUtil = PackUtil<DataT>;
 
-            auto lo = PackUtil::paddedPack(extractEven(v));
-            auto hi = PackUtil::paddedPack(extractOdd(v));
+            auto lo = PackUtil::paddedPack(v0);
+            auto hi = PackUtil::paddedPack(v1);
 
             auto rot_lo = Permute::RotateWaveR<32>::exec(lo);
             auto rot_hi = Permute::RotateWaveR<32>::exec(hi);
             lo          = Dpp::Zip32::exec(lo, rot_hi);
             hi          = Dpp::Zip32::exec(rot_lo, hi);
 
-            return concat(PackUtil::template paddedUnpack<VecSize / 2u>(lo),
-                          PackUtil::template paddedUnpack<VecSize / 2u>(hi));
+            return concat(PackUtil::template paddedUnpack<VecSize>(lo),
+                          PackUtil::template paddedUnpack<VecSize>(hi));
         }
         else
         {
-            return v;
+            return concat(v0, v1);
         }
+    }
+
+    template <typename DataT, uint32_t VecSize>
+    ROCWMMA_DEVICE static inline auto unpackLoHi32(VecT<DataT, VecSize> const& v)
+    {
+        static_assert(VecSize % 2 == 0, "VecSize must be a multiple of 2");
+        return unpackLoHi32(extractEven(v), extractOdd(v));
     }
 
     namespace TransformsImpl

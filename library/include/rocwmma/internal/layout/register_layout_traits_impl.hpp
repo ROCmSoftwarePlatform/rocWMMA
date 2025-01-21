@@ -507,8 +507,8 @@ namespace rocwmma
             // Register layouts must be valid to be orthogonal
             // clang-format off
             using RegisterLayout::Format;
-            constexpr bool TestOpposingFormat
-                = (
+            constexpr bool TestOpposingFormat =
+                (
                     // Non-interleaved formats
                     // SOA <-> AOS
                        (traits_lhs::Format == Format::SOA && traits_rhs::Format == Format::AOS)

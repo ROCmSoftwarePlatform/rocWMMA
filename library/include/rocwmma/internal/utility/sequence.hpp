@@ -32,6 +32,7 @@ namespace rocwmma
 {
     using detail::index_sequence;
     using detail::make_index_sequence;
+
 } // namespace rocwmma
 
 #endif // ROCWMMA_UTILITY_SEQUENCE_HPP
