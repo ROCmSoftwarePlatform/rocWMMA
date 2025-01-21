@@ -37,6 +37,94 @@ namespace rocwmma
     // Implementations for the MatrixLayout classes
     namespace MatrixLayout
     {
+        // Representing an embedded compile time value in argument passing
+        template<uint32_t Number>
+        using I = integral_constant<uint32_t, Number>;
+
+        // All of the matrix layouts are required to provide interface functions to:
+        // - strideCounts()
+        // - strides()
+        template<typename MatrixLayoutT>
+        struct MatrixLayoutBase
+        {
+            private:
+
+            // Incremental iteration offset
+            template<typename Coord1d, size_t... Indices>
+            ROCWMMA_DEVICE constexpr static inline auto incrementalOffset_impl(Coord1d&& flatCoord, index_sequence<Indices...>)
+            {
+                // This will get invoked for each MatrixLayout stride component to determine
+                // iterative stride offset contributions
+                auto component_offset = [](auto&& flatCoord, auto& flatStride, auto&& component, auto&& stride)
+                {
+                    constexpr auto comp = decay_t<decltype(component)>::value;
+
+                    // Ensure component is a contributor
+                    if constexpr (comp > 1)
+                    {
+                        // flatStride it how many iterations between a contribution of given component.
+                        // The stride of the LAST iteration of any component will reset the offset back
+                        // to the component origin.
+                        // Any other component stride will advance the iterative offset.
+                        auto next = flatCoord + 1;
+                        auto nextOffset = next % (comp * flatStride) == 0
+                            ? (-(comp - 1) * stride) // reset stride
+                            : (next % flatStride == 0
+                                ? stride // advance stride
+                                : decay_t<decltype(stride)>{0}); // NOP
+
+                        // scale the flatStride by current component
+                        flatStride *= comp;
+                        return nextOffset;
+                    }
+                    else
+                    {
+                        return decay_t<decltype(stride)>{0};
+                    }
+                };
+
+                // Initialize the MatrixLayout strides and stride space
+                constexpr auto strideSpace = MatrixLayoutT::strideCounts();
+                constexpr auto strides = MatrixLayoutT::strides();
+
+                // Flat stride begins with neighbor elements
+                auto flatStride = decay_t<Coord1d>{1};
+
+                // Accumulate the matrix offset contributions of each component to the next iteration.
+                // Note: Build strides in reverse order due to layouts are built in reverse order
+                return (component_offset(forward<Coord1d>(flatCoord),
+                                        forward<decltype(flatStride)&>(flatStride),
+                                        I<get<sizeof...(Indices) - 1 - Indices>(strideSpace)>{},
+                                        get<sizeof...(Indices) - 1 - Indices>(strides))
+                        + ...);
+            }
+
+            public:
+
+            template<typename Coord1d>
+            ROCWMMA_DEVICE constexpr static inline decltype(auto) cumulativeOffset(Coord1d&& flatCoord)
+            {
+                // Get the iterative stride coord in the stride space.
+                // Note: Using the reverse inflate because layouts generate strideSpace in reverse order.
+                constexpr auto strideSpace = MatrixLayoutT::strideCounts();
+                auto strideCoord = inflate_coord_left(forward<Coord1d>(flatCoord), strideSpace);
+
+                // Calculate the final matrix offset by applying the stride coord on the physical strides
+                constexpr auto strides = MatrixLayoutT::strides();
+                return to_matrix_space(strideCoord, strides);
+            }
+
+            // Incremental iteration offset
+            template<typename Coord1d>
+            ROCWMMA_DEVICE constexpr static inline decltype(auto) incrementalOffset(Coord1d&& flatCoord)
+            {
+                using VecT = decay_t<decltype(MatrixLayoutT::strideCounts())>;
+
+                return incrementalOffset_impl(forward<Coord1d>(flatCoord),
+                                              make_index_sequence<VecTraits<VecT>::size()>{});
+            }
+        };
+
         /* Pattern that maps threads contiguously to matrix columns and assumes
         * that VW will be mapped orthogonally to the column.
         * This pattern considers VW up to MaxVW, BlockDim <= 64 and BlockDim > 64.
@@ -96,7 +184,7 @@ namespace rocwmma
                   typename DataT,
                   uint32_t VectorWidth,
                   uint32_t MaxVectorWidth>
-        struct ColOrthoVW
+        struct ColOrthoVW : public MatrixLayoutBase<ColOrthoVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>>
         {
             struct Traits
             {
@@ -140,12 +228,6 @@ namespace rocwmma
                               "MaxVectorWidth must larger than VWStride_Y");
                 static_assert(MaxVectorWidth % VWStride_Y == 0,
                               "MaxVectorWidth must be a multiple of VWStride_Y");
-
-                // Orthogonal layout, coordinates are reversed
-                // using OrthoLayout
-                //     = RowOrthoVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>;
-
-                // using MatrixCoordT = Coord2d;
             };
 
             ROCWMMA_DEVICE constexpr static inline auto strideCounts()
@@ -177,91 +259,6 @@ namespace rocwmma
                                             % Traits::BlockKStride_Y);
                 }
             }
-
-            ROCWMMA_DEVICE static inline auto incrementalOffset(uint32_t iteration)
-            {
-                // Reference:
-                // VWOffsetY = VWStride_Y - ((i+1) % VWSegs ? 0u : VWStride_Y * VWSegs);
-                // Every set of VWSegs, we must iteratively reset the VWOffset back to 0, hence
-                // the subtraction.
-                // Optimization 1: if VWSegs == 1, there are no contributions from this stride
-                // Optimization 2: if BlockKSegs == 1 and BlockDimSegs == 1, there are no "reset"
-                // contributions from this stride
-                int32_t VWOffsetY = 0;
-                if constexpr((int32_t)Traits::VWSegs > 1)
-                {
-                    // Offset contribution
-                    VWOffsetY = (int32_t)Traits::VWStride_Y;
-                    if constexpr(((int32_t)Traits::BlockKSegs > 1)
-                                 || ((int32_t)Traits::BlockDimSegs > 1))
-                    {
-                        // "Reset" cycle
-                        VWOffsetY -= (((int32_t)iteration + 1) % (int32_t)Traits::VWSegs
-                                          ? 0
-                                          : (int32_t)Traits::VWStride_Y * (int32_t)Traits::VWSegs);
-                    }
-                }
-
-                // Reference:
-                // BlockKOffsetY = ((i+1) % VWSegs ? 0u : BlockKStride_Y) -
-                // ((i+1) % (VWSegs * BlockKSegs) ? 0u : BlockKSegs * BlockKStride_Y);
-                // Every set of BlockKSegs, we must iteratively reset the BlockKOffsetY back to 0, hence
-                // the subtraction.
-                // Optimization 1: if BlockKSegs == 1, there are no contributions from this stride
-                // Optimization 2: if BlockDimSegs == 1, there are no "reset" contributions from this stride
-                int32_t BlockKOffsetY = 0;
-                if constexpr((int32_t)Traits::BlockKSegs > 1)
-                {
-                    // Offset contribution
-                    BlockKOffsetY = (((int32_t)iteration + 1) % (int32_t)Traits::VWSegs
-                                         ? 0
-                                         : (int32_t)Traits::BlockKStride_Y);
-
-                    if constexpr((int32_t)Traits::BlockDimSegs > 1)
-                    {
-                        // "Reset" cycle
-                        BlockKOffsetY
-                            -= (((int32_t)iteration + 1)
-                                        % ((int32_t)Traits::VWSegs * (int32_t)Traits::BlockKSegs)
-                                    ? 0
-                                    : (int32_t)Traits::BlockKSegs
-                                          * (int32_t)Traits::BlockKStride_Y);
-                    }
-                }
-
-                // Reference:
-                // BlockDimOffsetX = ((i+1) % VWSegs * BlockKSegs) ? 0u : BlockDimStride_X);
-                // Optimization 1: if BlockKSegs == 1, there are no contributions from this stride
-                // Optimization 2: There are no "reset" contributions from this stride because it is the last dim
-                int32_t BlockDimOffsetX = 0;
-                if constexpr((int32_t)Traits::BlockDimSegs > 1)
-                {
-                    // Offset contribution
-                    BlockDimOffsetX
-                        = (((int32_t)iteration + 1)
-                                   % ((int32_t)Traits::VWSegs * (int32_t)Traits::BlockKSegs)
-                               ? 0
-                               : (int32_t)Traits::BlockDimStride_X);
-                }
-
-                return make_coord2d(BlockDimOffsetX, VWOffsetY + BlockKOffsetY);
-            }
-
-            ROCWMMA_DEVICE static inline auto cumulativeOffset(uint32_t iteration)
-            {
-                int32_t cumVWOffsetY
-                    = (int32_t)Traits::VWStride_Y * ((int32_t)iteration % (int32_t)Traits::VWSegs);
-                int32_t cumBlockKOffsetY = ((int32_t)iteration / (int32_t)Traits::VWSegs)
-                                           % (int32_t)Traits::BlockKSegs
-                                           * (int32_t)Traits::BlockKStride_Y;
-                int32_t cumBlockDimOffsetX
-                    = ((int32_t)iteration / ((int32_t)Traits::VWSegs * (int32_t)Traits::BlockKSegs))
-                      * (int32_t)Traits::BlockDimStride_X;
-
-                return make_coord2d(cumBlockDimOffsetX, cumVWOffsetY + cumBlockKOffsetY);
-            }
-
-            ROCWMMA_DEVICE static inline auto debug() {}
         };
 
         /* Pattern that maps threads to matrix columns and assumes
@@ -360,7 +357,7 @@ namespace rocwmma
                   typename DataT,
                   uint32_t VectorWidth,
                   uint32_t MaxVectorWidth>
-        struct ColInlineVW
+        struct ColInlineVW : public MatrixLayoutBase<ColInlineVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>>
         {
 
             struct Traits
@@ -406,12 +403,6 @@ namespace rocwmma
                               "MaxVectorWidth must larger than VWStride_X");
                 static_assert(MaxVectorWidth % VWStride_X == 0,
                               "MaxVectorWidth must be a multiple of VWStride_X");
-
-                // Orthogonal layout, coordinates are reversed
-                //using OrthoLayout
-                //    = RowInlineVW<BlockDim, BlockK, DataT, VectorWidth, MaxVectorWidth>;
-
-                //using MatrixCoordT = Coord2d;
             };
 
             ROCWMMA_DEVICE constexpr static inline auto strideCounts()
@@ -444,92 +435,6 @@ namespace rocwmma
                                             % Traits::BlockKStride_Y);
                 }
             }
-
-            // Incremental iteration offset
-            ROCWMMA_DEVICE static inline auto incrementalOffset(uint32_t iteration)
-            {
-                // Reference:
-                // VWOffsetX = VWStride_X - ((i+1) % VWSegs ? 0u : VWStride_X * VWSegs);
-                // Every set of VWSegs, we must iteratively reset the VWOffset back to 0, hence
-                // the subtraction.
-                // Optimization 1: if VWSegs == 1, there are no contributions from this stride
-                // Optimization 2: if BlockKSegs == 1 and BlockDimSegs == 1, there are no "reset"
-                // contributions from this stride
-                int32_t VWOffsetX = 0;
-                if constexpr((int32_t)Traits::VWSegs > 1)
-                {
-                    // Offset contribution
-                    VWOffsetX = (int32_t)Traits::VWStride_X;
-                    if constexpr(((int32_t)Traits::BlockKSegs > 1)
-                                 || ((int32_t)Traits::BlockDimSegs > 1))
-                    {
-                        // "Reset" cycle
-                        VWOffsetX -= (((int32_t)iteration + 1) % (int32_t)Traits::VWSegs
-                                          ? 0
-                                          : (int32_t)Traits::VWStride_X * (int32_t)Traits::VWSegs);
-                    }
-                }
-
-                // Reference:
-                // BlockKOffsetY = ((i+1) % VWSegs ? 0u : BlockKStride_Y) -
-                // ((i+1) % (VWSegs * BlockKSegs) ? 0u : BlockKSegs * BlockKStride_Y);
-                // Every set of BlockKSegs, we must iteratively reset the BlockKOffsetY back to 0, hence
-                // the subtraction.
-                // Optimization 1: if BlockKSegs == 1, there are no contributions from this stride
-                // Optimization 2: if BlockDimSegs == 1, there are no "reset" contributions from this stride
-                int32_t BlockKOffsetY = 0;
-                if constexpr((int32_t)Traits::BlockKSegs > 1)
-                {
-                    // Offset contribution
-                    BlockKOffsetY = (((int32_t)iteration + 1) % (int32_t)Traits::VWSegs
-                                         ? 0
-                                         : (int32_t)Traits::BlockKStride_Y);
-                    if constexpr((int32_t)Traits::BlockDimSegs > 1)
-                    {
-                        // "Reset" cycle
-                        BlockKOffsetY
-                            -= (((int32_t)iteration + 1)
-                                        % ((int32_t)Traits::VWSegs * (int32_t)Traits::BlockKSegs)
-                                    ? 0
-                                    : (int32_t)Traits::BlockKSegs
-                                          * (int32_t)Traits::BlockKStride_Y);
-                    }
-                }
-
-                // Reference:
-                // BlockDimOffsetX = ((i+1) % VWSegs * BlockKSegs) ? 0u : BlockDimStride_X);
-                // Optimization 1: if BlockKSegs == 1, there are no contributions from this stride
-                // Optimization 2: There are no "reset" contributions from this stride because it is the last dim
-                int32_t BlockDimOffsetX = 0;
-                if constexpr((int32_t)Traits::BlockDimSegs > 1)
-                {
-                    // Offset contribution
-                    BlockDimOffsetX
-                        = (((int32_t)iteration + 1)
-                                   % ((int32_t)Traits::VWSegs * (int32_t)Traits::BlockKSegs)
-                               ? 0
-                               : (int32_t)Traits::BlockDimStride_X);
-                }
-
-                return make_coord2d(VWOffsetX + BlockDimOffsetX, BlockKOffsetY);
-            }
-
-            // Cumulative iteration offset
-            ROCWMMA_DEVICE static inline auto cumulativeOffset(uint32_t iteration)
-            {
-                int32_t cumVWOffsetX
-                    = (int32_t)Traits::VWStride_X * ((int32_t)iteration % (int32_t)Traits::VWSegs);
-                int32_t cumBlockKOffsetY = ((int32_t)iteration / (int32_t)Traits::VWSegs)
-                                           % (int32_t)Traits::BlockKSegs
-                                           * (int32_t)Traits::BlockKStride_Y;
-                int32_t cumBlockDimOffsetX
-                    = ((int32_t)iteration / ((int32_t)Traits::VWSegs * (int32_t)Traits::BlockKSegs))
-                      * (int32_t)Traits::BlockKStride_X;
-
-                return make_coord2d(cumVWOffsetX + cumBlockDimOffsetX, cumBlockKOffsetY);
-            }
-
-            ROCWMMA_DEVICE static inline auto debug() {}
         };
 
         template <uint32_t BlockDim,
@@ -537,7 +442,7 @@ namespace rocwmma
                   typename DataT,
                   uint32_t MfmaDim, // MFMA instruction size
                   uint32_t SplitK /* = 1*/> // # of splits
-        struct ColInlineInt
+        struct ColInlineInt : public MatrixLayoutBase<ColInlineInt<BlockDim, BlockK, DataT, MfmaDim, SplitK>>
         {
             struct Traits
             {
@@ -568,11 +473,6 @@ namespace rocwmma
                 static constexpr uint32_t BlockKSegs = KPerThread / BlockKStride_Y;
                 static constexpr uint32_t VWSegs     = DimPerThread / VWStride_X;
 
-                // // Check VectorWidth validity
-                // static_assert((uint32_t)Traits::DimPerThread >= VectorWidth, "Invalid VectorWidth");
-                // static_assert((uint32_t)Traits::DimPerThread % VectorWidth == 0,
-                //               "DimPerThread not a multiple of VectorWidth");
-
                 // Check KPerThread validity
                 static_assert(BlockK >= KPerThread, "Invalid KPerThread");
                 static_assert(BlockK % KPerThread == 0, "BlockK is not a multiple of KPerThread");
@@ -584,11 +484,6 @@ namespace rocwmma
                 // Check MfmaDim validity
                 static_assert(BlockDim >= MfmaDim, "BlockDim must be larger than MfmaDim");
                 static_assert(BlockDim % MfmaDim == 0, "BlockDim must be a multiple of MfmaDim");
-
-                // Orthogonal layout, coordinates are reversed
-                //using OrthoLayout = RowInlineInt<BlockDim, BlockK, DataT, MfmaDim, SplitK>;
-
-                //using MatrixCoordT = Coord2d;
             };
 
             ROCWMMA_DEVICE constexpr static inline auto strideCounts()
@@ -608,116 +503,6 @@ namespace rocwmma
                 return make_coord2d((threadIdx.x * Traits::DimPerThread) % BlockDim,
                                     (threadIdx.x / MfmaDim * Traits::KPerThread) % BlockK);
             }
-
-            // Incremental iteration offset
-            ROCWMMA_DEVICE static inline auto incrementalOffset(uint32_t iteration)
-            {
-                // Reference:
-                // VWOffsetX = VWStride_X - ((i+1) % VWSegs ? 0u : VWStride_X * VWSegs);
-                // Every set of VWSegs, we must iteratively reset the VWOffset back to 0, hence
-                // the subtraction.
-                // Optimization 1: if VWSegs == 1, there are no contributions from this stride
-                // Optimization 2: if BlockKSegs == 1 and SplitKSegs == 1, there are no "reset"
-                // contributions from this stride
-                int32_t VWOffsetX = 0;
-                if constexpr((int32_t)Traits::VWSegs > 1)
-                {
-                    // Offset contribution
-                    VWOffsetX = (int32_t)Traits::VWStride_X;
-                    if constexpr(((int32_t)Traits::BlockKSegs > 1)
-                                 || ((int32_t)Traits::SplitKSegs > 1))
-                    {
-                        // "Reset" cycle
-                        VWOffsetX -= (((int32_t)iteration + 1) % (int32_t)Traits::VWSegs
-                                          ? 0
-                                          : (int32_t)Traits::VWStride_X * (int32_t)Traits::VWSegs);
-                    }
-                }
-
-                // Reference:
-                // BlockKOffsetY = ((i+1) % VWSegs ? 0u : BlockKStride_Y) -
-                // ((i+1) % (VWSegs * BlockKSegs) ? 0u : BlockKSegs * BlockKStride_Y);
-                // Every set of BlockKSegs, we must iteratively reset the BlockKOffsetY back to 0, hence
-                // the subtraction.
-                // Optimization 1: if BlockKSegs == 1, there are no contributions from this stride
-                // Optimization 2: if SplitKSegs == 1, there are no "reset" contributions from this stride
-                int32_t BlockKOffsetY = 0;
-                if constexpr((int32_t)Traits::BlockKSegs > 1)
-                {
-                    // Offset contribution
-                    BlockKOffsetY = (((int32_t)iteration + 1) % (int32_t)Traits::VWSegs
-                                         ? 0
-                                         : (int32_t)Traits::BlockKStride_Y);
-                    if constexpr((int32_t)Traits::SplitKSegs > 1)
-                    {
-                        // "Reset" cycle
-                        BlockKOffsetY
-                            -= (((int32_t)iteration + 1)
-                                        % ((int32_t)Traits::VWSegs * (int32_t)Traits::BlockKSegs)
-                                    ? 0
-                                    : (int32_t)Traits::BlockKSegs
-                                          * (int32_t)Traits::BlockKStride_Y);
-                    }
-                }
-
-                // Reference:
-                // BlockDimOffsetX = ((i+1) % VWSegs * BlockKSegs) ? 0u : SplitKStride_X);
-                // Optimization 1: if BlockKSegs == 1, there are no contributions from this stride
-                // Optimization 2: There are no "reset" contributions from this stride because it is the last dim
-                int32_t BlockDimOffsetX = 0;
-                if constexpr((int32_t)Traits::SplitKSegs > 1)
-                {
-                    // Offset contribution
-                    BlockDimOffsetX
-                        = (((int32_t)iteration + 1)
-                                   % ((int32_t)Traits::VWSegs * (int32_t)Traits::BlockKSegs)
-                               ? 0
-                               : (int32_t)Traits::SplitKStride_X);
-                }
-
-                return make_coord2d(VWOffsetX + BlockDimOffsetX, BlockKOffsetY);
-            }
-
-            // Cumulative iteration offset
-            ROCWMMA_DEVICE static inline auto cumulativeOffset(uint32_t iteration)
-            {
-                int32_t cumVWOffsetX
-                    = (int32_t)Traits::VWStride_X * ((int32_t)iteration % (int32_t)Traits::VWSegs);
-                int32_t cumBlockKOffsetY = ((int32_t)iteration / (int32_t)Traits::VWSegs)
-                                           % (int32_t)Traits::BlockKSegs
-                                           * (int32_t)Traits::BlockKStride_Y;
-                int32_t cumBlockDimOffsetX
-                    = ((int32_t)iteration / ((int32_t)Traits::VWSegs * (int32_t)Traits::BlockKSegs))
-                      * (int32_t)Traits::SplitKStride_X;
-
-                return make_coord2d(cumVWOffsetX + cumBlockDimOffsetX, cumBlockKOffsetY);
-            }
-            ROCWMMA_DEVICE static inline auto debug()
-            {
-                // if(threadIdx.x == 0 && threadIdx.y == 0)
-                // {
-                //     printf("SplitKSegs: %d, BlockKSegs: %d, VWSegs: %d\n",
-                //            (uint32_t)Traits::SplitKSegs,
-                //            (uint32_t)Traits::BlockKSegs,
-                //            (uint32_t)Traits::VWSegs);
-
-                //     printf("SplitKStride_X: %d, SplitKStride_Y: %d\nBlockKStride_X: %d, "
-                //            "BlockKStride_Y: %d\nVWStride_X: %d, VWStride_Y: %d\n",
-                //            (uint32_t)Traits::SplitKStride_X,
-                //            (uint32_t)Traits::SplitKStride_Y,
-                //            (uint32_t)Traits::BlockKStride_X,
-                //            (uint32_t)Traits::BlockKStride_Y,
-                //            (uint32_t)Traits::VWStride_X,
-                //            (uint32_t)Traits::VWStride_Y);
-                // }
-                // if(threadIdx.x <= 63 && threadIdx.y == 0)
-                // {
-                //     printf("Tid: (%d) Base offset(X, Y): = (%d, %d)\n",
-                //            threadIdx.x,
-                //            get<0>(baseOffset()),
-                //            get<1>(baseOffset()));
-                // }
-            }
         };
 
         template <uint32_t BlockDim,
@@ -725,7 +510,7 @@ namespace rocwmma
                   typename DataT,
                   uint32_t MfmaDim, // MFMA instruction size
                   uint32_t SplitK /*= 1*/> // # of splits
-        struct ColOrthoInt
+        struct ColOrthoInt : public MatrixLayoutBase<ColOrthoInt<BlockDim, BlockK, DataT, MfmaDim, SplitK>>
         {
             struct Traits
             {
@@ -760,11 +545,6 @@ namespace rocwmma
                 static_assert(BlockK >= KPerThread, "Invalid KPerThread");
                 static_assert(BlockK % KPerThread == 0, "BlockK is not a multiple of KPerThread");
 
-                // // Check VectorWidth validity
-                // static_assert((uint32_t)Traits::KPerThread >= VectorWidth, "Invalid VectorWidth");
-                // static_assert((uint32_t)Traits::KPerThread % VectorWidth == 0,
-                //               "KPerThread not a multiple of VectorWidth");
-
                 // Check SplitK validity
                 static_assert(BlockK >= SplitK, "Invalid SplitK");
                 static_assert(BlockK % SplitK == 0, "BlockK is not a multiple of SplitK");
@@ -772,11 +552,6 @@ namespace rocwmma
                 // Check MfmaDim validity
                 static_assert(BlockDim >= MfmaDim, "BlockDim must be larger than MfmaDim");
                 static_assert(BlockDim % MfmaDim == 0, "BlockDim must be a multiple of MfmaDim");
-
-                // Orthogonal layout, coordinates are reversed
-                //using OrthoLayout = RowOrthoInt<BlockDim, BlockK, DataT, MfmaDim, SplitK>;
-
-                //using MatrixCoordT = Coord2d;
             };
 
             ROCWMMA_DEVICE constexpr static inline auto strideCounts()
@@ -797,114 +572,6 @@ namespace rocwmma
             {
                 return make_coord2d((threadIdx.x * Traits::DimPerThread) % BlockDim,
                                     (threadIdx.x / MfmaDim * Traits::KPerThread) % BlockK);
-            }
-
-            // Incremental iteration offset
-            ROCWMMA_DEVICE static inline auto incrementalOffset(uint32_t iteration)
-            {
-                // Reference:
-                // VWOffsetX = VWStride_X - ((i+1) % VWSegs ? 0u : VWStride_X * VWSegs);
-                // Every set of VWSegs, we must iteratively reset the VWOffset back to 0, hence
-                // the subtraction.
-                // Optimization 1: if VWSegs == 1, there are no contributions from this stride
-                // Optimization 2: if BlockKSegs == 1 and SplitKSegs == 1, there are no "reset"
-                // contributions from this stride
-                int32_t VWOffsetX = 0;
-                if constexpr((int32_t)Traits::VWSegs > 1)
-                {
-                    // Offset contribution
-                    VWOffsetX = (int32_t)Traits::VWStride_X;
-                    if constexpr(((int32_t)Traits::BlockKSegs > 1)
-                                 || ((int32_t)Traits::SplitKSegs > 1))
-                    {
-                        // "Reset" cycle
-                        VWOffsetX -= (((int32_t)iteration + 1) % (int32_t)Traits::VWSegs
-                                          ? 0
-                                          : (int32_t)Traits::VWStride_X * (int32_t)Traits::VWSegs);
-                    }
-                }
-
-                // Reference:
-                // BlockKOffsetY = ((i+1) % VWSegs ? 0u : BlockKStride_Y) -
-                // ((i+1) % (VWSegs * BlockKSegs) ? 0u : BlockKSegs * BlockKStride_Y);
-                // Every set of BlockKSegs, we must iteratively reset the BlockKOffsetY back to 0, hence
-                // the subtraction.
-                // Optimization 1: if BlockKSegs == 1, there are no contributions from this stride
-                // Optimization 2: if SplitKSegs == 1, there are no "reset" contributions from this stride
-                int32_t BlockKOffsetY = 0;
-                if constexpr((int32_t)Traits::BlockKSegs > 1)
-                {
-                    // Offset contribution
-                    BlockKOffsetY = (((int32_t)iteration + 1) % (int32_t)Traits::VWSegs
-                                         ? 0
-                                         : (int32_t)Traits::BlockKStride_Y);
-                    if constexpr((int32_t)Traits::SplitKSegs > 1)
-                    {
-                        // "Reset" cycle
-                        BlockKOffsetY
-                            -= (((int32_t)iteration + 1)
-                                        % ((int32_t)Traits::VWSegs * (int32_t)Traits::BlockKSegs)
-                                    ? 0
-                                    : (int32_t)Traits::BlockKSegs
-                                          * (int32_t)Traits::BlockKStride_Y);
-                    }
-                }
-
-                // Reference:
-                // BlockDimOffsetX = ((i+1) % VWSegs * BlockKSegs) ? 0u : SplitKStride_X);
-                // Optimization 1: if BlockKSegs == 1, there are no contributions from this stride
-                // Optimization 2: There are no "reset" contributions from this stride because it is the last dim
-                int32_t BlockDimOffsetX = 0;
-                if constexpr((int32_t)Traits::SplitKSegs > 1)
-                {
-                    // Offset contribution
-                    BlockDimOffsetX
-                        = (((int32_t)iteration + 1)
-                                   % ((int32_t)Traits::VWSegs * (int32_t)Traits::BlockKSegs)
-                               ? 0
-                               : (int32_t)Traits::SplitKStride_X);
-                }
-
-                return make_coord2d(VWOffsetX + BlockDimOffsetX, BlockKOffsetY);
-            }
-
-            // Cumulative iteration offset
-            ROCWMMA_DEVICE static inline auto cumulativeOffset(uint32_t iteration)
-            {
-                int32_t cumVWOffsetX
-                    = (int32_t)Traits::VWStride_X * ((int32_t)iteration % (int32_t)Traits::VWSegs);
-                int32_t cumBlockKOffsetY = ((int32_t)iteration / (int32_t)Traits::VWSegs)
-                                           % (int32_t)Traits::BlockKSegs
-                                           * (int32_t)Traits::BlockKStride_Y;
-                int32_t cumBlockDimOffsetX
-                    = ((int32_t)iteration / ((int32_t)Traits::VWSegs * (int32_t)Traits::BlockKSegs))
-                      * (int32_t)Traits::SplitKStride_X;
-
-                return make_coord2d(cumVWOffsetX + cumBlockDimOffsetX, cumBlockKOffsetY);
-            }
-
-            ROCWMMA_DEVICE static inline auto debug()
-            {
-                // if(threadIdx.x == 0 && threadIdx.y == 0)
-                // {
-                //     printf("SplitKSegs: %d, BlockKSegs: %d, VWSegs: %d\n",
-                //         (uint32_t)Traits::SplitKSegs,
-                //         (uint32_t)Traits::BlockKSegs,
-                //         (uint32_t)Traits::VWSegs);
-
-                //     printf("SplitKStride_X: %d, SplitKStride_Y: %d\nBlockKStride_X: %d, BlockKStride_Y: %d\nVWStride_X: %d, VWStride_Y: %d\n",
-                //         (uint32_t)Traits::SplitKStride_X,
-                //         (uint32_t)Traits::SplitKStride_Y,
-                //         (uint32_t)Traits::BlockKStride_X,
-                //         (uint32_t)Traits::BlockKStride_Y,
-                //         (uint32_t)Traits::VWStride_X,
-                //         (uint32_t)Traits::VWStride_Y);
-
-                // }
-                // if(threadIdx.x <= 63 && threadIdx.y == 0)
-                // {
-                //     printf("Base offset(X, Y): = (%d, %d)", get<0>(baseOffset()), get<1>(baseOffset()));
-                // }
             }
         };
 
@@ -965,41 +632,32 @@ namespace rocwmma
         };
 
         template <typename MatrixLayout>
-        struct OrthoImpl
+        struct OrthoImpl : public MatrixLayoutBase<OrthoImpl<MatrixLayout>>
         {
             struct Traits : public OrthoTraits<MatrixLayout>
             {
             };
 
-            ROCWMMA_DEVICE constexpr static inline auto strideCounts()
+            ROCWMMA_DEVICE constexpr static inline decltype(auto) strideCounts()
             {
                 return MatrixLayout::strideCounts();
             }
 
-            ROCWMMA_DEVICE constexpr static inline auto strides()
+            ROCWMMA_DEVICE constexpr static inline decltype(auto) strides()
             {
-                auto t = MatrixLayout::strides();
-                // TODO: use apply
-                //apply([](auto const& v){ return swap(v); });
-                return make_vector(swap(get<0>(t)), swap(get<1>(t)), swap(get<2>(t)));
+                constexpr auto t = MatrixLayout::strides();
+                constexpr auto swap_strides = [](auto&&... args)
+                {
+                    return make_vector(swap(forward<decay_t<decltype(args)>>(args))...);
+                };
+
+                return apply(swap_strides, t);
             }
 
-            ROCWMMA_DEVICE static inline auto baseOffset()
+            ROCWMMA_DEVICE static inline decltype(auto) baseOffset()
             {
                 return swap(MatrixLayout::baseOffset());
             }
-
-            ROCWMMA_DEVICE static inline auto incrementalOffset(uint32_t iteration)
-            {
-                return swap(MatrixLayout::incrementalOffset(iteration));
-            }
-
-            ROCWMMA_DEVICE static inline auto cumulativeOffset(uint32_t iteration)
-            {
-                return swap(MatrixLayout::cumulativeOffset(iteration));
-            }
-
-            ROCWMMA_DEVICE static inline auto debug() {}
         };
 
         template <uint32_t BlockDim,

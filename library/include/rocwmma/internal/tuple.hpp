@@ -218,17 +218,27 @@ namespace rocwmma
         constexpr static inline decltype(auto)
             inflate_coord_right_impl(Coord1d&& flatCoord, VecT&& dims, index_sequence<Indices...>)
         {
-            auto inflate = [](auto&& c, auto&& d, auto& div, bool last) {
-                auto result = (last ? (c / div) : (c / div % d));
-                div *= d;
-                return result;
+            auto inflate = [](auto&& c, auto&& d, auto& div, auto&& is_last) {
+
+                if constexpr ((bool)decay_t<decltype(is_last)>::value == true)
+                {
+                    auto result = c / div;
+                    div *= d;
+                    return result;
+                }
+                else
+                {
+                    auto result = c / div % d;
+                    div *= d;
+                    return result;
+                }
             };
 
             auto div = decay_t<Coord1d>{1};
             return make_vector(inflate(forward<Coord1d>(flatCoord),
                                        get<Indices>(forward<VecT>(dims)),
                                        forward<decltype(div)&>(div),
-                                       Indices == sizeof...(Indices) - 1)...);
+                                       Number<Indices == sizeof...(Indices) - 1>{})...);
         }
     }
 
@@ -247,10 +257,20 @@ namespace rocwmma
         constexpr static inline decltype(auto)
             inflate_coord_left_impl(Coord1d&& flatCoord, VecT&& dims, index_sequence<Indices...>)
         {
-            auto inflate = [](auto&& c, auto&& d, auto& div, bool last) {
-                auto result = (last ? (c / div) : (c / div % d));
-                div *= d;
-                return result;
+            auto inflate = [](auto&& c, auto&& d, auto& div, auto&& is_last) {
+
+                if constexpr ((bool)decay_t<decltype(is_last)>::value == true)
+                {
+                    auto result = c / div;
+                    div *= d;
+                    return result;
+                }
+                else
+                {
+                    auto result = c / div % d;
+                    div *= d;
+                    return result;
+                }
             };
 
             auto div = decay_t<Coord1d>{1};
@@ -258,7 +278,7 @@ namespace rocwmma
                 inflate(forward<Coord1d>(flatCoord),
                         get<VecTraits<decay_t<VecT>>::size() - 1 - Indices>(forward<VecT>(dims)),
                         forward<decltype(div)&>(div),
-                        Indices == sizeof...(Indices) - 1)...));
+                        Number<Indices == sizeof...(Indices) - 1>{})...));
         }
     }
 
@@ -273,29 +293,32 @@ namespace rocwmma
 
     namespace detail
     {
-        template <typename Vec0, typename Vec1, size_t... Indices>
+        template <typename VecT0, typename VecT1, size_t... Indices>
         constexpr static inline decltype(auto)
-            to_matrix_space_impl(Vec0&& strides, Vec1&& strideSpace, index_sequence<Indices...>)
+            to_matrix_space_impl(VecT0&& strideCoord, VecT1&& strides, index_sequence<Indices...>)
         {
-            static_assert(VecTraits<decay_t<Vec0>>::size() == sizeof...(Indices)
-                              && VecTraits<decay_t<Vec1>>::size() == sizeof...(Indices),
-                          "strides and strideSpace vectors must be the same size");
+            static_assert(VecTraits<decay_t<VecT0>>::size() == sizeof...(Indices)
+                       && VecTraits<decay_t<VecT1>>::size() == sizeof...(Indices),
+                          "strideCoord and strides vectors must be the same size");
 
-            auto inflate = [](auto&& stride, auto&& dim) { return stride * dim; };
+            auto matrix_space_offset = [](auto&& component, auto&& stride) { return component * stride; };
 
-            return (inflate(get<Indices>(forward<Vec0>(strides)),
-                            get<Indices>(forward<Vec1>(strideSpace)))
+            // Calculate a final matrix-space offset by accumulating
+            // each stride coordinate component multiplied by their respective stride:
+            // result = Sum(strideCoord[0]* strides[0] + ... + strideCoord[N-1] * strides[N-1])
+            return (matrix_space_offset(get<Indices>(forward<VecT0>(strideCoord)),
+                                        get<Indices>(forward<VecT1>(strides)))
                     + ...);
         }
     }
 
-    template <typename Vec0, typename Vec1>
-    constexpr static inline decltype(auto) to_matrix_space(Vec0&& strides, Vec1&& strideSpace)
+    template <typename VecT0, typename VecT1>
+    constexpr static inline decltype(auto) to_matrix_space(VecT0&& strideCoord, VecT1&& strides)
     {
         return detail::to_matrix_space_impl(
-            forward<Vec0>(strides),
-            forward<Vec1>(strideSpace),
-            make_index_sequence<VecTraits<decay_t<Vec0>>::size()>{});
+            forward<VecT0>(strideCoord),
+            forward<VecT1>(strides),
+            make_index_sequence<VecTraits<decay_t<VecT0>>::size()>{});
     }
 
 #if !defined(__HIPCC_RTC__)

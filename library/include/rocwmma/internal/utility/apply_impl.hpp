@@ -41,50 +41,40 @@ namespace rocwmma
             return fn(get<I>(forward<VecT>(v))...);
         }
 
-        template <typename F, typename DataT, uint32_t Rank>
-        ROCWMMA_HOST_DEVICE constexpr decltype(auto) apply(F fn, HIP_vector_type<DataT, Rank>& v)
+        template <typename F,
+        typename DataT,
+        uint32_t VecSize,
+        template<typename, uint32_t> class VecT>
+        ROCWMMA_HOST_DEVICE constexpr decltype(auto) apply(F&& fn, VecT<DataT, VecSize>&& v)
         {
-            constexpr size_t size = VecTraits<decay_t<decltype(v)>>::size();
-            return detail::apply_impl(fn, v, detail::make_index_sequence<size>());
+            constexpr size_t size = VecTraits<VecT<DataT, VecSize>>::size();
+            return detail::apply_impl(forward<F>(fn),
+                                      v,
+                                      detail::make_index_sequence<size>());
         }
 
-        template <typename F, typename DataT, uint32_t Rank>
-        ROCWMMA_HOST_DEVICE constexpr decltype(auto) apply(F                                   fn,
-                                                           HIP_vector_type<DataT, Rank> const& v)
+        template <typename F,
+        typename DataT,
+        uint32_t VecSize,
+        template<typename, uint32_t> class VecT>
+        ROCWMMA_HOST_DEVICE constexpr decltype(auto) apply(F&& fn, VecT<DataT, VecSize>& v)
         {
-            constexpr size_t size = VecTraits<decay_t<decltype(v)>>::size();
-            return detail::apply_impl(fn, v, detail::make_index_sequence<size>());
+            constexpr size_t size = VecTraits<VecT<DataT, VecSize>>::size();
+            return detail::apply_impl(forward<F>(fn),
+                                      v,
+                                      detail::make_index_sequence<size>());
         }
 
-        template <typename F, typename DataT, uint32_t Rank>
-        ROCWMMA_HOST_DEVICE constexpr decltype(auto) apply(F fn, HIP_vector_type<DataT, Rank>&& v)
+        template <typename F,
+        typename DataT,
+        uint32_t VecSize,
+        template<typename, uint32_t> class VecT>
+        ROCWMMA_HOST_DEVICE constexpr decltype(auto) apply(F&& fn, VecT<DataT, VecSize> const& v)
         {
-            constexpr size_t size = VecTraits<decay_t<decltype(v)>>::size();
-            return detail::apply_impl(fn, v, detail::make_index_sequence<size>());
-        }
-
-        template <typename F, typename DataT, uint32_t Rank>
-        ROCWMMA_HOST_DEVICE constexpr decltype(auto) apply(F                                    fn,
-                                                           non_native_vector_base<DataT, Rank>& v)
-        {
-            constexpr size_t size = VecTraits<decay_t<decltype(v)>>::size();
-            return detail::apply_impl(fn, v, detail::make_index_sequence<size>());
-        }
-
-        template <typename F, typename DataT, uint32_t Rank>
-        ROCWMMA_HOST_DEVICE constexpr decltype(auto)
-            apply(F fn, non_native_vector_base<DataT, Rank> const& v)
-        {
-            constexpr size_t size = VecTraits<decay_t<decltype(v)>>::size();
-            return detail::apply_impl(fn, v, detail::make_index_sequence<size>());
-        }
-
-        template <typename F, typename DataT, uint32_t Rank>
-        ROCWMMA_HOST_DEVICE constexpr decltype(auto) apply(F                                     fn,
-                                                           non_native_vector_base<DataT, Rank>&& v)
-        {
-            constexpr size_t size = VecTraits<decay_t<decltype(v)>>::size();
-            return detail::apply_impl(fn, v, detail::make_index_sequence<size>());
+            constexpr size_t size = VecTraits<VecT<DataT, VecSize>>::size();
+            return detail::apply_impl(forward<F>(fn),
+                                      v,
+                                      detail::make_index_sequence<size>());
         }
 
     } // namespace detail
