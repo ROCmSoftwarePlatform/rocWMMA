@@ -24,36 +24,29 @@
  *
  *******************************************************************************/
 
-#ifndef ROCWMMA_UTILITY_FUNCTIONAL_HPP
-#define ROCWMMA_UTILITY_FUNCTIONAL_HPP
+#ifndef ROCWMMA_UTILITY_MOVE_HPP
+#define ROCWMMA_UTILITY_MOVE_HPP
 
-#if defined(__HIPCC_RTC__)
+#if defined(__HIPCC_RTC__) || defined(__clang__)
 
-#include "type_traits.hpp"
-
+#include "forward_impl.hpp"
 namespace rocwmma
 {
-    using detail::logical_or;
-    using detail::logical_and;
-    using detail::logical_not;
+    // Use drop-in replacement
+    using detail::move;
 
 } // namespace rocwmma
-
-#define ROCWMMA_FUNCTIONAL_IMPL_NAMESPACE rocwmma::detail
 
 #else
 
-#include <functional>
+#include <utility>
 namespace rocwmma
 {
-    using std::logical_or;
-    using std::logical_and;
-    using std::logical_not;
+    // Use STL
+    using std::move;
 
 } // namespace rocwmma
 
-#define ROCWMMA_FUNCTIONAL_IMPL_NAMESPACE std
+#endif // defined(__HIPCC_RTC__) || defined(__clang__)
 
-#endif // defined(__HIPCC_RTC__)
-
-#endif // ROCWMMA_UTILITY_FUNCTIONAL_HPP
+#endif // ROCWMMA_UTILITY_MOVE_HPP

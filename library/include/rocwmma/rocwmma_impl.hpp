@@ -366,8 +366,8 @@ namespace rocwmma
 
         // Gfx9 uses MFMA, gfx11 uses WMMA
         using Mma = conditional_t<(bool)ROCWMMA_ARCH_GFX9,
-                                  Mfma<InputT, ComputeT, BlockM, BlockN, BlockK>,
-                                  Wmma<InputT, ComputeT, BlockM, BlockN, BlockK>>;
+                                  Mfma<BlockM, BlockN, BlockK, InputT, InputT, ComputeT, 16u>,
+                                  Wmma<BlockM, BlockN, BlockK, InputT, InputT, ComputeT, 16u>>;
 
         // 1. Perform input pre-ops on A, B, Acc (unpacked)
         // 2. Mma (packed)

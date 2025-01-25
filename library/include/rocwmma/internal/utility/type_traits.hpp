@@ -34,8 +34,12 @@
 namespace rocwmma
 {
     // Use drop-in replacement
+    using detail::add_lvalue_reference;
+    using detail::add_lvalue_reference_t;
     using detail::add_pointer;
     using detail::add_pointer_t;
+    using detail::add_rvalue_reference;
+    using detail::add_rvalue_reference_t;
     using detail::bool_constant;
     using detail::conditional;
     using detail::conditional_t;
@@ -93,8 +97,12 @@ namespace rocwmma
 namespace rocwmma
 {
     // std implementations
+    using std::add_lvalue_reference;
+    using std::add_lvalue_reference_t;
     using std::add_pointer;
     using std::add_pointer_t;
+    using std::add_rvalue_reference;
+    using std::add_rvalue_reference_t;
     using std::bool_constant;
     using std::conditional;
     using std::conditional_t;

@@ -28,13 +28,15 @@
 #define ROCWMMA_UTILITY_TYPE_TRAITS_IMPL_HPP
 
 #include "algorithm.hpp"
-#include "functional.hpp"
 
 namespace rocwmma
 {
     namespace detail
     {
         using ::size_t;
+
+        template<typename T>
+        struct type_identity { using type = T; }; // or use std::type_identity (since C++20)
 
         template <class T, T Val>
         struct integral_constant
@@ -68,6 +70,7 @@ namespace rocwmma
         struct true_or_false_type : public false_type
         {
         };
+
         template <>
         struct true_or_false_type<true> : public true_type
         {
@@ -93,6 +96,125 @@ namespace rocwmma
 
         template <bool B, class T, class F>
         using conditional_t = typename conditional<B, T, F>::type;
+
+        // Logical ops
+        template <typename... Bs>
+        struct logical_or;
+
+        template <>
+        struct logical_or<> : public false_type
+        {
+        };
+
+        // Comply with std interface
+        template <typename B1>
+        struct logical_or<B1> : public B1
+        {
+            constexpr bool operator()(B1 const& lhs, B1 const& rhs) const
+            {
+                return lhs || rhs;
+            }
+        };
+
+        // Comply with std interface
+        template <>
+        struct logical_or<void>
+        {
+            template<typename T>
+            constexpr bool operator()(T const& lhs, T const& rhs) const
+            {
+                return lhs || rhs;
+            }
+        };
+
+        template <typename B1, typename B2>
+        struct logical_or<B1, B2> : public conditional_t<B1::value, B1, B2>
+        {
+        };
+
+        template <typename B1, typename B2, typename B3, typename... Bs>
+        struct logical_or<B1, B2, B3, Bs...>
+            : public conditional_t<B1::value, B1, logical_or<B2, B3, Bs...>>
+        {
+        };
+
+        template <typename... Bs>
+        using logical_or_t = typename logical_or<Bs...>::type;
+
+        template <typename...>
+        struct logical_and;
+
+        template <>
+        struct logical_and<> : public true_type
+        {
+        };
+
+        // Comply with std interface
+        template <typename B1>
+        struct logical_and<B1> : public B1
+        {
+            constexpr bool operator()(B1 const& lhs, B1 const& rhs) const
+            {
+                return lhs && rhs;
+            }
+        };
+
+        // Comply with std interface
+        template <>
+        struct logical_and<void>
+        {
+            template<typename T>
+            constexpr bool operator()(T const& lhs, T const& rhs) const
+            {
+                return lhs && rhs;
+            }
+        };
+
+        template <typename B1, typename B2>
+        struct logical_and<B1, B2> : public conditional_t<B1::value, B2, B1>
+        {
+        };
+
+        template <typename B1, typename B2, typename B3, typename... Bs>
+        struct logical_and<B1, B2, B3, Bs...>
+            : public conditional_t<B1::value, logical_and<B2, B3, Bs...>, B1>
+        {
+        };
+
+        template <typename... Bs>
+        using logical_and_t = typename logical_and<Bs...>::type;
+
+        template <typename B>
+        struct logical_not : public bool_constant<!bool(B::value)>
+        {
+        };
+
+        template <typename B>
+        using logical_not_t = typename logical_not<B>::type;
+
+        // Add lvalue/rvalue
+        template<typename T> // Note that "cv void&" is a substitution failure
+        auto test_add_lvalue_reference(int) -> type_identity<T&>;
+        template<typename T> // Handle T = cv void case
+        auto test_add_lvalue_reference(...) -> type_identity<T>;
+
+        template<typename T>
+        auto test_add_rvalue_reference(int) -> type_identity<T&&>;
+        template<typename T>
+        auto test_add_rvalue_reference(...) -> type_identity<T>;
+
+        template<typename T>
+        struct add_lvalue_reference
+            : decltype(detail::test_add_lvalue_reference<T>(0)) {};
+
+        template<typename T>
+        struct add_rvalue_reference
+            : decltype(detail::test_add_rvalue_reference<T>(0)) {};
+
+        template<typename T>
+        using add_lvalue_reference_t = typename add_lvalue_reference<T>::type;
+        template<typename T>
+        using add_rvalue_reference_t = typename add_rvalue_reference<T>::type;
 
         // remove_reference
         template <typename T>
@@ -264,8 +386,8 @@ namespace rocwmma
         inline constexpr bool is_reference_v = is_reference<T>::value;
 
         // is_function
-        template <typename>
-        struct is_function : public false_type
+        template <typename T>
+        struct is_function : public true_or_false_type<!std::is_const<const T>::value && !std::is_reference<T>::value>
         {
         };
 
@@ -371,75 +493,6 @@ namespace rocwmma
         template <typename T>
         inline constexpr bool is_integral_v = is_integral<T>::value;
 
-        // is_arithmetic
-        template <class T>
-        struct is_arithmetic : public false_type
-        {
-        };
-        template <>
-        struct is_arithmetic<bool> : public true_type
-        {
-        };
-        template <>
-        struct is_arithmetic<char> : public true_type
-        {
-        };
-        template <>
-        struct is_arithmetic<signed char> : public true_type
-        {
-        };
-        template <>
-        struct is_arithmetic<unsigned char> : public true_type
-        {
-        };
-        template <>
-        struct is_arithmetic<wchar_t> : public true_type
-        {
-        };
-        template <>
-        struct is_arithmetic<short> : public true_type
-        {
-        };
-        template <>
-        struct is_arithmetic<unsigned short> : public true_type
-        {
-        };
-        template <>
-        struct is_arithmetic<int> : public true_type
-        {
-        };
-        template <>
-        struct is_arithmetic<unsigned int> : public true_type
-        {
-        };
-        template <>
-        struct is_arithmetic<long> : public true_type
-        {
-        };
-        template <>
-        struct is_arithmetic<unsigned long> : public true_type
-        {
-        };
-        template <>
-        struct is_arithmetic<long long> : public true_type
-        {
-        };
-        template <>
-        struct is_arithmetic<unsigned long long> : public true_type
-        {
-        };
-        template <>
-        struct is_arithmetic<float> : public true_type
-        {
-        };
-        template <>
-        struct is_arithmetic<double> : public true_type
-        {
-        };
-
-        template <typename T>
-        inline constexpr bool is_arithmetic_v = is_arithmetic<T>::value;
-
         // is_floating_point
         template <typename T>
         struct is_floating_point : public false_type
@@ -465,6 +518,15 @@ namespace rocwmma
 
         template <typename T>
         inline constexpr bool is_floating_point_v = is_floating_point<T>::value;
+
+        // is_arithmetic
+        template <class T>
+        struct is_arithmetic : public logical_or_t<is_integral<T>, is_floating_point<T>>
+        {
+        };
+
+        template <typename T>
+        inline constexpr bool is_arithmetic_v = is_arithmetic<T>::value;
 
         // is_signed
         template <typename T, bool = is_arithmetic<T>::value>
@@ -492,7 +554,7 @@ namespace rocwmma
 
         template <typename... Ts>
         using first_type_t = typename first_type<Ts...>::type;
-      
+
         // is_standard_layout
         template<typename T>
         struct is_standard_layout
