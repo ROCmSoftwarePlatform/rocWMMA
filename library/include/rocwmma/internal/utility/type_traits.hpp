@@ -53,6 +53,8 @@ namespace rocwmma
     using detail::is_arithmetic_v;
     using detail::is_array;
     using detail::is_array_v;
+    using detail::is_const;
+    using detail::is_const_v;
     using detail::is_convertible;
     using detail::is_convertible_v;
     using detail::is_floating_point;
@@ -116,6 +118,8 @@ namespace rocwmma
     using std::is_arithmetic_v;
     using std::is_array;
     using std::is_array_v;
+    using std::is_const;
+    using std::is_const_v;
     using std::is_convertible;
     using std::is_convertible_v;
     using std::is_floating_point;

@@ -360,6 +360,18 @@ namespace rocwmma
         template <typename T>
         inline constexpr bool is_void_v = is_void<T>::value;
 
+        // is_const
+        template<typename T>
+        struct is_const : public false_type
+        {};
+
+        template<typename T> struct
+        is_const<const T> : public true_type
+        {};
+
+        template<typename T>
+        inline constexpr bool is_const_v = is_const<T>::value;
+
         // is_reference
         template <typename T>
         struct is_reference : public logical_or_t<is_lvalue_reference<T>, is_rvalue_reference<T>>
@@ -371,7 +383,7 @@ namespace rocwmma
 
         // is_function
         template <typename T>
-        struct is_function : public true_or_false_type<!std::is_const<const T>::value && !std::is_reference<T>::value>
+        struct is_function : public true_or_false_type<!is_const_v<const T> && !is_reference_v<T>>
         {
         };
 
