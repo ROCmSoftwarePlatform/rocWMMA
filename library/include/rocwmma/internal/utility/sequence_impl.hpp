@@ -92,7 +92,9 @@ namespace rocwmma
 
         template <size_t N>
         using make_index_sequence = make_integer_sequence<size_t, N>;
+
     } // namespace detail
+
 } // namespace rocwmma
 
 #endif // ROCWMMA_UTILITY_SEQUENCE_IMPL_HPP

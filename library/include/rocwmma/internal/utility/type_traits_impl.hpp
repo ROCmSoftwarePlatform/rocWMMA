@@ -106,25 +106,9 @@ namespace rocwmma
         {
         };
 
-        // Comply with std interface
         template <typename B1>
         struct logical_or<B1> : public B1
         {
-            constexpr bool operator()(B1 const& lhs, B1 const& rhs) const
-            {
-                return lhs || rhs;
-            }
-        };
-
-        // Comply with std interface
-        template <>
-        struct logical_or<void>
-        {
-            template<typename T>
-            constexpr bool operator()(T const& lhs, T const& rhs) const
-            {
-                return lhs || rhs;
-            }
         };
 
         template <typename B1, typename B2>
