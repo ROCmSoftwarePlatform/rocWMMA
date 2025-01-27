@@ -13,16 +13,17 @@ namespace rocwmma
 
     // Vector iterator class: handles for const and non-const vectors
     template <class VecT, uint32_t SubVecSize = 1>
-    struct VectorIterator;
-
-    template <typename DataT, uint32_t Rank, uint32_t SubVecSize>
-    struct VectorIterator<HIP_vector_type<DataT, Rank>, SubVecSize>
+    struct VectorIterator
     {
-        template <typename VDataT, uint32_t VRank>
-        using VecT = HIP_vector_type<VDataT, VRank>;
+        using VecTraits = VecTraits<VecT>;
+        using DataT = typename VecTraits::DataT;
+        constexpr static uint32_t Rank = VecTraits::size();
 
-        using RefVecT = HIP_vector_type<DataT, Rank>;
-        using ItVecT  = HIP_vector_type<DataT, SubVecSize>;
+        template <typename VDataT, uint32_t VRank>
+        using VecImpl = typename VecTraits::template VecT<VDataT, VRank>;
+
+        using RefVecT = VecImpl<DataT, Rank>;
+        using ItVecT  = VecImpl<DataT, SubVecSize>;
 
         struct iterator
         {
@@ -38,12 +39,9 @@ namespace rocwmma
             };
 
             static_assert(Rank % SubVecSize == 0, "VecSize not iterable by SubVecSize");
-            static_assert(sizeof(RefVecT) == sizeof(typename RefVecT::Native_vec_),
-                          "Cannot alias subvector");
-            static_assert(sizeof(ItVecT) == sizeof(typename ItVecT::Native_vec_),
-                          "Cannot alias subvector");
-            static_assert(sizeof(RefVecT) == sizeof(ItVecT) * Traits::Range,
-                          "Cannot alias subvector");
+            static_assert(sizeof(RefVecT) == sizeof(VecT), "Cannot alias subvector");
+            static_assert(sizeof(ItVecT) == SubVecSize * sizeof(DataT), "Cannot alias subvector");
+            static_assert(sizeof(RefVecT) == sizeof(ItVecT) * Traits::Range, "Cannot alias subvector");
 
             ROCWMMA_HOST_DEVICE constexpr iterator() noexcept = delete;
 
@@ -173,10 +171,10 @@ namespace rocwmma
         RefVecT const& mRef;
     };
 
-    template <uint32_t SubVecSize = 1, typename VecT = void>
-    constexpr auto makeVectorIterator(VecT const& vec)
+    template <uint32_t SubVecSize = 1, typename VecT>
+    constexpr auto makeVectorIterator(VecT&& vec)
     {
-        return VectorIterator<VecT, SubVecSize>{vec};
+        return VectorIterator<decay_t<VecT>, SubVecSize>{ forward<VecT>(vec) };
     }
 
 } // namespace rocwmma

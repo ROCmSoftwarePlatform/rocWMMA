@@ -434,11 +434,11 @@ namespace rocwmma
             // Idx1 = 2  Idx5 = 6  Offset = 2
             // Idx2 = 1  Idx6 = 5  Offset = 1
             // Idx3 = 3  Idx7 = 7  Offset = 3
-            constexpr auto Index   = std::decay_t<decltype(Idx)>::value % ElementCount;
+            constexpr auto Index   = decay_t<decltype(Idx)>::value % ElementCount;
             constexpr auto Offset0 = (Index / GatherSize) * ElementStride % ElementCount;
             constexpr auto Offset1 = Index % GatherSize;
             constexpr auto Offset2 = (Index * ElementStride) / (ElementCount * GatherSize) * GatherSize;
-            constexpr auto Offset3 = std::decay_t<decltype(Idx)>::value / ElementCount * ElementCount;
+            constexpr auto Offset3 = decay_t<decltype(Idx)>::value / ElementCount * ElementCount;
             return I<Offset0 + Offset1 + Offset2 + Offset3>{};
         }
     };

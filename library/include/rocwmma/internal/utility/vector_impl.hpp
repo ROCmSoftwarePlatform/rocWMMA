@@ -197,83 +197,57 @@ namespace rocwmma
 
     namespace detail
     {
-        template<typename WriteIt, typename ReadIt, typename IndexT, typename Func, typename... ArgsT>
-        ROCWMMA_HOST_DEVICE constexpr static inline auto vector_for_each_impl(WriteIt&& writeIt, ReadIt&& readIt, IndexT&& idx, Func&& func, ArgsT&&... args)
+        template<typename VecT0, typename VecT1, class Func, uint32_t... Indices, typename... ArgsT>
+        ROCWMMA_HOST_DEVICE constexpr static inline auto vector_for_each_impl(VecT0&& vOut, VecT1&& vIn, Func&& func, detail::SeqT<Indices...>, ArgsT&&... args)
         {
-            using WriteItT = decay_t<WriteIt>;
-            using ReadItT = decay_t<ReadIt>;
-            using NumberT = decay_t<IndexT>;
+            using VecTraits0 = VecTraits<decay_t<VecT0>>;
+            using VecTraits1 = VecTraits<decay_t<VecT1>>;
 
-            static_assert(WriteItT::range() == ReadItT::range(), "Mismatch in iterator range");
-            static_assert(WriteItT::range() > NumberT::value, "Invalid index");
-            static_assert(ReadItT::range() > NumberT::value, "Invalid index");
+            constexpr uint32_t VecSize = VecTraits0::size();
+            constexpr uint32_t SubVecSize = VecSize / sizeof...(Indices);
 
-            // De-reference read iterator and feed sub-vector to function.
-            // Feed constexpr index value to function argument.
-            // Write back sub-vector to writing iterator with function result
-            *writeIt = func(*readIt, NumberT::value, args...);
-        }
+            // Sanity checks
+            static_assert(VecTraits0::size() == VecTraits1::size(), "Vector sizes don't match");
+            static_assert(VecSize % SubVecSize == 0u, "VecSize must be a multiple of SubVecSize");
 
-        // Internal variant that will mutate the original input vector in place
-        template<typename VecT, class Func, uint32_t... Indices, typename... ArgsT>
-        ROCWMMA_HOST_DEVICE constexpr static inline decltype(auto) vector_mutate_for_each_impl(VecT&& v, Func&& func, detail::SeqT<Indices...>, ArgsT&&... args)
-        {
-            using VecTraits = VecTraits<decay_t<VecT>>;
-            constexpr uint32_t SubVecSize = VecTraits::size() / sizeof...(Indices);
+            // Initialize iterators for read / write
+            auto writeIt = makeVectorIterator<SubVecSize>(forward<VecT0>(vOut)).begin();
+            auto readIt = makeVectorIterator<SubVecSize>(forward<VecT1>(vIn)).begin();
 
             // Fold over each subvector
-            // Iterators attach directly to input for read / write mutation
             (
-                vector_for_each_impl(makeVectorIterator<SubVecSize>(forward<VecT>(v)).it(Indices),
-                                        makeVectorIterator<SubVecSize>(forward<VecT>(v)).it(Indices),
-                                        I<Indices>{},
-                                        forward<Func>(func),
-                                        forward<ArgsT>(args)...),
+                (*writeIt = func(*readIt,
+                                 I<Indices>{},
+                                 forward<ArgsT>(args)...),
+                 readIt++,
+                 writeIt++),
                 ...
             );
-            return v;
         }
 
-        // Internal variant that will not mutate the original input vector and produce a separate result
-        template<class Func, typename VecT, uint32_t... Indices, typename... ArgsT>
-        ROCWMMA_HOST_DEVICE constexpr static inline auto vector_for_each_impl(VecT&& v, Func&& func, detail::SeqT<Indices...>, ArgsT&&... args)
-        {
-            using VecTraits = VecTraits<decay_t<VecT>>;
-            constexpr uint32_t SubVecSize = VecTraits::size() / sizeof...(Indices);
-
-            // Initialize a result
-            auto result = decay_t<VecT>{};
-
-            // Fold over each subvector
-            // Write iterators attach to new result, not mutating input
-            (
-                vector_for_each_impl(makeVectorIterator<SubVecSize>(result).it(Indices),
-                                        makeVectorIterator<SubVecSize>(forward<VecT>(v)).it(Indices),
-                                        I<Indices>{},
-                                        forward<Func>(func),
-                                        forward<ArgsT>(args)...),
-                ...
-            );
-            return result;
-        }
     } // namespace detail
 
     // Func signature: Func(VecT<DataT, SubVecSize>, uint32_t idx, args...)
     template<uint32_t SubVecSize /*= 1u*/, typename VecT, class Func, typename... ArgsT>
     ROCWMMA_HOST_DEVICE constexpr static inline auto vector_for_each(VecT&& v, Func&& func, ArgsT&&... args)
     {
+        // Incoming vector Size
         using VecTraits = VecTraits<decay_t<VecT>>;
         constexpr uint32_t VecSize = VecTraits::size();
 
-        // Sanity checks
+        // Generate a result
+        using ResultT = decay_t<VecT>;
+        auto result = ResultT{};
+
         static_assert(VecSize >= SubVecSize, "SubVecSize exceeds VecSize");
-        static_assert(VecSize % SubVecSize == 0u, "VecSize must be a multiple of SubVecSize");
 
         // Feed-fwd with index sequence
-        return detail::vector_for_each_impl(forward<VecT>(v),
-                                        forward<Func>(func),
-                                        detail::Seq<VecSize / SubVecSize>{},
-                                        forward<ArgsT>(args)...);
+        detail::vector_for_each_impl(forward<add_lvalue_reference_t<ResultT>>(result),
+                                     forward<VecT>(v),
+                                     forward<Func>(func),
+                                     detail::Seq<VecSize / SubVecSize>{},
+                                     forward<ArgsT>(args)...);
+        return result;
     }
 
     template<uint32_t SubVecSize /*= 1u*/, typename VecT, class Func, typename... ArgsT>
@@ -282,15 +256,153 @@ namespace rocwmma
         using VecTraits = VecTraits<decay_t<VecT>>;
         constexpr uint32_t VecSize = VecTraits::size();
 
+        static_assert(VecSize >= SubVecSize, "SubVecSize exceeds VecSize");
+        static_assert(is_lvalue_reference_v<VecT>, "Mutate requires lvalue reference input");
+
+        // Feed-fwd with index sequence
+        detail::vector_for_each_impl(forward<VecT>(v),
+                                     forward<VecT>(v),
+                                     forward<Func>(func),
+                                     detail::Seq<VecSize / SubVecSize>{},
+                                     forward<ArgsT>(args)...);
+
+        return forward<VecT>(v);
+    }
+
+    namespace detail
+    {
+
+        template<uint32_t SubVecSize, typename VecT, typename AccumT, class Func, uint32_t... Indices, typename... ArgsT>
+        ROCWMMA_HOST_DEVICE constexpr static inline auto vector_reduce_impl(VecT&& v, AccumT&& init, Func&& func, detail::SeqT<Indices...>, ArgsT&&... args)
+        {
+            // Initialize accumulation and input iterators
+            auto accum = init;
+            auto it = makeVectorIterator<SubVecSize>(forward<VecT>(v)).begin();
+
+            // - Forward input sub-vector
+            // - Forward accumulator
+            // - Fold over each input subvector from ReadIt
+            (
+                (accum = func(*it,
+                             accum,
+                             I<Indices>{},
+                             forward<ArgsT>(args)...),
+                 it++),
+                ...
+            );
+
+            return accum;
+        }
+
+        template<uint32_t SubVecSize0, uint32_t SubVecSize1, typename VecT0, typename VecT1, typename AccumT, class Func, uint32_t... Indices, typename... ArgsT>
+        ROCWMMA_HOST_DEVICE constexpr static inline auto vector_reduce2_impl(VecT0&& v0, VecT1&& v1, AccumT&& init, Func&& func, detail::SeqT<Indices...>, ArgsT&&... args)
+        {
+            // Initialize accumulation and input iterators
+            auto accum = init;
+            auto it0 = makeVectorIterator<SubVecSize0>(forward<VecT0>(v0)).begin();
+            auto it1 = makeVectorIterator<SubVecSize1>(forward<VecT1>(v1)).begin();
+
+            // - Forward input sub-vector
+            // - Forward accumulator
+            // - Fold over each input subvector from ReadIt
+            (
+                (accum = func(*it0,
+                              *it1,
+                             accum,
+                             I<Indices>{},
+                             forward<ArgsT>(args)...), it0++, it1++),
+                ...
+            );
+
+            return accum;
+        }
+
+    } // namespace detail
+
+    // Func signature: Func(VecT<DataT, SubVecSize>, uint32_t idx, args...)
+    template<uint32_t SubVecSize /*= 1u*/, typename VecT, typename AccumT, class Func, typename... ArgsT>
+    ROCWMMA_HOST_DEVICE constexpr static inline auto vector_reduce(VecT&& v, AccumT&& init, Func&& func, ArgsT&&... args)
+    {
+        using VecTraits = VecTraits<decay_t<VecT>>;
+        constexpr uint32_t VecSize = VecTraits::size();
+
         // Sanity checks
         static_assert(VecSize >= SubVecSize, "SubVecSize exceeds VecSize");
         static_assert(VecSize % SubVecSize == 0u, "VecSize must be a multiple of SubVecSize");
 
-        // Feed-fwd with index sequence
-        return detail::vector_mutate_for_each_impl(forward<VecT>(v),
-                                               forward<Func>(func),
-                                               detail::Seq<VecSize / SubVecSize>{},
-                                               forward<ArgsT>(args)...);
+        // Forward to impl with index sequence
+        return detail::template vector_reduce_impl<SubVecSize>(forward<VecT>(v),
+                                                               forward<AccumT>(init),
+                                                               forward<Func>(func),
+                                                               detail::Seq<VecSize / SubVecSize>{},
+                                                               forward<ArgsT>(args)...);
+    }
+
+    // Func signature: Func(VecT<DataT, SubVecSize>, uint32_t idx, args...)
+    template<uint32_t SubVecSize /*= 1u*/, typename VecT, class Func, typename... ArgsT>
+    ROCWMMA_HOST_DEVICE constexpr static inline auto vector_reduce(VecT&& v, Func&& func, ArgsT&&... args)
+    {
+        // Default accumulator is a vector same size as SubVecSize
+        using VecTraits = VecTraits<decay_t<VecT>>;
+        using DataT = typename VecTraits::DataT;
+        constexpr uint32_t VecSize = VecTraits::size();
+        using AccumT = typename VecTraits::template VecT<DataT, SubVecSize>;
+
+        // Sanity checks
+        static_assert(VecSize >= SubVecSize, "SubVecSize exceeds VecSize");
+        static_assert(VecSize % SubVecSize == 0u, "VecSize must be a multiple of SubVecSize");
+
+        // Forward to impl with index sequence
+        return vector_reduce<SubVecSize>(forward<VecT>(v),
+                                         move(AccumT{static_cast<DataT>(0)}), // Default accum of 0
+                                         forward<Func>(func),
+                                         forward<ArgsT>(args)...);
+    }
+
+    // Func signature: Func(VecT<DataT, SubVecSize>, uint32_t idx, args...)
+    template<uint32_t SubVecSize0 /*= 1u*/, uint32_t SubVecSize1 /*= SubVecSize0*/, typename VecT0, typename VecT1, typename AccumT, class Func, typename... ArgsT>
+    ROCWMMA_HOST_DEVICE constexpr static inline auto vector_reduce2(VecT0&& v0, VecT1&& v1, AccumT&& init, Func&& func, ArgsT&&... args)
+    {
+        //
+        using VecTraits0 = VecTraits<decay_t<VecT0>>;
+        using VecTraits1 = VecTraits<decay_t<VecT1>>;
+
+        constexpr uint32_t VecSize0 = VecTraits0::size();
+        constexpr uint32_t VecSize1 = VecTraits1::size();
+        constexpr uint32_t StrideCount0 = VecSize0 / SubVecSize0;
+        constexpr uint32_t StrideCount1 = VecSize1 / SubVecSize1;
+
+        // Sanity checks
+        static_assert(StrideCount0 == StrideCount1, "Stride counts must match");
+        static_assert(VecSize0 >= StrideCount0, "Stride exceeds VecSize");
+        static_assert(VecSize0 % StrideCount0 == 0u, "VecSize must be a multiple of Stride");
+        static_assert(VecSize1 >= StrideCount1, "Stride exceeds VecSize");
+        static_assert(VecSize1 % StrideCount1 == 0u, "VecSize must be a multiple of Stride");
+
+        // Forward to impl with index sequence
+        return detail::template vector_reduce2_impl<SubVecSize0, SubVecSize1>(forward<VecT0>(v0),
+                                                                              forward<VecT1>(v1),
+                                                                              forward<AccumT>(init),
+                                                                              forward<Func>(func),
+                                                                              detail::Seq<StrideCount0>{},
+                                                                              forward<ArgsT>(args)...);
+    }
+
+    // Func signature: Func(VecT<DataT, SubVecSize>, uint32_t idx, args...)
+    template<uint32_t SubVecSize0 /*= 1u*/, uint32_t SubVecSize1 /*= SubVecSize0*/, typename VecT0, typename VecT1, class Func, typename... ArgsT>
+    ROCWMMA_HOST_DEVICE constexpr static inline auto vector_reduce2(VecT0&& v0, VecT1&& v1, Func&& func, ArgsT&&... args)
+    {
+        // Default accumulator is a vector of SubVecSize0
+        using VecTraits0 = VecTraits<decay_t<VecT0>>;
+        using DataT = typename VecTraits0::DataT;
+        using AccumT = typename VecTraits0::template VecT<DataT, SubVecSize0>;
+
+        // Forward default accum
+        return vector_reduce2<SubVecSize0, SubVecSize1>(forward<VecT0>(v0),
+                                                forward<VecT1>(v1),
+                                                move(AccumT{static_cast<DataT>(0)}), // Default of 0
+                                                forward<Func>(func),
+                                                forward<ArgsT>(args)...);
     }
 
 } // namespace rocwmma

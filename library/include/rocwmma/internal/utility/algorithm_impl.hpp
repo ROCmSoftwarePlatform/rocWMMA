@@ -33,13 +33,13 @@ namespace rocwmma
     {
 
         template <typename T>
-        ROCWMMA_HOST_DEVICE constexpr decltype(auto) max(T&& a, T&& b)
+        ROCWMMA_HOST_DEVICE constexpr T const& max(T const& a, T const& b)
         {
             return (a < b) ? b : a;
         }
 
         template <typename T>
-        ROCWMMA_HOST_DEVICE constexpr decltype(auto) min(T&& a, T&& b)
+        ROCWMMA_HOST_DEVICE constexpr T const& min(T const& a, T const& b)
         {
             return (a < b) ? a : b;
         }

@@ -26,107 +26,70 @@
 #ifndef ROCWMMA_MFMA_HPP
 #define ROCWMMA_MFMA_HPP
 
-#include "config.hpp"
-#include "vector.hpp"
-#include "vector_iterator.hpp"
-
+#include "mma.hpp"
 #include "mfma_impl.hpp"
 
 namespace rocwmma
 {
-    // MFMA interface
-    template <typename InputT,
+    // Expose MFMA implementation backend
+    template<typename InputTA,
+             typename InputTB,
+             typename ComputeT,
+             uint32_t BlockM,
+             uint32_t BlockN>
+    using Mfma_impl = detail::amdgcn_mfma<InputTA, InputTB, ComputeT, BlockM, BlockN>;
+
+    // Mfma interface through Mma
+    template <uint32_t FragM,
+              uint32_t FragN,
+              uint32_t FragK,
+              typename InputTA,
+              typename InputTB,
               typename ComputeT,
               uint32_t BlockM,
-              uint32_t BlockN,
-              uint32_t BlockK,
-              typename Enabler = void>
-    struct Mfma : public detail::amdgcn_mfma<InputT, ComputeT, BlockM, BlockN>
+              uint32_t BlockN = BlockM,
+              MmaAccumPolicy AccumPolicy = MmaAccumPolicy::ROW_MAJOR>
+    struct Mfma : public Mma<FragM, FragN, FragK, Mfma_impl<InputTA, InputTB, ComputeT, BlockM, BlockN>, AccumPolicy>
     {
+        // Interface:
+        // template <typename VecTA, typename VecTB, typename VecTC>
+        // ROCWMMA_DEVICE static inline decltype(auto) exec(VecTA&& a, VecTB&& b, VecTC& accum);
     };
 
-    // Unlock the mfma backend only on MI cards
-    template <typename InputT, typename ComputeT, uint32_t BlockM, uint32_t BlockN, uint32_t BlockK>
-    struct Mfma<InputT,
-                ComputeT,
-                BlockM,
-                BlockN,
-                BlockK,
-                enable_if_t<ROCWMMA_ARCH_GFX9 && (BlockM == BlockN)>>
+    template<typename InputTA_In,
+             typename InputTB_In,
+             typename ComputeT_In,
+             uint32_t BlockM_In,
+             uint32_t BlockN_In>
+    struct MmaTraits<Mfma_impl<InputTA_In, InputTB_In, ComputeT_In, BlockM_In, BlockN_In>>
     {
-        // Full-fragment IO traits
-        using IOTraitsA   = IOTraits<BlockM, BlockK, InputT>;
-        using IOTraitsB   = IOTraits<BlockK, BlockN, InputT>;
-        using IOTraitsAcc = IOTraits<BlockM, BlockN, ComputeT>;
+        // Base implementation
+        using Base = Mfma_impl<InputTA_In, InputTB_In, ComputeT_In, BlockM_In, BlockN_In>;
 
-        // Functional
-        using MFMA = detail::amdgcn_mfma<InputT, ComputeT, BlockM, BlockN>;
+        // Operand types
+        using InputTA = InputTA_In;
+        using InputTB = InputTB_In;
+        using ComputeT = ComputeT_In;
 
-        // Per-MFMA iterative vector requirements
-        using VecTraitsA = VecTraits<typename MFMA::Traits::ARegsT>;
-        using VecTraitsB = VecTraits<typename MFMA::Traits::BRegsT>;
-        using VecTraitsC = VecTraits<typename MFMA::Traits::CRegsT>;
-        using VecTraitsD = VecTraits<typename MFMA::Traits::DRegsT>;
+        // Raw input / output types
+        using ARegsT = typename Base::ARegsT;
+        using BRegsT = typename Base::BRegsT;
+        using CRegsT = typename Base::CRegsT;
+        using DRegsT = typename Base::DRegsT;
 
-        struct Traits
-        {
-            enum : uint32_t
-            {
-                MfmaCount = BlockK / MFMA::Traits::KPerMfma,
-                MinK      = MFMA::Traits::KPerMfma,
-            };
+        // Geometric block sizes
+        constexpr static uint32_t BlockM = BlockM_In;
+        constexpr static uint32_t BlockN = BlockN_In;
+        constexpr static uint32_t BlockK = Base::KPerMma;
 
-            // Create full-fragment vector sizes
-            using ARegsT = typename VecTraitsA::template VecT<typename VecTraitsA::DataT,
-                                                              MfmaCount * VecTraitsA::size()>;
-            using BRegsT = typename VecTraitsB::template VecT<typename VecTraitsA::DataT,
-                                                              MfmaCount * VecTraitsB::size()>;
-            using CRegsT = typename VecTraitsC::template VecT<>;
-            using DRegsT = typename VecTraitsD::template VecT<>;
+        // Vector sizes per block (packed)
+        constexpr static uint32_t BlockSizeA = VecTraits<ARegsT>::size();
+        constexpr static uint32_t BlockSizeB = VecTraits<BRegsT>::size();
+        constexpr static uint32_t BlockSizeC = VecTraits<CRegsT>::size();
 
-            // Sanity checks
-            static_assert(BlockK >= MinK, "BlockK is not a minimum of MinK");
-            static_assert(BlockK % MinK == 0, "BlockK is not a multiple of MinK");
-
-            // A / B  and C / D types must match
-            static_assert(is_same<typename VecTraitsA::DataT, typename VecTraitsB::DataT>::value,
-                          "A and B registers must be of same type");
-            static_assert(is_same<typename VecTraitsC::DataT, typename VecTraitsD::DataT>::value,
-                          "C and D registers must be of same type");
-
-            // Full fragment counts must match packed IO counts
-            // MFMA expects packed elements
-            static_assert(VecTraits<ARegsT>::size() == IOTraitsA::PackedSize,
-                          "Unexpected packed vector size for A");
-            static_assert(VecTraits<BRegsT>::size() == IOTraitsB::PackedSize,
-                          "Unexpected packed vector size for B");
-            static_assert(VecTraits<CRegsT>::size() == IOTraitsAcc::PackedSize,
-                          "Unexpected packed vector size for C");
-            static_assert(VecTraits<DRegsT>::size() == IOTraitsAcc::PackedSize,
-                          "Unexpected packed vector size for D");
-        };
-
-        ROCWMMA_DEVICE static inline auto exec(typename Traits::ARegsT const& regsA,
-                                               typename Traits::BRegsT const& regsB,
-                                               typename Traits::CRegsT const& regsC) ->
-            typename Traits::DRegsT
-        {
-            typename Traits::DRegsT result = regsC;
-
-            // Iterate over MFMA input requirements
-            auto aIt = makeVectorIterator<VecTraitsA::size()>(regsA).begin();
-            auto bIt = makeVectorIterator<VecTraitsB::size()>(regsB).begin();
-
-            // Accumulate over MFMA count
-#pragma unroll
-            for(unsigned i = 0; i < Traits::MfmaCount; i++)
-            {
-                result = MFMA::exec(*aIt, *bIt, result);
-                aIt++;
-                bIt++;
-            }
-            return result;
-        }
+        // Backend flag
+        constexpr static bool is_wmma = false;
+        constexpr static bool is_mfma = true;
     };
 
 } // namespace rocwmma

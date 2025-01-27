@@ -238,7 +238,7 @@ namespace rocwmma
             return make_vector(inflate(forward<Coord1d>(flatCoord),
                                        get<Indices>(forward<VecT>(dims)),
                                        forward<decltype(div)&>(div),
-                                       Number<Indices == sizeof...(Indices) - 1>{})...);
+                                       I<Indices == sizeof...(Indices) - 1>{})...);
         }
     }
 
@@ -278,7 +278,7 @@ namespace rocwmma
                 inflate(forward<Coord1d>(flatCoord),
                         get<VecTraits<decay_t<VecT>>::size() - 1 - Indices>(forward<VecT>(dims)),
                         forward<decltype(div)&>(div),
-                        Number<Indices == sizeof...(Indices) - 1>{})...));
+                        I<Indices == sizeof...(Indices) - 1>{})...));
         }
     }
 

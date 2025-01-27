@@ -34,8 +34,12 @@
 namespace rocwmma
 {
     // Use drop-in replacement
+    using detail::add_lvalue_reference;
+    using detail::add_lvalue_reference_t;
     using detail::add_pointer;
     using detail::add_pointer_t;
+    using detail::add_rvalue_reference;
+    using detail::add_rvalue_reference_t;
     using detail::bool_constant;
     using detail::conditional;
     using detail::conditional_t;
@@ -49,6 +53,8 @@ namespace rocwmma
     using detail::is_arithmetic_v;
     using detail::is_array;
     using detail::is_array_v;
+    using detail::is_const;
+    using detail::is_const_v;
     using detail::is_convertible;
     using detail::is_convertible_v;
     using detail::is_floating_point;
@@ -93,8 +99,12 @@ namespace rocwmma
 namespace rocwmma
 {
     // std implementations
+    using std::add_lvalue_reference;
+    using std::add_lvalue_reference_t;
     using std::add_pointer;
     using std::add_pointer_t;
+    using std::add_rvalue_reference;
+    using std::add_rvalue_reference_t;
     using std::bool_constant;
     using std::conditional;
     using std::conditional_t;
@@ -108,6 +118,8 @@ namespace rocwmma
     using std::is_arithmetic_v;
     using std::is_array;
     using std::is_array_v;
+    using std::is_const;
+    using std::is_const_v;
     using std::is_convertible;
     using std::is_convertible_v;
     using std::is_floating_point;
@@ -166,7 +178,7 @@ namespace rocwmma
 
     // Short-form integral constant
     template <uint32_t N>
-    using I = integral_constant<int32_t, N>;
+    using I = integral_constant<uint32_t, N>;
 
 } // namespace rocwmma
 
