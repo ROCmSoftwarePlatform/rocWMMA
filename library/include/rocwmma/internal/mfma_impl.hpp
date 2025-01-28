@@ -42,6 +42,8 @@ namespace rocwmma
         };
 
 
+        // Default, or 'not-implmented' variant.
+        // Built by the host, or unsupported params
         template <typename InputTA,
                  typename InputTB,
                  typename ComputeT,
@@ -51,15 +53,28 @@ namespace rocwmma
                  typename Enabler = void>
         struct amdgcn_mfma
         {
-            constexpr static uint32_t KPerMma = 16u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
             constexpr static MfmaCtrlFlags Abid = MfmaCtrlFlags::DEFAULT;
             constexpr static MfmaCtrlFlags Blgp = MfmaCtrlFlags::DEFAULT;
 
-            using ARegsT = VRegF32x2;
-            using BRegsT = VRegF32x2;
-            using CRegsT = AccRegF32x4;
-            using DRegsT = AccRegF32x4;
+            // Choose reasonable minimal default params to satisfy static checks
+            constexpr static uint32_t KPerMma = 8u;
+
+        private:
+            using PackTraitsA = PackTraits<InputTA>;
+            using PackTraitsB = PackTraits<InputTB>;
+            using PackTraitsAcc = PackTraits<ComputeT>;
+
+            constexpr static uint32_t InputASize = BlockM * KPerMma / (Constants::AMDGCN_WAVE_SIZE * PackTraitsA::PackRatio);
+            constexpr static uint32_t InputBSize = BlockN * KPerMma / (Constants::AMDGCN_WAVE_SIZE * PackTraitsB::PackRatio);
+            constexpr static uint32_t AccumSize = BlockM * BlockM / (Constants::AMDGCN_WAVE_SIZE * PackTraitsAcc::PackRatio);
+
+        public:
+
+            using ARegsT = VecT<typename PackTraitsA::PackedT, InputASize>;
+            using BRegsT = VecT<typename PackTraitsB::PackedT, InputBSize>;
+            using CRegsT = VecT<typename PackTraitsAcc::PackedT, AccumSize>;
+            using DRegsT = VecT<typename PackTraitsAcc::PackedT, AccumSize>;
 
             template <typename RegsA, typename RegsB, typename RegsC>
             ROCWMMA_DEVICE static inline decltype(auto) exec(RegsA&& regsA, RegsB&& regsB, RegsC&& regsC)
