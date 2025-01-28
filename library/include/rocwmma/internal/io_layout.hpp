@@ -151,6 +151,9 @@ namespace rocwmma
               uint32_t WaveCount>
     struct IOLayout<matrix_a, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>
     {
+        // For non-interleaved layouts, MmaDim is given by BlockDim
+        constexpr static uint32_t MmaDim = BlockDim;
+
         // Vector size properties
         constexpr static uint32_t MaxVW = detail::
             MaxVWSelector<matrix_a, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>::Result;
@@ -180,7 +183,7 @@ namespace rocwmma
 
         // Register layout required for mma. Expect non-interleaved SOA format.
         // Quirk: gfx11 requires input duplication.
-        using MmaLayout = RegisterLayout::MmaInput<BlockDim,
+        using MmaLayout = RegisterLayout::MmaInput<MmaDim,
                                                    DataT,
                                                    false,
                                                    (bool)ROCWMMA_ARCH_GFX11
@@ -197,6 +200,9 @@ namespace rocwmma
               uint32_t WaveCount>
     struct IOLayout<matrix_b, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>
     {
+        // For non-interleaved layouts, MmaDim is given by BlockDim
+        constexpr static uint32_t MmaDim = BlockDim;
+
         // Vector size properties
         constexpr static uint32_t MaxVW = detail::
             MaxVWSelector<matrix_b, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>::Result;
@@ -226,7 +232,7 @@ namespace rocwmma
 
         // Register layout required for mma. Expect non-interleaved SOA format.
         // Quirk: gfx11 requires input duplication.
-        using MmaLayout = RegisterLayout::MmaInput<BlockDim,
+        using MmaLayout = RegisterLayout::MmaInput<MmaDim,
                                                    DataT,
                                                    false,
                                                    (bool)ROCWMMA_ARCH_GFX11
@@ -244,6 +250,9 @@ namespace rocwmma
               uint32_t WaveCount>
     struct IOLayout<accumulator, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>
     {
+        // For non-interleaved layouts, MmaDim is given by BlockDim
+        constexpr static uint32_t MmaDim = BlockDim;
+
         // Vector size properties
         constexpr static uint32_t MaxVW = detail::
             MaxVWSelector<accumulator, BlockDim, BlockK, DataT, DataLayoutT, WaveCount>::Result;
@@ -262,7 +271,7 @@ namespace rocwmma
 
         // Register layout required for mma. Expect non-interleaved SOA format.
         // Quirk: gfx11 requires padded acc.
-        using MmaLayout = RegisterLayout::MmaAcc<BlockDim,
+        using MmaLayout = RegisterLayout::MmaAcc<MmaDim,
                                                  DataT,
                                                  false,
                                                  (bool)ROCWMMA_ARCH_GFX11
@@ -276,12 +285,15 @@ namespace rocwmma
     template <uint32_t BlockDim, uint32_t BlockK, typename DataT, uint32_t WaveCount>
     struct IOLayout<accumulator, BlockDim, BlockK, DataT, void, WaveCount>
     {
+        // For non-interleaved layouts, MmaDim is given by BlockDim
+        constexpr static uint32_t MmaDim = BlockDim;
+
         // We don't know which storage is needed: no DataLayout
         using StorageLayout = void;
 
         // Register layout required for mma. Expect non-interleaved SOA format.
         // Quirk: gfx11 requires padded acc.
-        using MmaLayout = RegisterLayout::MmaAcc<BlockDim,
+        using MmaLayout = RegisterLayout::MmaAcc<MmaDim,
                                                  DataT,
                                                  false,
                                                  (bool)ROCWMMA_ARCH_GFX11
@@ -289,7 +301,7 @@ namespace rocwmma
                                                      : RegisterLayout::Format::SOA>;
 
         // Fragments will assume default mma register layout.
-        using FragmentLayout = RegisterLayout::MmaAcc<BlockDim,
+        using FragmentLayout = RegisterLayout::MmaAcc<MmaDim,
                                                  DataT,
                                                  false,
                                                  RegisterLayout::Format::SOA>;

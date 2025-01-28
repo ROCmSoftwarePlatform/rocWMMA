@@ -91,15 +91,6 @@ namespace rocwmma
         using PostLoadXForm = register_layout_transform<typename IOLayout::StorageLayout,
                                                         typename IOLayout::FragmentLayout>;
 
-        using PreMmaXForm = register_layout_transform<typename IOLayout::FragmentLayout,
-                                                      typename IOLayout::MmaLayout>;
-
-        // Currently, only makes sense to have a post-mma transform on acc layouts
-        using PostMmaXForm = conditional_t<is_same_v<MatrixT, accumulator>,
-                                        register_layout_transform<typename IOLayout::MmaLayout,
-                                                                  typename IOLayout::FragmentLayout>,
-                                        register_layout_transform_nop>;
-
         using PreStoreXForm = register_layout_transform<typename IOLayout::FragmentLayout,
                                                         typename IOLayout::StorageLayout>;
 

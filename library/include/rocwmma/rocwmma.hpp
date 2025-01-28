@@ -293,14 +293,15 @@ namespace rocwmma
     //! @param b Input fragment B
     //! @param c Input accumulator fragment C
     //! @tparam BlockM/N/K block dimensions
-    //! @tparam InputT Datatype of input frags A and B
+    //! @tparam InputT A/B Datatype of input frags A and B
     //! @tparam ComputeT Datatype of accumulator fragment C / D
     //! @tparam LayoutA/B/C/D In-memory layout of frag as col_major or row_major
     //! @note Frag c = d is valid
     template <uint32_t BlockM,
               uint32_t BlockN,
               uint32_t BlockK,
-              typename InputT,
+              typename InputTA,
+              typename InputTB,
               typename ComputeT,
               typename LayoutA,
               typename LayoutB,
@@ -308,8 +309,8 @@ namespace rocwmma
               typename LayoutD>
     ROCWMMA_DEVICE void
         mma_sync(fragment<accumulator, BlockM, BlockN, BlockK, ComputeT, LayoutD>&       d,
-                 fragment<matrix_a, BlockM, BlockN, BlockK, InputT, LayoutA> const&      a,
-                 fragment<matrix_b, BlockM, BlockN, BlockK, InputT, LayoutB> const&      b,
+                 fragment<matrix_a, BlockM, BlockN, BlockK, InputTA, LayoutA> const&      a,
+                 fragment<matrix_b, BlockM, BlockN, BlockK, InputTB, LayoutB> const&      b,
                  fragment<accumulator, BlockM, BlockN, BlockK, ComputeT, LayoutC> const& c);
 
     //! Synchronization point for all wavefronts in a workgroup. Guarantees pending reads / writes to LDS are flushed.
