@@ -41,16 +41,30 @@ namespace rocwmma
             DEFAULT = 0u,
         };
 
+        struct Unsupported;
+        struct Gfx9;
 
-        // Default, or 'not-implmented' variant.
-        // Built by the host, or unsupported params
+        // SFINAE target enabler for gfx9 with conditional check
+        template <typename TestTarget, bool Cond = true>
+        using enable_gfx9_t = enable_if_t<(bool)ROCWMMA_ARCH_GFX9 && is_same_v<TestTarget, Gfx9> && Cond, Gfx9>;
+
+        /*! \class amdgcn_mfma
+        *  \brief  Builtin wrapper for mfma instructions
+        *  @tparam InputTA Datatype of input A
+        *  @tparam InputTB Datatype of input B
+        *  @tparam ComputeT Datatype of accumulator
+        *  @tparam BlockM M-dimension of wmma block
+        *  @tparam BlockN N-dimension of wmma block
+        *  @tparam GfxTarget The current gfx family target of interest being compiled
+        *  @tparam TargetEnable Enabler for the current target if supported
+        */
         template <typename InputTA,
                  typename InputTB,
                  typename ComputeT,
                  uint32_t BlockM,
                  uint32_t BlockN,
-                 typename Dummy = true_type,
-                 typename Enabler = void>
+                 typename GfxTarget = conditional_t<(bool)ROCWMMA_ARCH_GFX9, Gfx9, Unsupported>,
+                 typename TargetEnable = GfxTarget>
         struct amdgcn_mfma
         {
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -83,6 +97,8 @@ namespace rocwmma
             }
         };
 
+#if ROCWMMA_ARCH_GFX9
+
         // Non-B32 compute types
         // Note: MFMA unit accum type is always b32 size.
         // Since we cannot natively accumulate in the desired type,
@@ -94,10 +110,8 @@ namespace rocwmma
                  typename ComputeT,
                  uint32_t BlockM,
                  uint32_t BlockN,
-                 typename Dummy>
-        struct amdgcn_mfma<InputTA, InputTB, ComputeT, BlockM, BlockN, Dummy, enable_if_t<Dummy::value
-                                                                                          && (sizeof(ComputeT) < 4u)
-                                                                                          && (bool)ROCWMMA_ARCH_GFX9>>
+                 typename GfxTarget>
+        struct amdgcn_mfma<InputTA, InputTB, ComputeT, BlockM, BlockN, GfxTarget, enable_gfx9_t<GfxTarget, (sizeof(ComputeT) < 4u)>>
         {
         private:
             using PackTraits = PackTraits<ComputeT>;
@@ -141,8 +155,8 @@ namespace rocwmma
         };
 
         // fp16
-        template <typename Dummy>
-        struct amdgcn_mfma<float16_t, float16_t, float32_t, 16u, 16u, Dummy, enable_if_t<Dummy::value && (bool)ROCWMMA_ARCH_GFX9>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<float16_t, float16_t, float32_t, 16u, 16u, GfxTarget, enable_gfx9_t<GfxTarget>>
         {
             constexpr static uint32_t KPerMma = 16u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -163,8 +177,8 @@ namespace rocwmma
             }
         };
 
-        template <typename Dummy>
-        struct amdgcn_mfma<float16_t, float16_t, float32_t, 32u, 32u, Dummy, enable_if_t<Dummy::value && (bool)ROCWMMA_ARCH_GFX9>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<float16_t, float16_t, float32_t, 32u, 32u, GfxTarget, enable_gfx9_t<GfxTarget>>
         {
             constexpr static uint32_t KPerMma = 8u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -186,27 +200,21 @@ namespace rocwmma
         };
 
         // hfloat16 derivative
-        template <uint32_t BlockM, uint32_t BlockN, typename Dummy>
-        struct amdgcn_mfma<hfloat16_t, hfloat16_t, float32_t, BlockM, BlockN, Dummy, enable_if_t<Dummy::value
-                                                                       &&(bool)ROCWMMA_ARCH_GFX9
-                                                                       && !(bool)ROCWMMA_NO_HALF>>
+        template <uint32_t BlockM, uint32_t BlockN, typename GfxTarget>
+        struct amdgcn_mfma<hfloat16_t, hfloat16_t, float32_t, BlockM, BlockN, GfxTarget, enable_gfx9_t<GfxTarget, !(bool)ROCWMMA_NO_HALF>>
             : public amdgcn_mfma<float16_t, float16_t, float32_t, BlockM, BlockN>
         {
         };
 
-        template <uint32_t BlockM, uint32_t BlockN, typename Dummy>
-        struct amdgcn_mfma<hfloat16_t, hfloat16_t, hfloat16_t, BlockM, BlockN, Dummy, enable_if_t<Dummy::value
-                                                                       && (bool)ROCWMMA_ARCH_GFX9
-                                                                       && !(bool)ROCWMMA_NO_HALF>>
+        template <uint32_t BlockM, uint32_t BlockN, typename GfxTarget>
+        struct amdgcn_mfma<hfloat16_t, hfloat16_t, hfloat16_t, BlockM, BlockN, GfxTarget, enable_gfx9_t<GfxTarget, !(bool)ROCWMMA_NO_HALF>>
             : public amdgcn_mfma<float16_t, float16_t, float16_t, BlockM, BlockN>
         {
         };
 
         // bf16
-        template <typename Dummy>
-        struct amdgcn_mfma<bfloat16_t, bfloat16_t, float32_t, 16u, 16u, Dummy, enable_if_t<Dummy::value
-                                                                                            && (bool)ROCWMMA_ARCH_GFX9
-                                                                                            && (bool)ROCWMMA_ARCH_GFX908>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<bfloat16_t, bfloat16_t, float32_t, 16u, 16u, GfxTarget, enable_gfx9_t<GfxTarget, (bool)ROCWMMA_ARCH_GFX908>>
         {
             constexpr static uint32_t KPerMma = 8u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -240,10 +248,8 @@ namespace rocwmma
             }
         };
 
-        template <typename Dummy>
-        struct amdgcn_mfma<bfloat16_t, bfloat16_t, float32_t, 32u, 32u, Dummy, enable_if_t<Dummy::value
-                                                                                            && (bool)ROCWMMA_ARCH_GFX9
-                                                                                            && (bool)ROCWMMA_ARCH_GFX908>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<bfloat16_t, bfloat16_t, float32_t, 32u, 32u, GfxTarget, enable_gfx9_t<GfxTarget, (bool)ROCWMMA_ARCH_GFX908>>
         {
             constexpr static uint32_t KPerMma = 4u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -277,11 +283,10 @@ namespace rocwmma
             }
         };
 
-        template <typename Dummy>
-        struct amdgcn_mfma<bfloat16_t, bfloat16_t, float32_t, 16u, 16u, Dummy, enable_if_t<Dummy::value
-                                                                                            && (bool)ROCWMMA_ARCH_GFX9
-                                                                                            && ((bool)ROCWMMA_ARCH_GFX90A
-                                                                                              || (bool)ROCWMMA_ARCH_GFX94X), int>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<bfloat16_t, bfloat16_t, float32_t, 16u, 16u, GfxTarget, enable_gfx9_t<GfxTarget,
+                                                                                                ((bool)ROCWMMA_ARCH_GFX90A
+                                                                                                || (bool)ROCWMMA_ARCH_GFX94X)>>
         {
             constexpr static uint32_t KPerMma = 16u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -302,11 +307,10 @@ namespace rocwmma
             }
         };
 
-        template <typename Dummy>
-        struct amdgcn_mfma<bfloat16_t, bfloat16_t, float32_t, 32u, 32u, Dummy, enable_if_t<Dummy::value
-                                                                                            && (bool)ROCWMMA_ARCH_GFX9
-                                                                                            && ((bool)ROCWMMA_ARCH_GFX90A
-                                                                                              || (bool)ROCWMMA_ARCH_GFX94X), int>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<bfloat16_t, bfloat16_t, float32_t, 32u, 32u, GfxTarget, enable_gfx9_t<GfxTarget,
+                                                                                                ((bool)ROCWMMA_ARCH_GFX90A
+                                                                                                 || (bool)ROCWMMA_ARCH_GFX94X)>>
         {
             constexpr static uint32_t KPerMma = 8u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -328,8 +332,8 @@ namespace rocwmma
         };
 
         // fp32
-        template <typename Dummy>
-        struct amdgcn_mfma<float32_t, float32_t, float32_t, 16u, 16u, Dummy, enable_if_t<Dummy::value && (bool)ROCWMMA_ARCH_GFX9>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<float32_t, float32_t, float32_t, 16u, 16u, GfxTarget, enable_gfx9_t<GfxTarget>>
         {
             constexpr static uint32_t KPerMma = 4u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -350,8 +354,8 @@ namespace rocwmma
             }
         };
 
-        template <typename Dummy>
-        struct amdgcn_mfma<float32_t, float32_t, float32_t, 32u, 32u, Dummy, enable_if_t<Dummy::value && (bool)ROCWMMA_ARCH_GFX9>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<float32_t, float32_t, float32_t, 32u, 32u, GfxTarget, enable_gfx9_t<GfxTarget>>
         {
             constexpr static uint32_t KPerMma = 2u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -373,10 +377,10 @@ namespace rocwmma
         };
 
         // fp64
-        template <typename Dummy>
-        struct amdgcn_mfma<float64_t, float64_t, float64_t, 16u, 16u, Dummy, enable_if_t<Dummy::value && (bool)ROCWMMA_ARCH_GFX9
-                                                                                                      && ((bool)ROCWMMA_ARCH_GFX90A
-                                                                                                         || (bool)ROCWMMA_ARCH_GFX94X)>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<float64_t, float64_t, float64_t, 16u, 16u, GfxTarget, enable_gfx9_t<GfxTarget,
+                                                                                               ((bool)ROCWMMA_ARCH_GFX90A
+                                                                                               || (bool)ROCWMMA_ARCH_GFX94X)>>
         {
             constexpr static uint32_t KPerMma = 4u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -398,11 +402,10 @@ namespace rocwmma
         };
 
         // int8
-        template <typename Dummy>
-        struct amdgcn_mfma<int8_t, int8_t, int32_t, 16u, 16u, Dummy, enable_if_t<Dummy::value
-                                                                                            && (bool)ROCWMMA_ARCH_GFX9
-                                                                                            && ((bool)ROCWMMA_ARCH_GFX908
-                                                                                             || (bool)ROCWMMA_ARCH_GFX90A)>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<int8_t, int8_t, int32_t, 16u, 16u, GfxTarget, enable_gfx9_t<GfxTarget,
+                                                                                      ((bool)ROCWMMA_ARCH_GFX908
+                                                                                      || (bool)ROCWMMA_ARCH_GFX90A)>>
         {
             constexpr static uint32_t KPerMma = 16u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -423,11 +426,10 @@ namespace rocwmma
             }
         };
 
-        template <typename Dummy>
-        struct amdgcn_mfma<int8_t, int8_t, int32_t, 32u, 32u, Dummy, enable_if_t<Dummy::value
-                                                                                            && (bool)ROCWMMA_ARCH_GFX9
-                                                                                            && ((bool)ROCWMMA_ARCH_GFX908
-                                                                                             || (bool)ROCWMMA_ARCH_GFX90A)>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<int8_t, int8_t, int32_t, 32u, 32u, GfxTarget, enable_gfx9_t<GfxTarget,
+                                                                                      ((bool)ROCWMMA_ARCH_GFX908
+                                                                                      || (bool)ROCWMMA_ARCH_GFX90A)>>
         {
             constexpr static uint32_t KPerMma = 8u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -448,10 +450,9 @@ namespace rocwmma
             }
         };
 
-        template <typename Dummy>
-        struct amdgcn_mfma<int8_t, int8_t, int32_t, 16u, 16u, Dummy, enable_if_t<Dummy::value
-                                                                                            && (bool)ROCWMMA_ARCH_GFX9
-                                                                                            && (bool)ROCWMMA_ARCH_GFX94X, int>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<int8_t, int8_t, int32_t, 16u, 16u, GfxTarget, enable_gfx9_t<GfxTarget,
+                                                                                       (bool)ROCWMMA_ARCH_GFX94X>>
         {
             constexpr static uint32_t KPerMma = 32u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -482,10 +483,9 @@ namespace rocwmma
             }
         };
 
-        template <typename Dummy>
-        struct amdgcn_mfma<int8_t, int8_t, int32_t, 32u, 32u, Dummy, enable_if_t<Dummy::value
-                                                                                            && (bool)ROCWMMA_ARCH_GFX9
-                                                                                            && (bool)ROCWMMA_ARCH_GFX94X, int>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<int8_t, int8_t, int32_t, 32u, 32u, GfxTarget, enable_gfx9_t<GfxTarget,
+                                                                                    (bool)ROCWMMA_ARCH_GFX94X>>
         {
             constexpr static uint32_t KPerMma = 16u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -517,9 +517,9 @@ namespace rocwmma
         };
 
         // f8_fnuz
-        template <typename Dummy>
-        struct amdgcn_mfma<float8_fnuz_t, float8_fnuz_t, float32_t, 16u, 16u, Dummy, enable_if_t<Dummy::value && (bool)ROCWMMA_ARCH_GFX9
-                                                                                                              && (bool)ROCWMMA_ARCH_GFX94X>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<float8_fnuz_t, float8_fnuz_t, float32_t, 16u, 16u, GfxTarget, enable_gfx9_t<GfxTarget,
+                                                                                                      (bool)ROCWMMA_ARCH_GFX94X>>
         {
             constexpr static uint32_t KPerMma = 32u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -550,9 +550,9 @@ namespace rocwmma
             }
         };
 
-        template <typename Dummy>
-        struct amdgcn_mfma<float8_fnuz_t, float8_fnuz_t, float32_t, 32u, 32u, Dummy, enable_if_t<Dummy::value && (bool)ROCWMMA_ARCH_GFX9
-                                                                                                              && (bool)ROCWMMA_ARCH_GFX94X>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<float8_fnuz_t, float8_fnuz_t, float32_t, 32u, 32u, GfxTarget, enable_gfx9_t<GfxTarget,
+                                                                                                        (bool)ROCWMMA_ARCH_GFX94X>>
         {
             constexpr static uint32_t KPerMma = 16u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -584,9 +584,9 @@ namespace rocwmma
         };
 
         // bf8_fnuz
-        template <typename Dummy>
-        struct amdgcn_mfma<bfloat8_fnuz_t, bfloat8_fnuz_t, float32_t, 16u, 16u, Dummy, enable_if_t<Dummy::value && (bool)ROCWMMA_ARCH_GFX9
-                                                                                                              && (bool)ROCWMMA_ARCH_GFX94X>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<bfloat8_fnuz_t, bfloat8_fnuz_t, float32_t, 16u, 16u, GfxTarget, enable_gfx9_t<GfxTarget,
+                                                                                                        (bool)ROCWMMA_ARCH_GFX94X>>
         {
             constexpr static uint32_t KPerMma = 32u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -617,9 +617,9 @@ namespace rocwmma
             }
         };
 
-        template <typename Dummy>
-        struct amdgcn_mfma<bfloat8_fnuz_t, bfloat8_fnuz_t, float32_t, 32u, 32u, Dummy, enable_if_t<Dummy::value && (bool)ROCWMMA_ARCH_GFX9
-                                                                                                                && (bool)ROCWMMA_ARCH_GFX94X>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<bfloat8_fnuz_t, bfloat8_fnuz_t, float32_t, 32u, 32u, GfxTarget, enable_gfx9_t<GfxTarget,
+                                                                                                        (bool)ROCWMMA_ARCH_GFX94X>>
         {
             constexpr static uint32_t KPerMma = 16u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -650,9 +650,9 @@ namespace rocwmma
             }
         };
 
-        template <typename Dummy>
-        struct amdgcn_mfma<xfloat32_t, xfloat32_t, float32_t, 16u, 16u, Dummy, enable_if_t<Dummy::value && (bool)ROCWMMA_ARCH_GFX9
-                                                                                                              && (bool)ROCWMMA_ARCH_GFX94X>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<xfloat32_t, xfloat32_t, float32_t, 16u, 16u, GfxTarget, enable_gfx9_t<GfxTarget,
+                                                                                                 (bool)ROCWMMA_ARCH_GFX94X>>
         {
             constexpr static uint32_t KPerMma = 8u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -673,9 +673,9 @@ namespace rocwmma
             }
         };
 
-        template <typename Dummy>
-        struct amdgcn_mfma<xfloat32_t, xfloat32_t, float32_t, 32u, 32u, Dummy, enable_if_t<Dummy::value && (bool)ROCWMMA_ARCH_GFX9
-                                                                                                        && (bool)ROCWMMA_ARCH_GFX94X>>
+        template <typename GfxTarget>
+        struct amdgcn_mfma<xfloat32_t, xfloat32_t, float32_t, 32u, 32u, GfxTarget, enable_gfx9_t<GfxTarget,
+                                                                                                (bool)ROCWMMA_ARCH_GFX94X>>
         {
             constexpr static uint32_t KPerMma = 4u;
             constexpr static MfmaCtrlFlags Cbsz = MfmaCtrlFlags::DEFAULT;
@@ -695,6 +695,8 @@ namespace rocwmma
                 return result;
             }
         };
+
+#endif // ROCWMMA_ARCH_GFX9
 
     } // namespace detail
 
