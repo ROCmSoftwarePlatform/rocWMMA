@@ -415,6 +415,7 @@ ROCWMMA_DEVICE static inline void fill(FragT (&frags)[BLOCKS_X][BLOCKS_Y],
 #pragma unroll
         for(int j = 0; j < BLOCKS_Y; j++)
         {
+
             fill_fragment(frags[i][j], value);
         }
     }
@@ -426,6 +427,10 @@ ROCWMMA_DEVICE static inline void mfma(MfmaFragAcc (&fragsAccOut)[BLOCKS_X][BLOC
                                        MfmaFragB const (&fragsB)[BLOCKS_Y],
                                        MfmaFragAcc const (&fragsAccIn)[BLOCKS_X][BLOCKS_Y])
 {
+
+// TODO: SGEMM MMA only valid on gfx9 class cards
+#if ROCWMMA_ARCH_GFX9
+
 #pragma unroll
     for(int i = 0; i < BLOCKS_X; i++)
     {
@@ -435,6 +440,9 @@ ROCWMMA_DEVICE static inline void mfma(MfmaFragAcc (&fragsAccOut)[BLOCKS_X][BLOC
             mma_sync(fragsAccOut[i][j], fragsA[i], fragsB[j], fragsAccIn[i][j]);
         }
     }
+
+#endif // ROCWMMA_ARCH_GFX9
+
 }
 
 // Uniform multiply - add (FMA)
@@ -475,8 +483,6 @@ ROCWMMA_KERNEL void __launch_bounds__(256) sgemm_rocwmma_d(uint32_t       m,
                                                           ComputeT       alpha,
                                                           ComputeT       beta)
 {
-#if ROCWMMA_ARCH_GFX9
-
     ///
     /// 2D matrix coordinate setup
     ///
@@ -656,8 +662,6 @@ ROCWMMA_KERNEL void __launch_bounds__(256) sgemm_rocwmma_d(uint32_t       m,
     MfmaFragD fragsD[BLOCKS_X][BLOCKS_Y];
     uniformFma(fragsD, alpha, fragsAcc, beta, fragsC);
     globalWriteD(d + MfmaFragDMap1d::fromMatrixCoord(warpTileCoord, ldd), fragsD, ldd);
-
-#endif // ROCWMMA_ARCH_GFX9
 
 }
 
