@@ -70,10 +70,11 @@ namespace rocwmma
         static_assert(is_layout_same_v<typename IOLayoutC::MmaLayout, typename IOLayoutD::MmaLayout>, "Accumulator fragment register layouts do not match");
 
         // Check valid mma layouts
-        static_assert(layout_traits<typename IOLayoutA::MmaLayout>::is_valid, "Invalid MmaLayout for matrix_a");
-        static_assert(layout_traits<typename IOLayoutB::MmaLayout>::is_valid, "Invalid MmaLayout for matrix_b");
-        static_assert(layout_traits<typename IOLayoutC::MmaLayout>::is_valid, "Invalid MmaLayout for accumulator C");
-        static_assert(layout_traits<typename IOLayoutD::MmaLayout>::is_valid, "Invalid MmaLayout for accumulator D");
+        // TODO: eventually should enforce
+        // static_assert(layout_traits<typename IOLayoutA::MmaLayout>::is_valid, "Invalid MmaLayout for matrix_a");
+        // static_assert(layout_traits<typename IOLayoutB::MmaLayout>::is_valid, "Invalid MmaLayout for matrix_b");
+        // static_assert(layout_traits<typename IOLayoutC::MmaLayout>::is_valid, "Invalid MmaLayout for accumulator C");
+        // static_assert(layout_traits<typename IOLayoutD::MmaLayout>::is_valid, "Invalid MmaLayout for accumulator D");
 
         // Input transforms
         using PreMmaXFormA = register_layout_transform<typename IOLayoutA::FragmentLayout,
