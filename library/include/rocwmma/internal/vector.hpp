@@ -413,7 +413,7 @@ namespace rocwmma
         using VecT = HIP_vector_type<T, size>;
 
         // Current data type
-        using DataT = typename VecT<>::value_type;
+        using DataT = T;
 
         // Current vector size
         constexpr static inline uint32_t size()

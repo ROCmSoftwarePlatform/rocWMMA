@@ -42,6 +42,8 @@
 #include "internal/layout/layout.hpp"
 #include "internal/mapping_util.hpp"
 #include "internal/mfma.hpp"
+#include "internal/mma.hpp"
+#include "internal/mma_config.hpp"
 #include "internal/opaque_load.hpp"
 #include "internal/opaque_store.hpp"
 #include "internal/pack_util.hpp"
@@ -321,7 +323,8 @@ namespace rocwmma
     template <uint32_t BlockM,
               uint32_t BlockN,
               uint32_t BlockK,
-              typename InputT,
+              typename InputTA,
+              typename InputTB,
               typename ComputeT,
               typename LayoutA,
               typename LayoutB,
@@ -329,54 +332,35 @@ namespace rocwmma
               typename LayoutD>
     ROCWMMA_DEVICE void
         mma_sync(fragment<accumulator, BlockM, BlockN, BlockK, ComputeT, LayoutD>&       d,
-                 fragment<matrix_a, BlockM, BlockN, BlockK, InputT, LayoutA> const&      a,
-                 fragment<matrix_b, BlockM, BlockN, BlockK, InputT, LayoutB> const&      b,
+                 fragment<matrix_a, BlockM, BlockN, BlockK, InputTA, LayoutA> const&      a,
+                 fragment<matrix_b, BlockM, BlockN, BlockK, InputTB, LayoutB> const&      b,
                  fragment<accumulator, BlockM, BlockN, BlockK, ComputeT, LayoutC> const& c)
     {
-        using FragA   = decay_t<decltype(a)>;
-        using FragB   = decay_t<decltype(b)>;
-        using FragAcc = decay_t<decltype(c)>;
+        using MmaConfig = MmaConfig<BlockM, BlockN, BlockK, InputTA, InputTB, ComputeT, LayoutA, LayoutB, LayoutC, LayoutD>;
 
-        using IOConfigA   = GetIOConfig_t<FragA>;
-        using IOConfigB   = GetIOConfig_t<FragB>;
-        using IOConfigAcc = GetIOConfig_t<FragAcc>;
+        // Transforms
+        using XA = typename MmaConfig::PreMmaXFormA;
+        using XB = typename MmaConfig::PreMmaXFormB;
+        using XC = typename MmaConfig::PreMmaXFormC;
+        using XD = typename MmaConfig::PostMmaXFormD;
 
-        using PreMmaA   = typename IOConfigA::PreMmaXForm;
-        using PreMmaB   = typename IOConfigB::PreMmaXForm;
-        using PreMmaAcc = typename IOConfigAcc::PreMmaXForm;
-        using PostMmaAcc = typename IOConfigAcc::PostMmaXForm;
+        // PackUtil
+        using PackA = typename MmaConfig::PackA;
+        using PackB = typename MmaConfig::PackB;
+        using PackC = typename MmaConfig::PackC;
+        using PackD = typename MmaConfig::PackD;
 
-        using PackA   = typename IOConfigA::PackUtil;
-        using PackB   = typename IOConfigB::PackUtil;
-        using PackAcc = typename IOConfigAcc::PackUtil;
+        using Mma = typename MmaConfig::Mma;
 
-        // Sanity checks
-        static_assert((IOConfigA::IOShape::BlockDim >= 16) && (IOConfigB::IOShape::BlockDim >= 16)
-                          && (IOConfigA::IOShape::BlockDim <= 32)
-                          && (IOConfigB::IOShape::BlockDim <= 32),
-                      "Input fragment BlockDim is not mfma friendly");
-
-        static_assert((IOConfigA::IOShape::BlockDim == IOConfigB::IOShape::BlockDim)
-                          && (IOConfigA::IOShape::KDim == IOConfigB::IOShape::KDim),
-                      "BlockDim and KDim of input fragments must match");
-
-        static_assert(is_layout_same_v<typename IOConfigA::IOLayout::MmaLayout,
-                                       typename IOConfigB::IOLayout::MmaLayout>,
-                      "Input fragment register layouts do not match");
-
-        // Gfx9 uses MFMA, gfx11 uses WMMA
-        using Mma = conditional_t<(bool)ROCWMMA_ARCH_GFX9,
-                                  Mfma<InputT, ComputeT, BlockM, BlockN, BlockK>,
-                                  Wmma<InputT, ComputeT, BlockM, BlockN, BlockK>>;
-
-        // 1. Perform input pre-ops on A, B, Acc (unpacked)
+        // 1. Perform input pre-ops on A, B, Acc (unpacked mAccess)
         // 2. Mma (packed)
         // 3. Perform acc post-op on Acc
         // 4. Pack back to register
-        d.mAccess = PostMmaAcc::exec(
-                    PackAcc::unpack(Mma::exec(PackA::pack(PreMmaA::exec(a.mAccess)),
-                                              PackB::pack(PreMmaB::exec(b.mAccess)),
-                                              PackAcc::pack(PreMmaAcc::exec(c.mAccess)))));
+        d.mAccess = XD::exec(PackD::unpack(
+                                Mma::exec(PackA::pack(XA::exec(a.mAccess)),
+                                          PackB::pack(XB::exec(b.mAccess)),
+                                          PackC::pack(XC::exec(c.mAccess)))));
+
     }
 
     ROCWMMA_DEVICE void synchronize_workgroup()

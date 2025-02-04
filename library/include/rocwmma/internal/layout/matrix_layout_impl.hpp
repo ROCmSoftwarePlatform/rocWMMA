@@ -37,10 +37,6 @@ namespace rocwmma
     // Implementations for the MatrixLayout classes
     namespace MatrixLayout
     {
-        // Representing an embedded compile time value in argument passing
-        template<uint32_t Number>
-        using I = integral_constant<uint32_t, Number>;
-
         // All of the matrix layouts are required to provide interface functions to:
         // - strideCounts()
         // - strides()

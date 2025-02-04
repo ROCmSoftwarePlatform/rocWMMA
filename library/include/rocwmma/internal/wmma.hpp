@@ -26,136 +26,71 @@
 #ifndef ROCWMMA_WMMA_HPP
 #define ROCWMMA_WMMA_HPP
 
-#include "permute.hpp"
-#include "vector.hpp"
-#include "vector_iterator.hpp"
-
+#include "mma.hpp"
 #include "wmma_impl.hpp"
 
 namespace rocwmma
 {
-    // Wmma interface
-    template <typename InputT,
+    // Expose WMMA implementation backend
+    template<typename InputTA,
+             typename InputTB,
+             typename ComputeT,
+             uint32_t BlockM,
+             uint32_t BlockN>
+    using Wmma_impl = detail::amdgcn_wmma<InputTA, InputTB, ComputeT, BlockM, BlockN>;
+
+    // Wmma interface through Mma
+    template <uint32_t FragM,
+              uint32_t FragN,
+              uint32_t FragK,
+              typename InputTA,
+              typename InputTB,
               typename ComputeT,
               uint32_t BlockM,
-              uint32_t BlockN,
-              uint32_t BlockK,
-              typename Enabler = void>
-    struct Wmma : public detail::amdgcn_wmma<InputT, ComputeT, BlockM, BlockN>
+              uint32_t BlockN = BlockM,
+              MmaAccumPolicy AccumPolicy = MmaAccumPolicy::ROW_MAJOR>
+    struct Wmma : public Mma<FragM, FragN, FragK, Wmma_impl<InputTA, InputTB, ComputeT, BlockM, BlockN>, AccumPolicy>
     {
-        template <typename InputARegsT, typename InputBRegsT, typename InputCRegsT>
-        ROCWMMA_DEVICE static inline auto
-            exec(InputARegsT const& regsA, InputBRegsT const& regsB, InputCRegsT const& regsC)
-        {
-            return regsC;
-        }
+        // Interface:
+        // template <typename VecTA, typename VecTB, typename VecTC>
+        // ROCWMMA_DEVICE static inline decltype(auto) exec(VecTA&& a, VecTB&& b, VecTC& accum);
     };
 
-#if ROCWMMA_ARCH_GFX11 || ROCWMMA_ARCH_GFX12
-
-    // Unlock the WMMA builtins for gfx11 cards
-    // Supported Input/Compute types:
-    // float16_t / float16_t
-    // float16_t / float32_t
-    // hfloat16_t / float16_t
-    // hfloat16_t / float32_t
-    // bfloat16_t / bfloat16_t
-    // bfloat16_t / float32_t
-    // int8_t / int32_t
-    // Supported block sizes (M, N) = 16
-    template <typename InputT, typename ComputeT, uint32_t BlockM, uint32_t BlockN, uint32_t BlockK>
-    struct Wmma<
-        InputT,
-        ComputeT,
-        BlockM,
-        BlockN,
-        BlockK,
-        typename enable_if<
-            ((is_same<InputT, float16_t>::value && is_same<ComputeT, float16_t>::value)
-             || (is_same<InputT, float16_t>::value && is_same<ComputeT, float32_t>::value)
-#if !ROCWMMA_NO_HALF
-             || (is_same<InputT, hfloat16_t>::value && is_same<ComputeT, hfloat16_t>::value)
-             || (is_same<InputT, hfloat16_t>::value && is_same<ComputeT, float32_t>::value)
-#endif // !ROCWMMA_NO_HALF
-             || (is_same<InputT, bfloat16_t>::value && is_same<ComputeT, bfloat16_t>::value)
-             || (is_same<InputT, bfloat16_t>::value && is_same<ComputeT, float32_t>::value)
-             || (is_same<InputT, int8_t>::value && is_same<ComputeT, int32_t>::value)
-             || (is_same<InputT, float8_t>::value && is_same<ComputeT, float32_t>::value)
-             || (is_same<InputT, bfloat8_t>::value && is_same<ComputeT, float32_t>::value))
-            && (BlockM == 16) && (BlockN == 16) && (BlockK >= 16) // 16 block size only
-            >::type>
+    template<typename InputTA_In,
+             typename InputTB_In,
+             typename ComputeT_In,
+             uint32_t BlockM_In,
+             uint32_t BlockN_In>
+    struct MmaTraits<Wmma_impl<InputTA_In, InputTB_In, ComputeT_In, BlockM_In, BlockN_In>>
     {
-        // Functional backend
-        using WMMA     = detail::amdgcn_wmma<InputT, ComputeT, BlockM, BlockN>;
-        using PackUtil = PackUtil<ComputeT>;
+        // Base implementation
+        using Base = Wmma_impl<InputTA_In, InputTB_In, ComputeT_In, BlockM_In, BlockN_In>;
 
-        // Full-fragment IO traits
-        using IOTraitsA   = IOTraits<BlockM, BlockK, InputT>;
-        using IOTraitsB   = IOTraits<BlockK, BlockN, InputT>;
-        using IOTraitsAcc = IOTraits<BlockM, BlockN, ComputeT>;
+        // Operand types
+        using InputTA = InputTA_In;
+        using InputTB = InputTB_In;
+        using ComputeT = ComputeT_In;
 
-        struct Traits
-        {
-            enum : uint32_t
-            {
-                WmmaCount         = BlockK / WMMA::Traits::KPerWmma,
-                MinK              = WMMA::Traits::KPerWmma,
-                InputSizeModifier = ROCWMMA_ARCH_GFX11 ? 2u : 1u
-            };
+        // Raw input / output types
+        using ARegsT = typename Base::ARegsT;
+        using BRegsT = typename Base::BRegsT;
+        using CRegsT = typename Base::CRegsT;
+        using DRegsT = typename Base::DRegsT;
 
-            // Sanity checks
-            static_assert(BlockK >= MinK, "BlockK is not a minimum of MinK");
-            static_assert(BlockK % MinK == 0, "BlockK is not a multiple of MinK");
-        };
+        // Geometric block sizes
+        constexpr static uint32_t BlockM = BlockM_In;
+        constexpr static uint32_t BlockN = BlockN_In;
+        constexpr static uint32_t BlockK = Base::KPerMma;
 
-        // Per-WMMA iterative vector requirements
-        using VecTraitsA = VecTraits<typename WMMA::Traits::ARegsT>;
-        using VecTraitsB = VecTraits<typename WMMA::Traits::BRegsT>;
-        using VecTraitsC = VecTraits<typename WMMA::Traits::CRegsT>;
-        using VecTraitsD = VecTraits<typename WMMA::Traits::DRegsT>;
+        // Vector sizes per block (packed)
+        constexpr static uint32_t BlockSizeA = VecTraits<ARegsT>::size();
+        constexpr static uint32_t BlockSizeB = VecTraits<BRegsT>::size();
+        constexpr static uint32_t BlockSizeC = VecTraits<CRegsT>::size();
 
-        // amdgcn backend requires duplicated packed inputs A / B, and unpacked accumulator
-        static_assert(VecTraitsA::size() * Traits::WmmaCount
-                          == IOTraitsA::PackedSize * Traits::InputSizeModifier,
-                      "WMMA backend input size mismatch");
-        static_assert(VecTraitsB::size() * Traits::WmmaCount
-                          == IOTraitsB::PackedSize * Traits::InputSizeModifier,
-                      "WMMA backend input size mismatch");
-        static_assert(VecTraitsC::size() == IOTraitsAcc::UnpackedSize,
-                      "WMMA backend input size mismatch");
-
-        template <typename InputARegsT, typename InputBRegsT, typename InputCRegsT>
-        ROCWMMA_DEVICE static inline auto
-            exec(InputARegsT const& regsA, InputBRegsT const& regsB, InputCRegsT const& regsC)
-        {
-            // Inputs from outside will come in as fully packed
-            static_assert(VecTraits<InputARegsT>::size() == VecTraitsA::size() * Traits::WmmaCount,
-                          "WMMA A input size mismatch");
-            static_assert(VecTraits<InputBRegsT>::size() == VecTraitsB::size() * Traits::WmmaCount,
-                          "WMMA B input size mismatch");
-            static_assert(VecTraits<InputCRegsT>::size() == VecTraitsC::size(),
-                          "WMMA Acc input size mismatch");
-
-            auto accum = regsC;
-
-            // Iterate over packed WMMA inputs
-            auto const aIt = makeVectorIterator<VecTraitsA::size()>(regsA).begin();
-            auto const bIt = makeVectorIterator<VecTraitsB::size()>(regsB).begin();
-
-            // Accumulate over WMMA count
-#pragma unroll
-            for(uint32_t i = 0; i < Traits::WmmaCount; i++)
-            {
-                accum = WMMA::exec(*aIt, *bIt, accum);
-                aIt++;
-                bIt++;
-            }
-
-            return accum;
-        }
+        // Backend flag
+        constexpr static bool is_wmma = true;
+        constexpr static bool is_mfma = false;
     };
-
-#endif // ROCWMMA_ARCH_GFX11 || ROCWMMA_ARCH_GFX12
 
 } // namespace rocwmma
 
