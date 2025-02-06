@@ -162,7 +162,7 @@ namespace rocwmma
         // Load and implicit pack
         // Note: the frag will only be partially filled with useful data.
         // Layout and thread locality is not guaranteed.
-        Loader::template exec(frag.mAccess, data, ldm, waveIndex);
+        Loader::exec(frag.mAccess, data, ldm, waveIndex);
 
         // Post-load transformation
         frag.mAccess = PostLoad::exec(frag.mAccess);
