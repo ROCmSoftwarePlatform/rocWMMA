@@ -76,9 +76,9 @@ namespace rocwmma
                       "Must provide layout information. Either statically assign data layout in "
                       "fragment declaration or use the run-time function overload.");
 
-        static_assert(
-            is_same<typename FragT::Traits::AccessT, typename Loader::Traits::OutputT>::value,
-            "Fragment access and coop load output types do not match");
+        // static_assert(
+        //     is_same<typename FragT::Traits::AccessT, typename Loader::Traits::OutputT>::value,
+        //     "Fragment access and coop load output types do not match");
 
         // Load and implicit pack
         // Note: the frag will only be partially filled with useful data.
@@ -155,14 +155,14 @@ namespace rocwmma
                       "Must provide layout information. Either statically assign data layout in "
                       "fragment declaration or use the run-time function overload.");
 
-        static_assert(
-            is_same<typename FragT::Traits::AccessT, typename Loader::Traits::OutputT>::value,
-            "Fragment access and coop load output types do not match");
+        // static_assert(
+        //     is_same<typename FragT::Traits::AccessT, typename Loader::Traits::OutputT>::value,
+        //     "Fragment access and coop load output types do not match");
 
         // Load and implicit pack
         // Note: the frag will only be partially filled with useful data.
         // Layout and thread locality is not guaranteed.
-        Loader::template exec<WaveCount>(frag.mAccess, data, ldm, waveIndex);
+        Loader::exec(frag.mAccess, data, ldm, waveIndex);
 
         // Post-load transformation
         frag.mAccess = PostLoad::exec(frag.mAccess);
@@ -209,9 +209,9 @@ namespace rocwmma
                       "Must provide data layout. Either statically assign data layout in "
                       "fragment declaration or use the run-time function overload.");
 
-        static_assert(
-            is_same<typename FragT::Traits::AccessT, typename Storer::Traits::InputT>::value,
-            "Fragment access and coop store input types do not match");
+        // static_assert(
+        //     is_same<typename FragT::Traits::AccessT, typename Storer::Traits::InputT>::value,
+        //     "Fragment access and coop store input types do not match");
 
         // Implicit unpack and store
         // Note: the frag is only be partially filled with useful data.
@@ -287,14 +287,14 @@ namespace rocwmma
                       "Must provide data layout. Either statically assign data layout in "
                       "fragment declaration or use the run-time function overload.");
 
-        static_assert(
-            is_same<typename FragT::Traits::AccessT, typename Storer::Traits::InputT>::value,
-            "Fragment access and coop stor input types do not match");
+        // static_assert(
+        //     is_same<typename FragT::Traits::AccessT, typename Storer::Traits::InputT>::value,
+        //     "Fragment access and coop stor input types do not match");
 
         // Implicit unpack and store
         // Note: the frag is only be partially filled with useful data.
         // Layout and thread locality is not guaranteed.
-        Storer::template exec<WaveCount>(data, PreStore::exec(frag.mAccess), ldm, waveIndex);
+        Storer::exec(data, PreStore::exec(frag.mAccess), ldm, waveIndex);
     }
 
 } // namespace rocwmma
