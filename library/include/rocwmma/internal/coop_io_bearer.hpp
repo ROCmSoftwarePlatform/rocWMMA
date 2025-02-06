@@ -53,11 +53,11 @@ namespace rocwmma
         // Inner loop = index N-1
         template <size_t Depth = 0,
                   typename Iterator,
-                  typename DataPtrT,
+                  typename DataT,
                   typename StrideSpace,
                   typename Strides2d>
-        ROCWMMA_DEVICE static inline auto unroll_impl(Iterator&     in,
-                                                      DataPtrT&&    dataPtr,
+        ROCWMMA_DEVICE static inline auto unroll_impl(Iterator&     it,
+                                                      DataT*        dataPtr,
                                                       uint32_t      ldm,
                                                       StrideSpace&& strideCounts,
                                                       Strides2d&&   strides2d)
@@ -73,9 +73,9 @@ namespace rocwmma
             {
                 for(uint32_t i = 0u; i < strideCount; i++)
                 {
-                    Bearer::exec(*in, forward<DataPtrT>(dataPtr));
+                    Bearer::exec(*it, dataPtr);
                     dataPtr += strideOffset;
-                    in++;
+                    it++;
                 }
             }
             // Recurse to the next nested layer
@@ -83,11 +83,12 @@ namespace rocwmma
             {
                 for(uint32_t i = 0u; i < strideCount; i++)
                 {
-                    unroll_impl<Depth + 1>(forward<Iterator&>(in),
-                                           forward<DataPtrT>(dataPtr),
+                    unroll_impl<Depth + 1>(forward<Iterator&>(it),
+                                           dataPtr,
                                            ldm,
                                            forward<StrideSpace>(strideCounts),
                                            forward<Strides2d>(strides2d));
+
                     dataPtr += strideOffset;
                 }
             }
@@ -95,9 +96,9 @@ namespace rocwmma
 
     public:
         // Forwards to base class static unroll using static WaveCount
-        template <typename BufferT, typename DataPtrT>
+        template <typename BufferT, typename DataT>
         ROCWMMA_DEVICE static void
-            exec(BufferT&& buffer, DataPtrT&& dataPtr, uint32_t ldm, uint32_t waveIndex)
+            exec(BufferT&& buffer, DataT* dataPtr, uint32_t ldm, uint32_t waveIndex)
         {
             // Filter out waves we don't want participating
             if(!CoopMatrixLayout::waveEnabler(waveIndex, WaveCount))
@@ -122,12 +123,9 @@ namespace rocwmma
         }
 
         // Forwards to iterative unroll because waveCount override may not be known at compile time.
-        template <typename BufferT, typename DataPtrT>
-        ROCWMMA_DEVICE static void exec(BufferT&&  buffer,
-                                        DataPtrT&& dataPtr,
-                                        uint32_t   ldm,
-                                        uint32_t   waveIndex,
-                                        uint32_t   waveCount)
+        template <typename BufferT, typename DataT>
+        ROCWMMA_DEVICE static void exec(
+            BufferT&& buffer, DataT* dataPtr, uint32_t ldm, uint32_t waveIndex, uint32_t waveCount)
         {
             // Filter out waves we don't want participating
             if(!CoopMatrixLayout::waveEnabler(waveIndex, waveCount))
@@ -145,7 +143,7 @@ namespace rocwmma
             unroll_impl(it,
                         dataPtr + DataLayout::fromMatrixCoord(baseOffset, ldm),
                         ldm,
-                        CoopMatrixLayout::strideCounts(),
+                        CoopMatrixLayout::strideCounts(waveCount),
                         CoopMatrixLayout::strides());
         }
     };

@@ -64,9 +64,8 @@ namespace rocwmma
         // Inner loop = index N-1
         // Assumption: MatrixLayout provides constexpr strideCounts and strides.
         // We can then use static unroll to eliminate looping.
-        template <size_t Depth = 0, typename BuffT, typename DataPtrT>
-        ROCWMMA_DEVICE static inline auto
-            unroll_impl(BuffT&& buff, DataPtrT&& dataPtr, uint32_t ldm)
+        template <size_t Depth = 0, typename BuffT, typename DataT>
+        ROCWMMA_DEVICE static inline auto unroll_impl(BuffT&& buff, DataT* dataPtr, uint32_t ldm)
         {
             // Get the layout strides for the current depth
             constexpr auto StrideSpace = pop_front<Depth>(MatrixLayout::strideCounts());
@@ -85,12 +84,12 @@ namespace rocwmma
             {
                 auto res = vector_mutate_for_each<ChunkSize>(
                     forward<BuffT>(buff),
-                    [](auto&& v, auto&& idx, auto&& dataPtr, auto&& dataStride) {
+                    [](auto&& v, auto idx, auto* dataPtr, auto dataStride) {
                         uint32_t dataOffset = decay_t<decltype(idx)>::value * dataStride;
                         Bearer::exec(v, dataPtr + dataOffset);
                         return v;
                     },
-                    forward<DataPtrT>(dataPtr),
+                    dataPtr,
                     currentDataStride);
             }
             // Recurse to the next nested layer
@@ -101,20 +100,20 @@ namespace rocwmma
 
                 auto res = vector_mutate_for_each<NextBufferStride>(
                     forward<BuffT>(buff),
-                    [](auto&& v, auto&& idx, auto&& dataPtr, auto&& ldm, auto&& dataStride) {
+                    [](auto&& v, auto idx, auto* dataPtr, auto ldm, auto dataStride) {
                         uint32_t dataOffset = decay_t<decltype(idx)>::value * dataStride;
                         unroll_impl<Depth + 1u>(v, dataPtr + dataOffset, ldm);
                         return v;
                     },
-                    forward<DataPtrT>(dataPtr),
+                    dataPtr,
                     ldm,
                     currentDataStride);
             }
         }
 
     public:
-        template <typename BuffT, typename DataPtrT>
-        ROCWMMA_DEVICE static void exec(BuffT&& buff, DataPtrT&& dataPtr, uint32_t ldm)
+        template <typename BuffT, typename DataT>
+        ROCWMMA_DEVICE static void exec(BuffT&& buff, DataT* dataPtr, uint32_t ldm)
         {
             // Arrange wave threads to starting matrix layout offsets.
             auto baseOffset = MatrixLayout::baseOffset();

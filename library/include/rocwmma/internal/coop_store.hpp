@@ -47,22 +47,18 @@ namespace rocwmma
                                   detail::OpaqueStoreBearer>;
 
     public:
-        template <typename DataPtrT, typename BufferT>
+        template <typename DataT, typename BufferT>
         ROCWMMA_DEVICE static void
-            exec(DataPtrT&& dataPtr, BufferT&& buff, uint32_t ldm, uint32_t waveIndex)
+            exec(DataT* dataPtr, BufferT&& buff, uint32_t ldm, uint32_t waveIndex)
         {
-            Base::exec(forward<BufferT>(buff), forward<DataPtrT>(dataPtr), ldm, waveIndex);
+            Base::exec(forward<BufferT>(buff), dataPtr, ldm, waveIndex);
         }
 
-        template <typename DataPtrT, typename BufferT>
-        ROCWMMA_DEVICE static void exec(DataPtrT&& dataPtr,
-                                        BufferT&&  buff,
-                                        uint32_t   ldm,
-                                        uint32_t   waveIndex,
-                                        uint32_t   waveCount)
+        template <typename DataT, typename BufferT>
+        ROCWMMA_DEVICE static void exec(
+            DataT* dataPtr, BufferT&& buff, uint32_t ldm, uint32_t waveIndex, uint32_t waveCount)
         {
-            Base::exec(
-                forward<BufferT>(buff), forward<DataPtrT>(dataPtr), ldm, waveIndex, waveCount);
+            Base::exec(forward<BufferT>(buff), dataPtr, ldm, waveIndex, waveCount);
         }
     };
 
