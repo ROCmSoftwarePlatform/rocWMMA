@@ -53,11 +53,11 @@ namespace rocwmma
         // Inner loop = index N-1
         template <size_t Depth = 0,
                   typename Iterator,
-                  typename DataT,
+                  typename ExternDataT,
                   typename StrideSpace,
                   typename Strides2d>
         ROCWMMA_DEVICE static inline auto unroll_impl(Iterator&     it,
-                                                      DataT*        dataPtr,
+                                                      ExternDataT*  dataPtr,
                                                       uint32_t      ldm,
                                                       StrideSpace&& strideCounts,
                                                       Strides2d&&   strides2d)
@@ -96,9 +96,9 @@ namespace rocwmma
 
     public:
         // Forwards to base class static unroll using static WaveCount
-        template <typename BufferT, typename DataT>
+        template <typename BufferT, typename ExternDataT>
         ROCWMMA_DEVICE static void
-            exec(BufferT&& buffer, DataT* dataPtr, uint32_t ldm, uint32_t waveIndex)
+            exec(BufferT&& buffer, ExternDataT* dataPtr, uint32_t ldm, uint32_t waveIndex)
         {
             // Filter out waves we don't want participating
             if(!CoopMatrixLayout::waveEnabler(waveIndex, WaveCount))
@@ -123,9 +123,12 @@ namespace rocwmma
         }
 
         // Forwards to iterative unroll because waveCount override may not be known at compile time.
-        template <typename BufferT, typename DataT>
-        ROCWMMA_DEVICE static void exec(
-            BufferT&& buffer, DataT* dataPtr, uint32_t ldm, uint32_t waveIndex, uint32_t waveCount)
+        template <typename BufferT, typename ExternDataT>
+        ROCWMMA_DEVICE static void exec(BufferT&&    buffer,
+                                        ExternDataT* dataPtr,
+                                        uint32_t     ldm,
+                                        uint32_t     waveIndex,
+                                        uint32_t     waveCount)
         {
             // Filter out waves we don't want participating
             if(!CoopMatrixLayout::waveEnabler(waveIndex, waveCount))
