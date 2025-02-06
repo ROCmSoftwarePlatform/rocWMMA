@@ -28,6 +28,7 @@
 
 #include "layout/layout.hpp"
 #include "layout/layout_traits.hpp"
+#include "tuple.hpp"
 #include "utility/vector.hpp"
 
 namespace rocwmma
